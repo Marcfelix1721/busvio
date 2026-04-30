@@ -1,3 +1,8 @@
+import { redirect } from 'next/navigation'
+
+export default function RootPage() {
+  redirect('/login')
+}
 import Image from "next/image";
 
 export default function Home() {
