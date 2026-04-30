@@ -151,7 +151,7 @@ export default async function QuoteRequestDetailPage({
           </div>
 
           <div className="lg:sticky lg:top-8 space-y-6">
-            <QuoteActions request={quote} />
+            <QuoteActions quote={quote} />
           </div>
         </div>
       </div>
