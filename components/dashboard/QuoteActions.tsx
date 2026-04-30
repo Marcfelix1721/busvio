@@ -127,9 +127,9 @@ export function QuoteActions({ quote, request }: QuoteActionsProps) {
     doc.text("DATOS DEL SOLICITANTE", 15, 74)
 
     doc.setFont("helvetica", "normal")
-    doc.text(`Nombre: ${quote.requester_name ?? quote.full_name}`, 15, 85)
-    doc.text(`Email: ${quote.requester_email ?? quote.email}`, 15, 93)
-    doc.text(`Teléfono: ${quote.requester_phone ?? quote.phone ?? "-"}`, 15, 101)
+    doc.text(`Nombre: ${quote.requester_name ?? "-"}`, 15, 85)
+    doc.text(`Email: ${quote.requester_email ?? "-"}`, 15, 93)
+    doc.text(`Teléfono: ${quote.requester_phone ?? "-"}`, 15, 101)
 
     // Detalles viaje
     doc.setFillColor(240, 244, 248)
