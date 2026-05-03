@@ -61,7 +61,7 @@ export default function LoginPage() {
 
     if (!error) {
       await new Promise((resolve) => setTimeout(resolve, 500))
-      window.location.href = '/dashboard'
+      window.location.replace('/dashboard')
     }
   }
 
