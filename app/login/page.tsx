@@ -1,7 +1,6 @@
 "use client"
 
 import { FormEvent, useState } from "react"
-import { useRouter } from "next/navigation"
 import { BusFront } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +9,6 @@ import { createClient } from "@/lib/supabase"
 
 export default function LoginPage() {
   const supabase = createClient()
-  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -30,7 +28,7 @@ export default function LoginPage() {
       return
     }
 
-    router.push("/dashboard")
+    window.location.href = "/dashboard"
   }
 
   return (
