@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
-  const [loginDebug, setLoginDebug] = useState("Ningún intento de login aún.")
+  const [loginDebug, setLoginDebug] = useState("")
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -117,7 +117,8 @@ export default function LoginPage() {
                 Debug (resultado del login)
               </p>
               <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs text-amber-950">
-                {loginDebug}
+                {loginDebug ||
+                  "Pulsa «Iniciar sesión» para ver aquí el resultado de depuración."}
               </pre>
             </div>
           </form>
