@@ -13,13 +13,41 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [loginDebug, setLoginDebug] = useState("Ningún intento de login aún.")
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setLoading(true)
     setErrorMessage("")
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error, data } = await supabase.auth.signInWithPassword({ email, password })
+    console.log('Login result:', { error, data })
+
+    const debugJson = JSON.stringify(
+      { error, data },
+      (_key, value) => {
+        if (value instanceof Error) {
+          return {
+            message: value.message,
+            name: value.name,
+            ...("status" in value && typeof (value as { status?: number }).status === "number"
+              ? { status: (value as { status: number }).status }
+              : {}),
+          }
+        }
+        if (value && typeof value === "object" && "access_token" in value) {
+          const session = value as Record<string, unknown>
+          return {
+            ...session,
+            access_token: session.access_token ? "[redacted]" : session.access_token,
+            refresh_token: session.refresh_token ? "[redacted]" : session.refresh_token,
+          }
+        }
+        return value
+      },
+      2
+    )
+    setLoginDebug(debugJson)
 
     setLoading(false)
 
@@ -84,6 +112,14 @@ export default function LoginPage() {
               {loading ? "Entrando..." : "Iniciar sesión"}
             </Button>
             {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-900">
+                Debug (resultado del login)
+              </p>
+              <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs text-amber-950">
+                {loginDebug}
+              </pre>
+            </div>
           </form>
 
           <p className="mt-8 text-center text-[1rem] font-medium text-slate-500">
