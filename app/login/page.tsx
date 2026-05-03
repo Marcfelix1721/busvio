@@ -1,6 +1,6 @@
 "use client"
 
-import { FormEvent, useState } from "react"
+import { FormEvent, useRef, useState } from "react"
 import { BusFront } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,8 +9,8 @@ import { createClient } from "@/lib/supabase"
 
 export default function LoginPage() {
   const supabase = createClient()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const emailRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [loginDebug, setLoginDebug] = useState("")
@@ -19,6 +19,9 @@ export default function LoginPage() {
     event.preventDefault()
     setLoading(true)
     setErrorMessage("")
+
+    const email = emailRef.current?.value ?? ""
+    const password = passwordRef.current?.value ?? ""
 
     const { error, data } = await supabase.auth.signInWithPassword({ email, password })
     console.log('Login result:', { error, data })
@@ -80,11 +83,10 @@ export default function LoginPage() {
                 Correo electrónico
               </Label>
               <Input
+                ref={emailRef}
                 id="email"
                 type="email"
                 required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
                 className="h-12 rounded-xl border-slate-300 bg-white px-4 text-lg"
               />
             </div>
@@ -96,11 +98,10 @@ export default function LoginPage() {
                 Contraseña
               </Label>
               <Input
+                ref={passwordRef}
                 id="password"
                 type="password"
                 required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
                 className="h-12 rounded-xl border-slate-300 bg-white px-4 text-lg"
               />
             </div>
