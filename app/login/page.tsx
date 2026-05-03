@@ -77,7 +77,7 @@ export default function LoginPage() {
           <h2 className="text-4xl font-bold text-slate-900">Bienvenido</h2>
           <p className="mt-2 text-2xl text-slate-500">Inicia sesión en tu cuenta</p>
 
-          <form onSubmit={handleSubmit} className="mt-8 grid gap-5">
+          <form className="mt-8 grid gap-5">
             <div className="grid gap-2">
               <Label htmlFor="email" className="text-[1.1rem] font-semibold text-slate-800">
                 Correo electrónico
@@ -106,7 +106,8 @@ export default function LoginPage() {
               />
             </div>
             <Button
-              type="submit"
+              type="button"
+              onClick={() => handleSubmit({ preventDefault: () => {} } as any)}
               disabled={loading}
               className="mt-4 h-12 w-full rounded-xl bg-[#1e3a5f] text-xl font-semibold text-white hover:bg-[#1e3a5f]/90"
             >
