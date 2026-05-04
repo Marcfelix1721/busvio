@@ -301,44 +301,20 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
       }
     }
 
-    // DESGLOSE DE COSTES
+    // RESUMEN DE PRECIOS (solo base + IVA, sin desglose interno)
     if (rutaInfo?.desglose) {
       y += 16
       doc.setTextColor(r, g, b)
       doc.setFont("helvetica", "bold")
       doc.setFontSize(9)
-      doc.text("DESGLOSE DE COSTES", 15, y)
+      doc.text("RESUMEN", 15, y)
       doc.line(15, y + 2, pageWidth - 15, y + 2)
       y += 10
       doc.setTextColor(80, 80, 80)
-      const items: [string, string][] = [
-        ["Combustible", `${rutaInfo.desglose.combustible} €`],
-        ["Vehículo (amort. + mant. + seguro)", `${rutaInfo.desglose.vehiculo} €`],
-        ["Peajes estimados", `${rutaInfo.desglose.peajes} €`],
-        ["Conductor", `${rutaInfo.desglose.conductor} €`],
-        ...(rutaInfo.desglose.pluses > 0 ? [["Pluses conductor", `${rutaInfo.desglose.pluses} €`] as [string, string]] : []),
-      ]
-      items.forEach(([label, value]) => {
-        doc.setFont("helvetica", "normal")
-        doc.text(label, 20, y)
-        doc.text(value, pageWidth - 15, y, { align: "right" })
-        y += 7
-      })
-      doc.line(15, y, pageWidth - 15, y)
-      y += 6
-      doc.setFont("helvetica", "bold")
-      doc.text("Subtotal costes", 20, y)
-      doc.text(`${rutaInfo.desglose.subtotal} €`, pageWidth - 15, y, { align: "right" })
-      y += 7
       doc.setFont("helvetica", "normal")
-      doc.text("Margen comercial", 20, y)
-      doc.text(`${rutaInfo.desglose.margen} €`, pageWidth - 15, y, { align: "right" })
-      y += 7
-      doc.setFont("helvetica", "bold")
       doc.text("Base imponible", 20, y)
       doc.text(`${rutaInfo.desglose.base_imponible} €`, pageWidth - 15, y, { align: "right" })
       y += 7
-      doc.setFont("helvetica", "normal")
       doc.text(`IVA (${rutaInfo.desglose.iva_porcentaje}%)`, 20, y)
       doc.text(`${rutaInfo.desglose.importe_iva} €`, pageWidth - 15, y, { align: "right" })
     }
@@ -440,7 +416,7 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
                     <div className="mt-2">
                       <button onClick={() => setMostrarDesglose(!mostrarDesglose)} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium">
                         {mostrarDesglose ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-                        {mostrarDesglose ? "Ocultar desglose" : "Ver desglose"}
+                        {mostrarDesglose ? "Ocultar desglose interno" : "Ver desglose interno"}
                       </button>
                       {mostrarDesglose && (
                         <div className="mt-2 space-y-1 border-t border-blue-200 pt-2">
