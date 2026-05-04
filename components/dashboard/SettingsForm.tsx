@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Save } from "lucide-react"
+import { useState, useRef } from "react"
+import { Save, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,6 +18,7 @@ type Company = {
   address?: string
   website?: string
   logo_url?: string
+  color_primario?: string
 }
 
 function Field({ label, id, value, onChange, unit }: {
@@ -86,6 +87,7 @@ export function SettingsForm({ settings, companyId, company }: {
   company: Company | null
 }) {
   const supabase = createClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [companyValues, setCompanyValues] = useState({
     name: company?.name ?? "",
@@ -94,7 +96,11 @@ export function SettingsForm({ settings, companyId, company }: {
     cif: company?.cif ?? "",
     address: company?.address ?? "",
     website: company?.website ?? "",
+    color_primario: company?.color_primario ?? "#1e3a5f",
   })
+
+  const [logoUrl, setLogoUrl] = useState(company?.logo_url ?? "")
+  const [uploadingLogo, setUploadingLogo] = useState(false)
 
   const [values, setValues] = useState<Settings>({
     precio_combustible: settings?.precio_combustible ?? 1.65,
@@ -140,11 +146,37 @@ export function SettingsForm({ settings, companyId, company }: {
     setCompanyValues((prev) => ({ ...prev, [id]: val }))
   }
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingLogo(true)
+    const ext = file.name.split(".").pop()
+    const fileName = `${companyId}.${ext}`
+
+    const { error } = await supabase.storage
+      .from("logos")
+      .upload(fileName, file, { upsert: true })
+
+    if (error) {
+      setMessage("❌ Error al subir el logo: " + error.message)
+      setUploadingLogo(false)
+      return
+    }
+
+    const { data } = supabase.storage.from("logos").getPublicUrl(fileName)
+    const publicUrl = data.publicUrl + `?t=${Date.now()}`
+
+    await supabase.from("companies").update({ logo_url: data.publicUrl }).eq("id", companyId)
+    setLogoUrl(publicUrl)
+    setUploadingLogo(false)
+    setMessage("✅ Logo subido correctamente")
+  }
+
   const handleSave = async () => {
     setSaving(true)
     setMessage("")
 
-    // Guardar datos de empresa
     const { error: companyError } = await supabase
       .from("companies")
       .update({
@@ -154,6 +186,7 @@ export function SettingsForm({ settings, companyId, company }: {
         cif: companyValues.cif,
         address: companyValues.address,
         website: companyValues.website,
+        color_primario: companyValues.color_primario,
       })
       .eq("id", companyId)
 
@@ -163,7 +196,6 @@ export function SettingsForm({ settings, companyId, company }: {
       return
     }
 
-    // Guardar ajustes de tarifas
     const { error } = await supabase
       .from("company_settings")
       .update({ ...values, updated_at: new Date().toISOString() })
@@ -184,14 +216,73 @@ export function SettingsForm({ settings, companyId, company }: {
 
   return (
     <div className="space-y-6">
-      <Section title="🏢 Datos de la empresa">
-        {t("name", "Nombre de la empresa", "Autocares García S.L.")}
-        {t("cif", "CIF", "B12345678")}
-        {t("email", "Email de contacto", "info@empresa.com")}
-        {t("phone", "Teléfono", "+34 600 000 000")}
-        {t("address", "Dirección", "Calle Mayor 1, 08001 Barcelona")}
-        {t("website", "Web", "www.empresa.com")}
-      </Section>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b pb-2">
+          🏢 Datos de la empresa
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {t("name", "Nombre de la empresa", "Autocares García S.L.")}
+          {t("cif", "CIF", "B12345678")}
+          {t("email", "Email de contacto", "info@empresa.com")}
+          {t("phone", "Teléfono", "+34 600 000 000")}
+          {t("address", "Dirección", "Calle Mayor 1, 08001 Barcelona")}
+          {t("website", "Web", "www.empresa.com")}
+        </div>
+
+        {/* COLOR PRIMARIO */}
+        <div className="grid gap-1.5">
+          <Label className="text-sm font-medium text-gray-700">Color corporativo</Label>
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              value={companyValues.color_primario}
+              onChange={(e) => handleCompanyChange("color_primario", e.target.value)}
+              className="h-10 w-16 cursor-pointer rounded border border-gray-200"
+            />
+            <span className="text-sm text-gray-500">{companyValues.color_primario}</span>
+            <div
+              className="h-8 w-32 rounded-md text-white text-xs flex items-center justify-center font-semibold"
+              style={{ backgroundColor: companyValues.color_primario }}
+            >
+              Vista previa
+            </div>
+          </div>
+        </div>
+
+        {/* LOGO */}
+        <div className="grid gap-2">
+          <Label className="text-sm font-medium text-gray-700">Logo de la empresa</Label>
+          <div className="flex items-center gap-4">
+            {logoUrl && (
+              <img
+                src={logoUrl}
+                alt="Logo"
+                className="h-16 w-auto object-contain rounded border border-gray-200 p-1"
+              />
+            )}
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={handleLogoUpload}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                disabled={uploadingLogo}
+                onClick={() => fileInputRef.current?.click()}
+                className="h-9 border-gray-200 text-gray-700"
+              >
+                <Upload className="size-4" />
+                {uploadingLogo ? "Subiendo..." : logoUrl ? "Cambiar logo" : "Subir logo"}
+              </Button>
+              <p className="text-xs text-gray-400 mt-1">PNG, JPG o WebP. Recomendado: fondo transparente.</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <Section title="🚌 Vehículos — Consumo (litros/100km)">
         {f("consumo_minibus", "Minibus")}
