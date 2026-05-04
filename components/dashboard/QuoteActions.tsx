@@ -20,6 +20,8 @@ type Company = {
   cif?: string
   address?: string
   website?: string
+  logo_url?: string
+  color_primario?: string
 }
 
 const statusClasses: Record<QuoteRequest["status"], string> = {
@@ -50,6 +52,14 @@ type Desglose = {
   subtotal: number
   margen: number
   total: number
+}
+
+// Convierte hex (#1e3a5f) a RGB [r, g, b]
+function hexToRgb(hex: string): [number, number, number] {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  return result
+    ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+    : [30, 58, 95]
 }
 
 export function QuoteActions({ quote, company }: { quote: QuoteRequest; company: Company | null }) {
@@ -131,7 +141,7 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
     setMessage("Guardado correctamente")
   }
 
-  const generarPDFBase64 = (): string => {
+  const generarPDFBase64 = async (): Promise<string> => {
     const doc = new jsPDF()
     const precio = finalPrice || quote.estimated_price || 0
     const numPresupuesto = `P-${quote.id.slice(0, 8).toUpperCase()}`
@@ -141,35 +151,71 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
     const empresaTelefono = company?.phone ?? ""
     const empresaCIF = company?.cif ?? ""
     const empresaDireccion = company?.address ?? ""
+    const colorHex = company?.color_primario ?? "#1e3a5f"
+    const [r, g, b] = hexToRgb(colorHex)
 
-    // CABECERA
-    doc.setFillColor(30, 58, 95)
-    doc.rect(0, 0, pageWidth, 40, "F")
+    // CABECERA con color corporativo
+    doc.setFillColor(r, g, b)
+    doc.rect(0, 0, pageWidth, 45, "F")
     doc.setTextColor(255, 255, 255)
-    doc.setFontSize(20)
-    doc.setFont("helvetica", "bold")
-    doc.text(empresaNombre.toUpperCase(), 15, 20)
-    doc.setFontSize(8)
-    doc.setFont("helvetica", "normal")
-    if (empresaDireccion) doc.text(empresaDireccion, 15, 28)
-    if (empresaEmail) doc.text(empresaEmail, 15, 34)
-    if (empresaTelefono) doc.text(`Tel: ${empresaTelefono}`, 15, 40)
+
+    // LOGO si existe
+    if (company?.logo_url) {
+      try {
+        const logoRes = await fetch(company.logo_url)
+        const logoBlob = await logoRes.blob()
+        const logoBase64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.readAsDataURL(logoBlob)
+        })
+        doc.addImage(logoBase64, "PNG", 15, 5, 35, 35)
+        doc.setFontSize(18)
+        doc.setFont("helvetica", "bold")
+        doc.text(empresaNombre.toUpperCase(), 55, 18)
+        doc.setFontSize(8)
+        doc.setFont("helvetica", "normal")
+        if (empresaDireccion) doc.text(empresaDireccion, 55, 26)
+        if (empresaEmail) doc.text(empresaEmail, 55, 32)
+        if (empresaTelefono) doc.text(`Tel: ${empresaTelefono}`, 55, 38)
+      } catch {
+        doc.setFontSize(20)
+        doc.setFont("helvetica", "bold")
+        doc.text(empresaNombre.toUpperCase(), 15, 20)
+        doc.setFontSize(8)
+        doc.setFont("helvetica", "normal")
+        if (empresaDireccion) doc.text(empresaDireccion, 15, 28)
+        if (empresaEmail) doc.text(empresaEmail, 15, 34)
+        if (empresaTelefono) doc.text(`Tel: ${empresaTelefono}`, 15, 40)
+      }
+    } else {
+      doc.setFontSize(20)
+      doc.setFont("helvetica", "bold")
+      doc.text(empresaNombre.toUpperCase(), 15, 20)
+      doc.setFontSize(8)
+      doc.setFont("helvetica", "normal")
+      if (empresaDireccion) doc.text(empresaDireccion, 15, 28)
+      if (empresaEmail) doc.text(empresaEmail, 15, 34)
+      if (empresaTelefono) doc.text(`Tel: ${empresaTelefono}`, 15, 40)
+    }
+
+    // Lado derecho cabecera
     doc.setFontSize(11)
     doc.setFont("helvetica", "bold")
-    doc.text("PRESUPUESTO", pageWidth - 15, 20, { align: "right" })
+    doc.text("PRESUPUESTO", pageWidth - 15, 15, { align: "right" })
     doc.setFont("helvetica", "normal")
     doc.setFontSize(9)
-    doc.text(`Nº ${numPresupuesto}`, pageWidth - 15, 28, { align: "right" })
-    doc.text(`Fecha: ${new Date().toLocaleDateString("es-ES")}`, pageWidth - 15, 35, { align: "right" })
-    if (empresaCIF) doc.text(`CIF: ${empresaCIF}`, pageWidth - 15, 42, { align: "right" })
+    doc.text(`Nº ${numPresupuesto}`, pageWidth - 15, 23, { align: "right" })
+    doc.text(`Fecha: ${new Date().toLocaleDateString("es-ES")}`, pageWidth - 15, 30, { align: "right" })
+    if (empresaCIF) doc.text(`CIF: ${empresaCIF}`, pageWidth - 15, 37, { align: "right" })
 
     // DATOS DEL SOLICITANTE
-    let y = 58
-    doc.setTextColor(30, 58, 95)
+    let y = 60
+    doc.setTextColor(r, g, b)
     doc.setFontSize(9)
     doc.setFont("helvetica", "bold")
     doc.text("DATOS DEL SOLICITANTE", 15, y)
-    doc.setDrawColor(30, 58, 95)
+    doc.setDrawColor(r, g, b)
     doc.line(15, y + 2, pageWidth - 15, y + 2)
 
     y += 10
@@ -192,7 +238,7 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
 
     // DETALLES DEL VIAJE
     y += 16
-    doc.setTextColor(30, 58, 95)
+    doc.setTextColor(r, g, b)
     doc.setFont("helvetica", "bold")
     doc.setFontSize(9)
     doc.text("DETALLES DEL VIAJE", 15, y)
@@ -260,7 +306,7 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
     // DESGLOSE DE COSTES
     if (rutaInfo?.desglose) {
       y += 16
-      doc.setTextColor(30, 58, 95)
+      doc.setTextColor(r, g, b)
       doc.setFont("helvetica", "bold")
       doc.setFontSize(9)
       doc.text("DESGLOSE DE COSTES", 15, y)
@@ -291,9 +337,9 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
       doc.text(`${rutaInfo.desglose.margen} €`, pageWidth - 15, y, { align: "right" })
     }
 
-    // PRECIO TOTAL
+    // PRECIO TOTAL con color corporativo
     y += 16
-    doc.setFillColor(30, 58, 95)
+    doc.setFillColor(r, g, b)
     doc.rect(0, y, pageWidth, 28, "F")
     doc.setTextColor(255, 255, 255)
     doc.setFont("helvetica", "bold")
@@ -316,7 +362,7 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
     setEnviando(true)
     setMessage("")
     try {
-      const pdfBase64 = generarPDFBase64()
+      const pdfBase64 = await generarPDFBase64()
       const numeroPresupuesto = `P-${quote.id.slice(0, 8).toUpperCase()}`
       const precio = finalPrice || quote.estimated_price || 0
       const res = await fetch("/api/enviar-presupuesto", {
