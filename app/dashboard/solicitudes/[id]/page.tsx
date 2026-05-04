@@ -56,6 +56,7 @@ export default async function QuoteRequestDetailPage({
 }) {
   const { id } = await params
   const supabase = await createClient()
+
   const { data } = await supabase
     .from("quote_requests")
     .select("*")
@@ -63,10 +64,14 @@ export default async function QuoteRequestDetailPage({
     .maybeSingle()
 
   const quote = data as QuoteRequest | null
+  if (!quote) redirect("/dashboard")
 
-  if (!quote) {
-    redirect("/dashboard")
-  }
+  // Obtener datos de la empresa
+  const { data: company } = await supabase
+    .from("companies")
+    .select("*")
+    .eq("id", quote.company_id)
+    .maybeSingle()
 
   const serviceType = extractCommentField(quote.comments, "Tipo de servicio") ?? "-"
   const endTime =
@@ -76,7 +81,7 @@ export default async function QuoteRequestDetailPage({
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
       <div className="bg-[#1e3a5f] px-6 py-4 flex justify-between items-center">
-        <div className="text-white font-semibold">🚌 Busvio</div>
+        <div className="text-white font-semibold">🚌 {company?.name ?? "Busvio"}</div>
         <LogoutButton />
       </div>
 
@@ -106,18 +111,14 @@ export default async function QuoteRequestDetailPage({
                 <div className="bg-gray-50 rounded-lg p-4 flex items-start gap-3">
                   <Mail className="h-4 w-4 text-[#1e3a5f] mt-0.5" />
                   <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Email
-                    </p>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</p>
                     <p className="text-sm font-medium mt-1">{quote.requester_email}</p>
                   </div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4 flex items-start gap-3">
                   <Phone className="h-4 w-4 text-[#1e3a5f] mt-0.5" />
                   <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Teléfono
-                    </p>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Teléfono</p>
                     <p className="text-sm font-medium mt-1">{quote.requester_phone}</p>
                   </div>
                 </div>
@@ -151,7 +152,7 @@ export default async function QuoteRequestDetailPage({
           </div>
 
           <div className="lg:sticky lg:top-8 space-y-6">
-            <QuoteActions quote={quote} />
+            <QuoteActions quote={quote} company={company} />
           </div>
         </div>
       </div>

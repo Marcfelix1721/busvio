@@ -12,6 +12,16 @@ import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase"
 import { QuoteRequest } from "@/lib/types"
 
+type Company = {
+  id: string
+  name: string
+  email: string
+  phone: string
+  cif?: string
+  address?: string
+  website?: string
+}
+
 const statusClasses: Record<QuoteRequest["status"], string> = {
   nuevo: "bg-blue-50 text-blue-700 border-blue-200",
   en_revision: "bg-amber-50 text-amber-700 border-amber-200",
@@ -42,7 +52,7 @@ type Desglose = {
   total: number
 }
 
-export function QuoteActions({ quote }: { quote: QuoteRequest }) {
+export function QuoteActions({ quote, company }: { quote: QuoteRequest; company: Company | null }) {
   const supabase = createClient()
   const [status, setStatus] = useState<QuoteRequest["status"]>(quote.status)
   const [finalPrice, setFinalPrice] = useState<number | "">(quote.final_price ?? "")
@@ -126,27 +136,35 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
     const precio = finalPrice || quote.estimated_price || 0
     const numPresupuesto = `P-${quote.id.slice(0, 8).toUpperCase()}`
     const pageWidth = 210
+    const empresaNombre = company?.name ?? "Busvio"
+    const empresaEmail = company?.email ?? ""
+    const empresaTelefono = company?.phone ?? ""
+    const empresaCIF = company?.cif ?? ""
+    const empresaDireccion = company?.address ?? ""
 
     // CABECERA
     doc.setFillColor(30, 58, 95)
     doc.rect(0, 0, pageWidth, 40, "F")
     doc.setTextColor(255, 255, 255)
-    doc.setFontSize(24)
+    doc.setFontSize(20)
     doc.setFont("helvetica", "bold")
-    doc.text("BUSVIO", 15, 22)
-    doc.setFontSize(10)
+    doc.text(empresaNombre.toUpperCase(), 15, 20)
+    doc.setFontSize(8)
     doc.setFont("helvetica", "normal")
-    doc.text("Gestión de transporte discrecional", 15, 32)
+    if (empresaDireccion) doc.text(empresaDireccion, 15, 28)
+    if (empresaEmail) doc.text(empresaEmail, 15, 34)
+    if (empresaTelefono) doc.text(`Tel: ${empresaTelefono}`, 15, 40)
     doc.setFontSize(11)
     doc.setFont("helvetica", "bold")
-    doc.text("PRESUPUESTO", pageWidth - 15, 22, { align: "right" })
+    doc.text("PRESUPUESTO", pageWidth - 15, 20, { align: "right" })
     doc.setFont("helvetica", "normal")
     doc.setFontSize(9)
-    doc.text(`Nº ${numPresupuesto}`, pageWidth - 15, 30, { align: "right" })
-    doc.text(`Fecha: ${new Date().toLocaleDateString("es-ES")}`, pageWidth - 15, 37, { align: "right" })
+    doc.text(`Nº ${numPresupuesto}`, pageWidth - 15, 28, { align: "right" })
+    doc.text(`Fecha: ${new Date().toLocaleDateString("es-ES")}`, pageWidth - 15, 35, { align: "right" })
+    if (empresaCIF) doc.text(`CIF: ${empresaCIF}`, pageWidth - 15, 42, { align: "right" })
 
     // DATOS DEL SOLICITANTE
-    let y = 55
+    let y = 58
     doc.setTextColor(30, 58, 95)
     doc.setFontSize(9)
     doc.setFont("helvetica", "bold")
@@ -289,7 +307,7 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
     doc.setFontSize(7)
     doc.setFont("helvetica", "normal")
     doc.text("Este presupuesto tiene una validez de 30 días desde la fecha de emisión.", 15, 285)
-    doc.text("Busvio — Gestión de transporte discrecional", 15, 290)
+    doc.text(`${empresaNombre} — Gestión de transporte discrecional`, 15, 290)
 
     return doc.output("datauristring").split(",")[1]
   }
@@ -313,6 +331,7 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
           destino: quote.destination,
           fecha: new Date(quote.trip_date).toLocaleDateString("es-ES"),
           precio,
+          empresaNombre: company?.name ?? "Busvio",
         }),
       })
       const data = await res.json()
