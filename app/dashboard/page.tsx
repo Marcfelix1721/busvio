@@ -9,6 +9,7 @@ import {
   Eye,
   FileText,
   Search,
+  Settings,
   Star,
   CircleCheck,
 } from "lucide-react"
@@ -34,16 +35,15 @@ const statusClasses: Record<QuoteRequest["status"], string> = {
   cancelado: "bg-slate-100 text-slate-700",
 }
 
-const statusOptions: Array<{ value: QuoteRequest["status"] | "todas"; label: string }> =
-  [
-    { value: "todas", label: "Todas" },
-    { value: "nuevo", label: "Nuevo" },
-    { value: "en_revision", label: "En revisión" },
-    { value: "enviado", label: "Enviado" },
-    { value: "aceptado", label: "Aceptado" },
-    { value: "rechazado", label: "Rechazado" },
-    { value: "cancelado", label: "Cancelado" },
-  ]
+const statusOptions: Array<{ value: QuoteRequest["status"] | "todas"; label: string }> = [
+  { value: "todas", label: "Todas" },
+  { value: "nuevo", label: "Nuevo" },
+  { value: "en_revision", label: "En revisión" },
+  { value: "enviado", label: "Enviado" },
+  { value: "aceptado", label: "Aceptado" },
+  { value: "rechazado", label: "Rechazado" },
+  { value: "cancelado", label: "Cancelado" },
+]
 
 function formatDate(dateValue: string) {
   const date = new Date(dateValue)
@@ -73,12 +73,8 @@ export default async function DashboardPage({
   searchParams?: Promise<{ estado?: string; q?: string }>
 }) {
   const supabase = await createClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  if (!session) {
-    redirect("/login")
-  }
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) redirect("/login")
 
   const { data } = await supabase
     .from("quote_requests")
@@ -87,9 +83,7 @@ export default async function DashboardPage({
 
   const requests = (data ?? []) as QuoteRequest[]
   const resolvedSearchParams = searchParams ? await searchParams : undefined
-  const selectedStatus = (resolvedSearchParams?.estado ?? "todas") as
-    | QuoteRequest["status"]
-    | "todas"
+  const selectedStatus = (resolvedSearchParams?.estado ?? "todas") as QuoteRequest["status"] | "todas"
   const rawSearchQuery = (resolvedSearchParams?.q ?? "").trim()
   const searchQuery = rawSearchQuery.toLowerCase()
 
@@ -97,6 +91,7 @@ export default async function DashboardPage({
     selectedStatus === "todas"
       ? requests
       : requests.filter((request) => request.status === selectedStatus)
+
   const filteredRequests = searchQuery
     ? statusFilteredRequests.filter((request) =>
         request.requester_name.toLowerCase().includes(searchQuery)
@@ -124,6 +119,13 @@ export default async function DashboardPage({
                 <p className="hidden text-xs text-slate-200 md:block">
                   {session.user.email ?? "Sin usuario"}
                 </p>
+                <Link
+                  href="/dashboard/ajustes"
+                  className="flex items-center gap-1 text-xs text-slate-200 hover:text-white transition-colors"
+                >
+                  <Settings className="size-3.5" />
+                  Ajustes
+                </Link>
                 <LogoutButton />
               </div>
             </div>
@@ -172,12 +174,9 @@ export default async function DashboardPage({
                   {statusOptions.map((statusOption) => {
                     const isActive = selectedStatus === statusOption.value
                     const params = new URLSearchParams()
-                    if (statusOption.value !== "todas")
-                      params.set("estado", statusOption.value)
+                    if (statusOption.value !== "todas") params.set("estado", statusOption.value)
                     if (rawSearchQuery) params.set("q", rawSearchQuery)
-                    const href = params.toString()
-                      ? `/dashboard?${params.toString()}`
-                      : "/dashboard"
+                    const href = params.toString() ? `/dashboard?${params.toString()}` : "/dashboard"
                     return (
                       <Link
                         key={statusOption.value}
@@ -213,30 +212,14 @@ export default async function DashboardPage({
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 text-slate-700">
                     <tr>
-                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">
-                        Solicitante
-                      </th>
-                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">
-                        Tipo servicio
-                      </th>
-                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">
-                        Origen → Destino
-                      </th>
-                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">
-                        Fecha viaje
-                      </th>
-                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">
-                        Pasajeros
-                      </th>
-                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">
-                        Estado
-                      </th>
-                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">
-                        Recibida
-                      </th>
-                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">
-                        Acción
-                      </th>
+                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">Solicitante</th>
+                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">Tipo servicio</th>
+                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">Origen → Destino</th>
+                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">Fecha viaje</th>
+                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">Pasajeros</th>
+                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">Estado</th>
+                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">Recibida</th>
+                      <th className="px-4 py-3 text-xs font-semibold tracking-wide uppercase">Acción</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -253,33 +236,19 @@ export default async function DashboardPage({
                           className={`${index % 2 === 0 ? "bg-white" : "bg-slate-50/60"} border-t border-slate-100 hover:bg-slate-100/70`}
                         >
                           <td className="px-4 py-3">
-                            <p className="font-semibold text-slate-800">
-                              {request.requester_name}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {request.requester_email}
-                            </p>
+                            <p className="font-semibold text-slate-800">{request.requester_name}</p>
+                            <p className="text-xs text-slate-500">{request.requester_email}</p>
                           </td>
-                          <td className="px-4 py-3 text-slate-700">
-                            {getRequestServiceType(request)}
-                          </td>
-                          <td className="px-4 py-3 text-slate-700">
-                            {request.origin} → {request.destination}
-                          </td>
-                          <td className="px-4 py-3 text-slate-700">
-                            {formatDate(request.trip_date)}
-                          </td>
+                          <td className="px-4 py-3 text-slate-700">{getRequestServiceType(request)}</td>
+                          <td className="px-4 py-3 text-slate-700">{request.origin} → {request.destination}</td>
+                          <td className="px-4 py-3 text-slate-700">{formatDate(request.trip_date)}</td>
                           <td className="px-4 py-3 text-slate-700">{request.passengers}</td>
                           <td className="px-4 py-3">
-                            <Badge
-                              className={`${statusClasses[request.status]} px-2.5 py-1 text-xs font-semibold`}
-                            >
+                            <Badge className={`${statusClasses[request.status]} px-2.5 py-1 text-xs font-semibold`}>
                               {request.status}
                             </Badge>
                           </td>
-                          <td className="px-4 py-3 text-slate-700">
-                            {formatDate(request.created_at)}
-                          </td>
+                          <td className="px-4 py-3 text-slate-700">{formatDate(request.created_at)}</td>
                           <td className="px-4 py-3">
                             <Link
                               href={`/dashboard/solicitudes/${request.id}`}
@@ -317,9 +286,7 @@ function MetricCard({
   return (
     <article className={`rounded-xl border border-slate-200 border-l-4 ${borderColor} bg-white p-6 shadow-[0_4px_12px_rgba(15,23,42,0.06)]`}>
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-          {label}
-        </p>
+        <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{label}</p>
         <span className="text-lg">{icon}</span>
       </div>
       <p className="text-[3rem] leading-none font-bold text-[#1e3a5f]">{value}</p>
