@@ -54,12 +54,27 @@ type Desglose = {
   total: number
 }
 
-// Convierte hex (#1e3a5f) a RGB [r, g, b]
 function hexToRgb(hex: string): [number, number, number] {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
   return result
     ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
     : [30, 58, 95]
+}
+
+async function loadImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const blob = await res.blob()
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return null
+  }
 }
 
 export function QuoteActions({ quote, company }: { quote: QuoteRequest; company: Company | null }) {
@@ -154,50 +169,34 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
     const colorHex = company?.color_primario ?? "#1e3a5f"
     const [r, g, b] = hexToRgb(colorHex)
 
-    // CABECERA con color corporativo
+    // CABECERA
     doc.setFillColor(r, g, b)
     doc.rect(0, 0, pageWidth, 45, "F")
     doc.setTextColor(255, 255, 255)
 
-    // LOGO si existe
+    // Intentar cargar logo
+    let logoLoaded = false
     if (company?.logo_url) {
-      try {
-        const logoRes = await fetch(company.logo_url)
-        const logoBlob = await logoRes.blob()
-        const logoBase64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result as string)
-          reader.readAsDataURL(logoBlob)
-        })
-        doc.addImage(logoBase64, "PNG", 15, 5, 35, 35)
-        doc.setFontSize(18)
-        doc.setFont("helvetica", "bold")
-        doc.text(empresaNombre.toUpperCase(), 55, 18)
-        doc.setFontSize(8)
-        doc.setFont("helvetica", "normal")
-        if (empresaDireccion) doc.text(empresaDireccion, 55, 26)
-        if (empresaEmail) doc.text(empresaEmail, 55, 32)
-        if (empresaTelefono) doc.text(`Tel: ${empresaTelefono}`, 55, 38)
-      } catch {
-        doc.setFontSize(20)
-        doc.setFont("helvetica", "bold")
-        doc.text(empresaNombre.toUpperCase(), 15, 20)
-        doc.setFontSize(8)
-        doc.setFont("helvetica", "normal")
-        if (empresaDireccion) doc.text(empresaDireccion, 15, 28)
-        if (empresaEmail) doc.text(empresaEmail, 15, 34)
-        if (empresaTelefono) doc.text(`Tel: ${empresaTelefono}`, 15, 40)
+      const logoBase64 = await loadImageAsBase64(company.logo_url)
+      if (logoBase64) {
+        try {
+          doc.addImage(logoBase64, "PNG", 15, 5, 35, 35)
+          logoLoaded = true
+        } catch {
+          logoLoaded = false
+        }
       }
-    } else {
-      doc.setFontSize(20)
-      doc.setFont("helvetica", "bold")
-      doc.text(empresaNombre.toUpperCase(), 15, 20)
-      doc.setFontSize(8)
-      doc.setFont("helvetica", "normal")
-      if (empresaDireccion) doc.text(empresaDireccion, 15, 28)
-      if (empresaEmail) doc.text(empresaEmail, 15, 34)
-      if (empresaTelefono) doc.text(`Tel: ${empresaTelefono}`, 15, 40)
     }
+
+    const textX = logoLoaded ? 55 : 15
+    doc.setFontSize(18)
+    doc.setFont("helvetica", "bold")
+    doc.text(empresaNombre.toUpperCase(), textX, 16)
+    doc.setFontSize(8)
+    doc.setFont("helvetica", "normal")
+    if (empresaDireccion) doc.text(empresaDireccion, textX, 24)
+    if (empresaEmail) doc.text(empresaEmail, textX, 30)
+    if (empresaTelefono) doc.text(`Tel: ${empresaTelefono}`, textX, 36)
 
     // Lado derecho cabecera
     doc.setFontSize(11)
@@ -337,7 +336,7 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
       doc.text(`${rutaInfo.desglose.margen} €`, pageWidth - 15, y, { align: "right" })
     }
 
-    // PRECIO TOTAL con color corporativo
+    // PRECIO TOTAL
     y += 16
     doc.setFillColor(r, g, b)
     doc.rect(0, y, pageWidth, 28, "F")
@@ -388,7 +387,8 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
       }).eq("id", quote.id)
       setStatus("enviado")
       setMessage("✅ Presupuesto enviado por email correctamente")
-    } catch {
+    } catch (err) {
+      console.error(err)
       setMessage("❌ Error de conexión al enviar el email")
     } finally {
       setEnviando(false)
