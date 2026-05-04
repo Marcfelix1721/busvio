@@ -35,6 +35,12 @@ export default async function AjustesPage() {
     .eq("company_id", userData.company_id)
     .maybeSingle()
 
+  const { data: company } = await supabase
+    .from("companies")
+    .select("*")
+    .eq("id", userData.company_id)
+    .maybeSingle()
+
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
       <div className="bg-[#1e3a5f] px-6 py-4 flex justify-between items-center">
@@ -46,7 +52,7 @@ export default async function AjustesPage() {
           <ArrowLeft className="h-4 w-4" /> Volver al panel
         </Link>
         <h1 className="text-2xl font-bold text-gray-900 mb-8">⚙️ Ajustes de la empresa</h1>
-        <SettingsForm settings={settings} companyId={userData.company_id} />
+        <SettingsForm settings={settings} companyId={userData.company_id} company={company} />
       </div>
     </div>
   )

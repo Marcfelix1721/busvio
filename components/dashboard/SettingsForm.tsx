@@ -8,6 +8,17 @@ import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase"
 
 type Settings = Record<string, number>
+type Company = {
+  id: string
+  name: string
+  slug: string
+  email: string
+  phone: string
+  cif?: string
+  address?: string
+  website?: string
+  logo_url?: string
+}
 
 function Field({ label, id, value, onChange, unit }: {
   label: string
@@ -34,6 +45,28 @@ function Field({ label, id, value, onChange, unit }: {
   )
 }
 
+function TextField({ label, id, value, onChange, placeholder }: {
+  label: string
+  id: string
+  value: string
+  onChange: (id: string, val: string) => void
+  placeholder?: string
+}) {
+  return (
+    <div className="grid gap-1.5">
+      <Label htmlFor={id} className="text-sm font-medium text-gray-700">{label}</Label>
+      <Input
+        id={id}
+        type="text"
+        value={value}
+        onChange={(e) => onChange(id, e.target.value)}
+        placeholder={placeholder}
+        className="h-9"
+      />
+    </div>
+  )
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
@@ -47,8 +80,22 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-export function SettingsForm({ settings, companyId }: { settings: Settings | null; companyId: string }) {
+export function SettingsForm({ settings, companyId, company }: {
+  settings: Settings | null
+  companyId: string
+  company: Company | null
+}) {
   const supabase = createClient()
+
+  const [companyValues, setCompanyValues] = useState({
+    name: company?.name ?? "",
+    email: company?.email ?? "",
+    phone: company?.phone ?? "",
+    cif: company?.cif ?? "",
+    address: company?.address ?? "",
+    website: company?.website ?? "",
+  })
+
   const [values, setValues] = useState<Settings>({
     precio_combustible: settings?.precio_combustible ?? 1.65,
     consumo_minibus: settings?.consumo_minibus ?? 12,
@@ -81,6 +128,7 @@ export function SettingsForm({ settings, companyId }: { settings: Settings | nul
     descuento_baja_temporada: settings?.descuento_baja_temporada ?? 0,
     recargo_alta_temporada: settings?.recargo_alta_temporada ?? 15,
   })
+
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
 
@@ -88,15 +136,41 @@ export function SettingsForm({ settings, companyId }: { settings: Settings | nul
     setValues((prev) => ({ ...prev, [id]: val }))
   }
 
+  const handleCompanyChange = (id: string, val: string) => {
+    setCompanyValues((prev) => ({ ...prev, [id]: val }))
+  }
+
   const handleSave = async () => {
     setSaving(true)
     setMessage("")
+
+    // Guardar datos de empresa
+    const { error: companyError } = await supabase
+      .from("companies")
+      .update({
+        name: companyValues.name,
+        email: companyValues.email,
+        phone: companyValues.phone,
+        cif: companyValues.cif,
+        address: companyValues.address,
+        website: companyValues.website,
+      })
+      .eq("id", companyId)
+
+    if (companyError) {
+      setMessage("❌ Error al guardar datos de empresa: " + companyError.message)
+      setSaving(false)
+      return
+    }
+
+    // Guardar ajustes de tarifas
     const { error } = await supabase
       .from("company_settings")
       .update({ ...values, updated_at: new Date().toISOString() })
       .eq("company_id", companyId)
+
     setSaving(false)
-    if (error) { setMessage("❌ Error al guardar: " + error.message); return }
+    if (error) { setMessage("❌ Error al guardar ajustes: " + error.message); return }
     setMessage("✅ Ajustes guardados correctamente")
   }
 
@@ -104,8 +178,21 @@ export function SettingsForm({ settings, companyId }: { settings: Settings | nul
     <Field key={id} id={id} label={label} value={values[id]} onChange={handleChange} unit={unit} />
   )
 
+  const t = (id: string, label: string, placeholder?: string) => (
+    <TextField key={id} id={id} label={label} value={companyValues[id as keyof typeof companyValues]} onChange={handleCompanyChange} placeholder={placeholder} />
+  )
+
   return (
     <div className="space-y-6">
+      <Section title="🏢 Datos de la empresa">
+        {t("name", "Nombre de la empresa", "Autocares García S.L.")}
+        {t("cif", "CIF", "B12345678")}
+        {t("email", "Email de contacto", "info@empresa.com")}
+        {t("phone", "Teléfono", "+34 600 000 000")}
+        {t("address", "Dirección", "Calle Mayor 1, 08001 Barcelona")}
+        {t("website", "Web", "www.empresa.com")}
+      </Section>
+
       <Section title="🚌 Vehículos — Consumo (litros/100km)">
         {f("consumo_minibus", "Minibus")}
         {f("consumo_autobus", "Autobús")}
