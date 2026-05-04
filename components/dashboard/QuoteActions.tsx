@@ -69,7 +69,6 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
     setCalculando(true)
     setRutaError("")
     setRutaInfo(null)
-
     try {
       const res = await fetch("/api/calcular-ruta", {
         method: "POST",
@@ -85,26 +84,14 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
         }),
       })
       const data = await res.json()
-
-      if (!res.ok) {
-        setRutaError(data.error ?? "Error al calcular la ruta")
-        return
-      }
-
+      if (!res.ok) { setRutaError(data.error ?? "Error al calcular la ruta"); return }
       const { distanceKm, durationText, precioSugerido, desglose } = data
       setRutaInfo({ distanceKm, durationText, precioSugerido, desglose })
-
-      await supabase
-        .from("quote_requests")
-        .update({
-          estimated_km: distanceKm,
-          ...(precioSugerido !== null && { estimated_price: precioSugerido }),
-        })
-        .eq("id", quote.id)
-
-      if (precioSugerido !== null && finalPrice === "") {
-        setFinalPrice(precioSugerido)
-      }
+      await supabase.from("quote_requests").update({
+        estimated_km: distanceKm,
+        ...(precioSugerido !== null && { estimated_price: precioSugerido }),
+      }).eq("id", quote.id)
+      if (precioSugerido !== null && finalPrice === "") setFinalPrice(precioSugerido)
     } catch {
       setRutaError("Error de conexión al calcular la ruta")
     } finally {
@@ -115,10 +102,7 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
   const updateStatus = async (nextStatus: QuoteRequest["status"]) => {
     setSaving(true)
     setMessage("")
-    const { error } = await supabase
-      .from("quote_requests")
-      .update({ status: nextStatus })
-      .eq("id", quote.id)
+    const { error } = await supabase.from("quote_requests").update({ status: nextStatus }).eq("id", quote.id)
     setSaving(false)
     if (error) { setMessage("No se pudo actualizar el estado"); return }
     setStatus(nextStatus)
@@ -128,13 +112,10 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
   const saveChanges = async () => {
     setSaving(true)
     setMessage("")
-    const { error } = await supabase
-      .from("quote_requests")
-      .update({
-        final_price: finalPrice === "" ? null : finalPrice,
-        internal_notes: internalNotes.trim() === "" ? null : internalNotes.trim(),
-      })
-      .eq("id", quote.id)
+    const { error } = await supabase.from("quote_requests").update({
+      final_price: finalPrice === "" ? null : finalPrice,
+      internal_notes: internalNotes.trim() === "" ? null : internalNotes.trim(),
+    }).eq("id", quote.id)
     setSaving(false)
     if (error) { setMessage("No se pudieron guardar los cambios"); return }
     setMessage("Guardado correctamente")
@@ -142,67 +123,184 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
 
   const generarPDFBase64 = (): string => {
     const doc = new jsPDF()
+    const precio = finalPrice || quote.estimated_price || 0
+    const numPresupuesto = `P-${quote.id.slice(0, 8).toUpperCase()}`
+    const pageWidth = 210
+
+    // CABECERA
     doc.setFillColor(30, 58, 95)
-    doc.rect(0, 0, 210, 35, "F")
+    doc.rect(0, 0, pageWidth, 40, "F")
     doc.setTextColor(255, 255, 255)
-    doc.setFontSize(22)
+    doc.setFontSize(24)
     doc.setFont("helvetica", "bold")
-    doc.text("BUSVIO", 15, 20)
+    doc.text("BUSVIO", 15, 22)
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "normal")
+    doc.text("Gestión de transporte discrecional", 15, 32)
     doc.setFontSize(11)
-    doc.setFont("helvetica", "normal")
-    doc.text("PRESUPUESTO", 160, 20)
-    doc.setTextColor(0, 0, 0)
-    doc.setFontSize(10)
     doc.setFont("helvetica", "bold")
-    doc.text(`Nº: P-${quote.id.slice(0, 8).toUpperCase()}`, 15, 50)
-    doc.text(`Fecha: ${new Date().toLocaleDateString("es-ES")}`, 15, 58)
-    doc.setFillColor(240, 244, 248)
-    doc.rect(0, 68, 210, 8, "F")
-    doc.setFontSize(10)
-    doc.setFont("helvetica", "bold")
-    doc.text("DATOS DEL SOLICITANTE", 15, 74)
+    doc.text("PRESUPUESTO", pageWidth - 15, 22, { align: "right" })
     doc.setFont("helvetica", "normal")
-    doc.text(`Nombre: ${quote.requester_name ?? "-"}`, 15, 85)
-    doc.text(`Email: ${quote.requester_email ?? "-"}`, 15, 93)
-    doc.text(`Teléfono: ${quote.requester_phone ?? "-"}`, 15, 101)
-    doc.setFillColor(240, 244, 248)
-    doc.rect(0, 111, 210, 8, "F")
+    doc.setFontSize(9)
+    doc.text(`Nº ${numPresupuesto}`, pageWidth - 15, 30, { align: "right" })
+    doc.text(`Fecha: ${new Date().toLocaleDateString("es-ES")}`, pageWidth - 15, 37, { align: "right" })
+
+    // DATOS DEL SOLICITANTE
+    let y = 55
+    doc.setTextColor(30, 58, 95)
+    doc.setFontSize(9)
     doc.setFont("helvetica", "bold")
-    doc.text("DETALLES DEL VIAJE", 15, 117)
+    doc.text("DATOS DEL SOLICITANTE", 15, y)
+    doc.setDrawColor(30, 58, 95)
+    doc.line(15, y + 2, pageWidth - 15, y + 2)
+
+    y += 10
+    doc.setTextColor(80, 80, 80)
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(9)
+    doc.text("Nombre:", 15, y)
     doc.setFont("helvetica", "normal")
-    doc.text(`Origen: ${quote.origin ?? "-"}`, 15, 128)
-    doc.text(`Destino: ${quote.destination ?? "-"}`, 110, 128)
-    doc.text(`Fecha: ${quote.trip_date ?? "-"}`, 15, 136)
-    doc.text(`Pasajeros: ${quote.passengers ?? "-"}`, 110, 136)
-    doc.text(`Vehículo: ${quote.vehicle_type ?? "-"}`, 15, 144)
-    if (rutaInfo) {
-      doc.text(`Distancia: ${rutaInfo.distanceKm} km`, 15, 152)
+    doc.text(quote.requester_name ?? "-", 45, y)
+    doc.setFont("helvetica", "bold")
+    doc.text("Email:", 110, y)
+    doc.setFont("helvetica", "normal")
+    doc.text(quote.requester_email ?? "-", 125, y)
+
+    y += 8
+    doc.setFont("helvetica", "bold")
+    doc.text("Teléfono:", 15, y)
+    doc.setFont("helvetica", "normal")
+    doc.text(quote.requester_phone ?? "-", 45, y)
+
+    // DETALLES DEL VIAJE
+    y += 16
+    doc.setTextColor(30, 58, 95)
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(9)
+    doc.text("DETALLES DEL VIAJE", 15, y)
+    doc.line(15, y + 2, pageWidth - 15, y + 2)
+
+    y += 10
+    doc.setTextColor(80, 80, 80)
+    doc.setFont("helvetica", "bold")
+    doc.text("Origen:", 15, y)
+    doc.setFont("helvetica", "normal")
+    const origenLines = doc.splitTextToSize(quote.origin ?? "-", 140)
+    doc.text(origenLines, 45, y)
+    y += origenLines.length * 5 + 3
+
+    doc.setFont("helvetica", "bold")
+    doc.text("Destino:", 15, y)
+    doc.setFont("helvetica", "normal")
+    const destinoLines = doc.splitTextToSize(quote.destination ?? "-", 140)
+    doc.text(destinoLines, 45, y)
+    y += destinoLines.length * 5 + 3
+
+    if (quote.stops) {
+      doc.setFont("helvetica", "bold")
+      doc.text("Paradas:", 15, y)
+      doc.setFont("helvetica", "normal")
+      const paradasLines = doc.splitTextToSize(quote.stops, 140)
+      doc.text(paradasLines, 45, y)
+      y += paradasLines.length * 5 + 3
     }
+
+    y += 2
+    doc.setFont("helvetica", "bold")
+    doc.text("Fecha viaje:", 15, y)
+    doc.setFont("helvetica", "normal")
+    doc.text(new Date(quote.trip_date).toLocaleDateString("es-ES"), 45, y)
+    doc.setFont("helvetica", "bold")
+    doc.text("Pasajeros:", 110, y)
+    doc.setFont("helvetica", "normal")
+    doc.text(String(quote.passengers ?? "-"), 135, y)
+
+    y += 8
+    doc.setFont("helvetica", "bold")
+    doc.text("Vehículo:", 15, y)
+    doc.setFont("helvetica", "normal")
+    doc.text(quote.vehicle_type ?? "-", 45, y)
+    doc.setFont("helvetica", "bold")
+    doc.text("Hora salida:", 110, y)
+    doc.setFont("helvetica", "normal")
+    doc.text(quote.departure_time ?? "-", 140, y)
+
+    if (rutaInfo) {
+      y += 8
+      doc.setFont("helvetica", "bold")
+      doc.text("Distancia:", 15, y)
+      doc.setFont("helvetica", "normal")
+      doc.text(`${rutaInfo.distanceKm} km`, 45, y)
+      if (rutaInfo.durationText) {
+        doc.setFont("helvetica", "bold")
+        doc.text("Duración est.:", 110, y)
+        doc.setFont("helvetica", "normal")
+        doc.text(rutaInfo.durationText, 140, y)
+      }
+    }
+
+    // DESGLOSE DE COSTES
+    if (rutaInfo?.desglose) {
+      y += 16
+      doc.setTextColor(30, 58, 95)
+      doc.setFont("helvetica", "bold")
+      doc.setFontSize(9)
+      doc.text("DESGLOSE DE COSTES", 15, y)
+      doc.line(15, y + 2, pageWidth - 15, y + 2)
+      y += 10
+      doc.setTextColor(80, 80, 80)
+      const items: [string, string][] = [
+        ["Combustible", `${rutaInfo.desglose.combustible} €`],
+        ["Vehículo (amort. + mant. + seguro)", `${rutaInfo.desglose.vehiculo} €`],
+        ["Peajes estimados", `${rutaInfo.desglose.peajes} €`],
+        ["Conductor", `${rutaInfo.desglose.conductor} €`],
+        ...(rutaInfo.desglose.pluses > 0 ? [["Pluses conductor", `${rutaInfo.desglose.pluses} €`] as [string, string]] : []),
+      ]
+      items.forEach(([label, value]) => {
+        doc.setFont("helvetica", "normal")
+        doc.text(label, 20, y)
+        doc.text(value, pageWidth - 15, y, { align: "right" })
+        y += 7
+      })
+      doc.line(15, y, pageWidth - 15, y)
+      y += 6
+      doc.setFont("helvetica", "bold")
+      doc.text("Subtotal", 20, y)
+      doc.text(`${rutaInfo.desglose.subtotal} €`, pageWidth - 15, y, { align: "right" })
+      y += 7
+      doc.setFont("helvetica", "normal")
+      doc.text("Margen comercial", 20, y)
+      doc.text(`${rutaInfo.desglose.margen} €`, pageWidth - 15, y, { align: "right" })
+    }
+
+    // PRECIO TOTAL
+    y += 16
     doc.setFillColor(30, 58, 95)
-    doc.rect(0, 160, 210, 30, "F")
+    doc.rect(0, y, pageWidth, 28, "F")
     doc.setTextColor(255, 255, 255)
     doc.setFont("helvetica", "bold")
-    doc.setFontSize(12)
-    doc.text("PRECIO TOTAL", 15, 172)
-    doc.setFontSize(20)
-    doc.text(`${finalPrice || quote.estimated_price || "0"} €`, 15, 183)
-    doc.setTextColor(0, 0, 0)
-    doc.setFontSize(8)
+    doc.setFontSize(11)
+    doc.text("PRECIO TOTAL", 15, y + 10)
+    doc.setFontSize(22)
+    doc.text(`${precio} €`, 15, y + 23)
+
+    // PIE
+    doc.setTextColor(150, 150, 150)
+    doc.setFontSize(7)
     doc.setFont("helvetica", "normal")
-    doc.text("Este presupuesto tiene una validez de 30 dias desde la fecha de emision.", 15, 270)
-    doc.text("Busvio — Gestion de transporte discrecional", 15, 276)
+    doc.text("Este presupuesto tiene una validez de 30 días desde la fecha de emisión.", 15, 285)
+    doc.text("Busvio — Gestión de transporte discrecional", 15, 290)
+
     return doc.output("datauristring").split(",")[1]
   }
 
   const enviarPresupuesto = async () => {
     setEnviando(true)
     setMessage("")
-
     try {
       const pdfBase64 = generarPDFBase64()
       const numeroPresupuesto = `P-${quote.id.slice(0, 8).toUpperCase()}`
       const precio = finalPrice || quote.estimated_price || 0
-
       const res = await fetch("/api/enviar-presupuesto", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -217,20 +315,12 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
           precio,
         }),
       })
-
       const data = await res.json()
-
-      if (!res.ok) {
-        setMessage(`❌ Error: ${data.error}`)
-        return
-      }
-
-      // Actualizar estado a "enviado"
-      await supabase
-        .from("quote_requests")
-        .update({ status: "enviado", final_price: precio === 0 ? null : Number(precio) })
-        .eq("id", quote.id)
-
+      if (!res.ok) { setMessage(`❌ Error: ${data.error}`); return }
+      await supabase.from("quote_requests").update({
+        status: "enviado",
+        final_price: precio === 0 ? null : Number(precio),
+      }).eq("id", quote.id)
       setStatus("enviado")
       setMessage("✅ Presupuesto enviado por email correctamente")
     } catch {
@@ -242,7 +332,6 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
 
   return (
     <div className="space-y-6">
-      {/* CARD: Calcular ruta */}
       <Card className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <CardHeader className="p-0 mb-4">
           <CardTitle className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
@@ -250,21 +339,10 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 space-y-3">
-          <Button
-            type="button"
-            onClick={calcularRuta}
-            disabled={calculando}
-            className="h-10 w-full bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90"
-          >
-            {calculando ? (
-              <><Loader2 className="size-4 animate-spin" /> Calculando...</>
-            ) : (
-              <><Calculator className="size-4" /> Calcular km y precio</>
-            )}
+          <Button type="button" onClick={calcularRuta} disabled={calculando} className="h-10 w-full bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90">
+            {calculando ? <><Loader2 className="size-4 animate-spin" /> Calculando...</> : <><Calculator className="size-4" /> Calcular km y precio</>}
           </Button>
-
           {rutaError && <p className="text-sm text-red-500">{rutaError}</p>}
-
           {rutaInfo && (
             <div className="rounded-lg bg-blue-50 border border-blue-100 p-4 space-y-2">
               <div className="flex justify-between text-sm">
@@ -285,10 +363,7 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
                   </div>
                   {rutaInfo.desglose && (
                     <div className="mt-2">
-                      <button
-                        onClick={() => setMostrarDesglose(!mostrarDesglose)}
-                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
-                      >
+                      <button onClick={() => setMostrarDesglose(!mostrarDesglose)} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium">
                         {mostrarDesglose ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
                         {mostrarDesglose ? "Ocultar desglose" : "Ver desglose"}
                       </button>
@@ -324,43 +399,26 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
                   )}
                 </>
               ) : (
-                <p className="text-xs text-gray-400 pt-1">
-                  Sin tarifas configuradas. Ve a Ajustes para definir los costes.
-                </p>
+                <p className="text-xs text-gray-400 pt-1">Sin tarifas configuradas. Ve a Ajustes para definir los costes.</p>
               )}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* CARD: Estado */}
       <Card className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <CardHeader className="p-0">
-          <CardTitle className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
-            Estado actual
-          </CardTitle>
+          <CardTitle className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">Estado actual</CardTitle>
           <Badge className={`${statusClasses[status]} mt-2 w-fit border px-3 py-1 text-sm font-semibold`}>
             {statuses.find((item) => item.value === status)?.label ?? status}
           </Badge>
         </CardHeader>
         <CardContent className="p-0 mt-4">
-          <p className="mb-2 text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
-            Cambiar estado
-          </p>
+          <p className="mb-2 text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">Cambiar estado</p>
           <div className="grid grid-cols-2 gap-2">
             {statuses.map((nextStatus) => (
-              <Button
-                key={nextStatus.value}
-                type="button"
-                variant={nextStatus.value === status ? "default" : "outline"}
-                onClick={() => updateStatus(nextStatus.value)}
-                disabled={saving}
-                className={
-                  nextStatus.value === status
-                    ? "h-8 rounded-md bg-[#1e3a5f] px-3 py-1 text-xs text-white hover:bg-[#1e3a5f]/90"
-                    : "h-8 rounded-md border-gray-200 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
-                }
-              >
+              <Button key={nextStatus.value} type="button" variant={nextStatus.value === status ? "default" : "outline"} onClick={() => updateStatus(nextStatus.value)} disabled={saving}
+                className={nextStatus.value === status ? "h-8 rounded-md bg-[#1e3a5f] px-3 py-1 text-xs text-white hover:bg-[#1e3a5f]/90" : "h-8 rounded-md border-gray-200 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"}>
                 {nextStatus.label}
               </Button>
             ))}
@@ -368,52 +426,24 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
         </CardContent>
       </Card>
 
-      {/* CARD: Precio y notas */}
       <Card className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <CardContent className="grid gap-4 p-0">
           <div className="grid gap-2">
-            <Label htmlFor="final_price" className="text-sm font-semibold text-slate-800">
-              Precio final (€)
-            </Label>
+            <Label htmlFor="final_price" className="text-sm font-semibold text-slate-800">Precio final (€)</Label>
             <div className="relative">
               <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-gray-400">€</span>
-              <Input
-                id="final_price"
-                type="number"
-                min={0}
-                value={finalPrice}
-                onChange={(e) => setFinalPrice(e.target.value === "" ? "" : Number(e.target.value))}
-                className="h-11 pl-7 text-lg"
-              />
+              <Input id="final_price" type="number" min={0} value={finalPrice} onChange={(e) => setFinalPrice(e.target.value === "" ? "" : Number(e.target.value))} className="h-11 pl-7 text-lg" />
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="internal_notes" className="text-sm font-semibold text-slate-800">
-              Notas internas
-            </Label>
-            <Textarea
-              id="internal_notes"
-              rows={4}
-              value={internalNotes}
-              onChange={(e) => setInternalNotes(e.target.value)}
-              className="resize-none"
-              placeholder="Anotaciones para el equipo..."
-            />
+            <Label htmlFor="internal_notes" className="text-sm font-semibold text-slate-800">Notas internas</Label>
+            <Textarea id="internal_notes" rows={4} value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} className="resize-none" placeholder="Anotaciones para el equipo..." />
           </div>
           <Button type="button" onClick={saveChanges} disabled={saving} variant="outline" className="h-10 w-full border-gray-200 text-gray-800">
             <Save className="size-4" /> Guardar cambios
           </Button>
-          <Button
-            type="button"
-            onClick={enviarPresupuesto}
-            disabled={enviando}
-            className="h-10 w-full bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90"
-          >
-            {enviando ? (
-              <><Loader2 className="size-4 animate-spin" /> Enviando...</>
-            ) : (
-              <><Mail className="size-4" /> Enviar presupuesto por email</>
-            )}
+          <Button type="button" onClick={enviarPresupuesto} disabled={enviando} className="h-10 w-full bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90">
+            {enviando ? <><Loader2 className="size-4 animate-spin" /> Enviando...</> : <><Mail className="size-4" /> Enviar presupuesto por email</>}
           </Button>
           {message && <p className="text-sm text-slate-500">{message}</p>}
         </CardContent>
