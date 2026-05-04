@@ -33,37 +33,21 @@ function Field({ label, id, value, onChange, unit }: {
       <Label htmlFor={id} className="text-sm font-medium text-gray-700">
         {label} {unit && <span className="text-gray-400 font-normal">({unit})</span>}
       </Label>
-      <Input
-        id={id}
-        type="number"
-        min={0}
-        step="0.01"
-        value={value}
-        onChange={(e) => onChange(id, parseFloat(e.target.value) || 0)}
-        className="h-9"
-      />
+      <Input id={id} type="number" min={0} step="0.01" value={value}
+        onChange={(e) => onChange(id, parseFloat(e.target.value) || 0)} className="h-9" />
     </div>
   )
 }
 
 function TextField({ label, id, value, onChange, placeholder }: {
-  label: string
-  id: string
-  value: string
-  onChange: (id: string, val: string) => void
-  placeholder?: string
+  label: string; id: string; value: string
+  onChange: (id: string, val: string) => void; placeholder?: string
 }) {
   return (
     <div className="grid gap-1.5">
       <Label htmlFor={id} className="text-sm font-medium text-gray-700">{label}</Label>
-      <Input
-        id={id}
-        type="text"
-        value={value}
-        onChange={(e) => onChange(id, e.target.value)}
-        placeholder={placeholder}
-        className="h-9"
-      />
+      <Input id={id} type="text" value={value} onChange={(e) => onChange(id, e.target.value)}
+        placeholder={placeholder} className="h-9" />
     </div>
   )
 }
@@ -71,20 +55,14 @@ function TextField({ label, id, value, onChange, placeholder }: {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
-      <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b pb-2">
-        {title}
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {children}
-      </div>
+      <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b pb-2">{title}</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</div>
     </div>
   )
 }
 
 export function SettingsForm({ settings, companyId, company }: {
-  settings: Settings | null
-  companyId: string
-  company: Company | null
+  settings: Settings | null; companyId: string; company: Company | null
 }) {
   const supabase = createClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -138,69 +116,49 @@ export function SettingsForm({ settings, companyId, company }: {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
 
-  const handleChange = (id: string, val: number) => {
-    setValues((prev) => ({ ...prev, [id]: val }))
-  }
-
-  const handleCompanyChange = (id: string, val: string) => {
-    setCompanyValues((prev) => ({ ...prev, [id]: val }))
-  }
+  const handleChange = (id: string, val: number) => setValues((prev) => ({ ...prev, [id]: val }))
+  const handleCompanyChange = (id: string, val: string) => setCompanyValues((prev) => ({ ...prev, [id]: val }))
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
     setUploadingLogo(true)
     const ext = file.name.split(".").pop()
     const fileName = `${companyId}.${ext}`
-
-    const { error } = await supabase.storage
-      .from("logos")
-      .upload(fileName, file, { upsert: true })
-
+    const { error } = await supabase.storage.from("logos").upload(fileName, file, { upsert: true })
     if (error) {
       setMessage("❌ Error al subir el logo: " + error.message)
       setUploadingLogo(false)
       return
     }
-
     const { data } = supabase.storage.from("logos").getPublicUrl(fileName)
-    const publicUrl = data.publicUrl + `?t=${Date.now()}`
-
     await supabase.from("companies").update({ logo_url: data.publicUrl }).eq("id", companyId)
-    setLogoUrl(publicUrl)
+    setLogoUrl(data.publicUrl + `?t=${Date.now()}`)
     setUploadingLogo(false)
-    setMessage("✅ Logo subido correctamente")
+    setMessage("✅ Logo subido correctamente — recargando...")
+    setTimeout(() => window.location.reload(), 1000)
   }
 
   const handleSave = async () => {
     setSaving(true)
     setMessage("")
-
-    const { error: companyError } = await supabase
-      .from("companies")
-      .update({
-        name: companyValues.name,
-        email: companyValues.email,
-        phone: companyValues.phone,
-        cif: companyValues.cif,
-        address: companyValues.address,
-        website: companyValues.website,
-        color_primario: companyValues.color_primario,
-      })
-      .eq("id", companyId)
-
+    const { error: companyError } = await supabase.from("companies").update({
+      name: companyValues.name,
+      email: companyValues.email,
+      phone: companyValues.phone,
+      cif: companyValues.cif,
+      address: companyValues.address,
+      website: companyValues.website,
+      color_primario: companyValues.color_primario,
+    }).eq("id", companyId)
     if (companyError) {
       setMessage("❌ Error al guardar datos de empresa: " + companyError.message)
       setSaving(false)
       return
     }
-
-    const { error } = await supabase
-      .from("company_settings")
+    const { error } = await supabase.from("company_settings")
       .update({ ...values, updated_at: new Date().toISOString() })
       .eq("company_id", companyId)
-
     setSaving(false)
     if (error) { setMessage("❌ Error al guardar ajustes: " + error.message); return }
     setMessage("✅ Ajustes guardados correctamente")
@@ -209,7 +167,6 @@ export function SettingsForm({ settings, companyId, company }: {
   const f = (id: string, label: string, unit?: string) => (
     <Field key={id} id={id} label={label} value={values[id]} onChange={handleChange} unit={unit} />
   )
-
   const t = (id: string, label: string, placeholder?: string) => (
     <TextField key={id} id={id} label={label} value={companyValues[id as keyof typeof companyValues]} onChange={handleCompanyChange} placeholder={placeholder} />
   )
@@ -217,9 +174,7 @@ export function SettingsForm({ settings, companyId, company }: {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b pb-2">
-          🏢 Datos de la empresa
-        </h2>
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b pb-2">🏢 Datos de la empresa</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {t("name", "Nombre de la empresa", "Autocares García S.L.")}
           {t("cif", "CIF", "B12345678")}
@@ -229,52 +184,33 @@ export function SettingsForm({ settings, companyId, company }: {
           {t("website", "Web", "www.empresa.com")}
         </div>
 
-        {/* COLOR PRIMARIO */}
         <div className="grid gap-1.5">
           <Label className="text-sm font-medium text-gray-700">Color corporativo</Label>
           <div className="flex items-center gap-3">
-            <input
-              type="color"
-              value={companyValues.color_primario}
+            <input type="color" value={companyValues.color_primario}
               onChange={(e) => handleCompanyChange("color_primario", e.target.value)}
-              className="h-10 w-16 cursor-pointer rounded border border-gray-200"
-            />
+              className="h-10 w-16 cursor-pointer rounded border border-gray-200" />
             <span className="text-sm text-gray-500">{companyValues.color_primario}</span>
-            <div
-              className="h-8 w-32 rounded-md text-white text-xs flex items-center justify-center font-semibold"
-              style={{ backgroundColor: companyValues.color_primario }}
-            >
+            <div className="h-8 w-32 rounded-md text-white text-xs flex items-center justify-center font-semibold"
+              style={{ backgroundColor: companyValues.color_primario }}>
               Vista previa
             </div>
           </div>
         </div>
 
-        {/* LOGO */}
         <div className="grid gap-2">
           <Label className="text-sm font-medium text-gray-700">Logo de la empresa</Label>
           <div className="flex items-center gap-4">
             {logoUrl && (
-              <img
-                src={logoUrl}
-                alt="Logo"
-                className="h-16 w-auto object-contain rounded border border-gray-200 p-1"
-              />
+              <img src={logoUrl} alt="Logo"
+                className="h-16 w-auto object-contain rounded border border-gray-200 p-1" />
             )}
             <div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                className="hidden"
-                onChange={handleLogoUpload}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                disabled={uploadingLogo}
+              <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp"
+                className="hidden" onChange={handleLogoUpload} />
+              <Button type="button" variant="outline" disabled={uploadingLogo}
                 onClick={() => fileInputRef.current?.click()}
-                className="h-9 border-gray-200 text-gray-700"
-              >
+                className="h-9 border-gray-200 text-gray-700">
                 <Upload className="size-4" />
                 {uploadingLogo ? "Subiendo..." : logoUrl ? "Cambiar logo" : "Subir logo"}
               </Button>
@@ -337,11 +273,8 @@ export function SettingsForm({ settings, companyId, company }: {
 
       <div className="flex flex-col gap-3 items-end">
         {message && <p className="text-sm">{message}</p>}
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className="h-11 px-8 bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90"
-        >
+        <Button onClick={handleSave} disabled={saving}
+          className="h-11 px-8 bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90">
           <Save className="size-4" />
           {saving ? "Guardando..." : "Guardar ajustes"}
         </Button>
