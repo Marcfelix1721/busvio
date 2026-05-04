@@ -51,6 +51,9 @@ type Desglose = {
   desglose_pluses: string[]
   subtotal: number
   margen: number
+  base_imponible: number
+  iva_porcentaje: number
+  importe_iva: number
   total: number
 }
 
@@ -174,7 +177,6 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
     doc.rect(0, 0, pageWidth, 45, "F")
     doc.setTextColor(255, 255, 255)
 
-    // Intentar cargar logo
     let logoLoaded = false
     if (company?.logo_url) {
       const logoBase64 = await loadImageAsBase64(company.logo_url)
@@ -182,9 +184,7 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
         try {
           doc.addImage(logoBase64, "PNG", 15, 5, 35, 35)
           logoLoaded = true
-        } catch {
-          logoLoaded = false
-        }
+        } catch { logoLoaded = false }
       }
     }
 
@@ -198,7 +198,6 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
     if (empresaEmail) doc.text(empresaEmail, textX, 30)
     if (empresaTelefono) doc.text(`Tel: ${empresaTelefono}`, textX, 36)
 
-    // Lado derecho cabecera
     doc.setFontSize(11)
     doc.setFont("helvetica", "bold")
     doc.text("PRESUPUESTO", pageWidth - 15, 15, { align: "right" })
@@ -328,24 +327,32 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
       doc.line(15, y, pageWidth - 15, y)
       y += 6
       doc.setFont("helvetica", "bold")
-      doc.text("Subtotal", 20, y)
+      doc.text("Subtotal costes", 20, y)
       doc.text(`${rutaInfo.desglose.subtotal} €`, pageWidth - 15, y, { align: "right" })
       y += 7
       doc.setFont("helvetica", "normal")
       doc.text("Margen comercial", 20, y)
       doc.text(`${rutaInfo.desglose.margen} €`, pageWidth - 15, y, { align: "right" })
+      y += 7
+      doc.setFont("helvetica", "bold")
+      doc.text("Base imponible", 20, y)
+      doc.text(`${rutaInfo.desglose.base_imponible} €`, pageWidth - 15, y, { align: "right" })
+      y += 7
+      doc.setFont("helvetica", "normal")
+      doc.text(`IVA (${rutaInfo.desglose.iva_porcentaje}%)`, 20, y)
+      doc.text(`${rutaInfo.desglose.importe_iva} €`, pageWidth - 15, y, { align: "right" })
     }
 
-    // PRECIO TOTAL
+    // PRECIO TOTAL CON IVA
     y += 16
     doc.setFillColor(r, g, b)
-    doc.rect(0, y, pageWidth, 28, "F")
+    doc.rect(0, y, pageWidth, 32, "F")
     doc.setTextColor(255, 255, 255)
     doc.setFont("helvetica", "bold")
-    doc.setFontSize(11)
-    doc.text("PRECIO TOTAL", 15, y + 10)
+    doc.setFontSize(10)
+    doc.text("TOTAL (IVA incluido)", 15, y + 10)
     doc.setFontSize(22)
-    doc.text(`${precio} €`, 15, y + 23)
+    doc.text(`${precio} €`, 15, y + 25)
 
     // PIE
     doc.setTextColor(150, 150, 150)
@@ -377,6 +384,9 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
           fecha: new Date(quote.trip_date).toLocaleDateString("es-ES"),
           precio,
           empresaNombre: company?.name ?? "Busvio",
+          iva: rutaInfo?.desglose?.iva_porcentaje ?? 21,
+          baseImponible: rutaInfo?.desglose?.base_imponible ?? null,
+          importeIva: rutaInfo?.desglose?.importe_iva ?? null,
         }),
       })
       const data = await res.json()
@@ -423,7 +433,7 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
               {rutaInfo.precioSugerido !== null ? (
                 <>
                   <div className="flex justify-between text-sm border-t border-blue-200 pt-2 mt-2">
-                    <span className="text-gray-600 font-medium">Precio sugerido:</span>
+                    <span className="text-gray-600 font-medium">Precio sugerido (IVA inc.):</span>
                     <span className="font-bold text-green-700 text-base">{rutaInfo.precioSugerido} €</span>
                   </div>
                   {rutaInfo.desglose && (
@@ -447,15 +457,23 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
                             </>
                           )}
                           <div className="flex justify-between text-xs pt-1 border-t border-blue-200">
-                            <span className="text-gray-500">Subtotal</span>
+                            <span className="text-gray-500">Subtotal costes</span>
                             <span className="text-gray-600">{rutaInfo.desglose.subtotal} €</span>
                           </div>
                           <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">Margen beneficio</span>
+                            <span className="text-gray-500">Margen comercial</span>
                             <span className="text-gray-600">+{rutaInfo.desglose.margen} €</span>
                           </div>
+                          <div className="flex justify-between text-xs border-t border-blue-200 pt-1">
+                            <span className="text-gray-500">Base imponible</span>
+                            <span className="text-gray-600">{rutaInfo.desglose.base_imponible} €</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">IVA ({rutaInfo.desglose.iva_porcentaje}%)</span>
+                            <span className="text-gray-600">+{rutaInfo.desglose.importe_iva} €</span>
+                          </div>
                           <div className="flex justify-between text-xs font-bold border-t border-blue-300 pt-1">
-                            <span>TOTAL</span>
+                            <span>TOTAL (IVA inc.)</span>
                             <span className="text-green-700">{rutaInfo.desglose.total} €</span>
                           </div>
                         </div>
@@ -494,7 +512,7 @@ export function QuoteActions({ quote, company }: { quote: QuoteRequest; company:
       <Card className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <CardContent className="grid gap-4 p-0">
           <div className="grid gap-2">
-            <Label htmlFor="final_price" className="text-sm font-semibold text-slate-800">Precio final (€)</Label>
+            <Label htmlFor="final_price" className="text-sm font-semibold text-slate-800">Precio final con IVA (€)</Label>
             <div className="relative">
               <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-gray-400">€</span>
               <Input id="final_price" type="number" min={0} value={finalPrice} onChange={(e) => setFinalPrice(e.target.value === "" ? "" : Number(e.target.value))} className="h-11 pl-7 text-lg" />

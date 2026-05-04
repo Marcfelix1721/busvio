@@ -22,11 +22,8 @@ type Company = {
 }
 
 function Field({ label, id, value, onChange, unit }: {
-  label: string
-  id: string
-  value: number
-  onChange: (id: string, val: number) => void
-  unit?: string
+  label: string; id: string; value: number
+  onChange: (id: string, val: number) => void; unit?: string
 }) {
   return (
     <div className="grid gap-1.5">
@@ -109,6 +106,7 @@ export function SettingsForm({ settings, companyId, company }: {
     precio_minimo_servicio: settings?.precio_minimo_servicio ?? 200,
     tasas_aparcamiento: settings?.tasas_aparcamiento ?? 0,
     margen_beneficio: settings?.margen_beneficio ?? 20,
+    iva: settings?.iva ?? 21,
     descuento_baja_temporada: settings?.descuento_baja_temporada ?? 0,
     recargo_alta_temporada: settings?.recargo_alta_temporada ?? 15,
   })
@@ -202,15 +200,13 @@ export function SettingsForm({ settings, companyId, company }: {
           <Label className="text-sm font-medium text-gray-700">Logo de la empresa</Label>
           <div className="flex items-center gap-4">
             {logoUrl && (
-              <img src={logoUrl} alt="Logo"
-                className="h-16 w-auto object-contain rounded border border-gray-200 p-1" />
+              <img src={logoUrl} alt="Logo" className="h-16 w-auto object-contain rounded border border-gray-200 p-1" />
             )}
             <div>
               <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp"
                 className="hidden" onChange={handleLogoUpload} />
               <Button type="button" variant="outline" disabled={uploadingLogo}
-                onClick={() => fileInputRef.current?.click()}
-                className="h-9 border-gray-200 text-gray-700">
+                onClick={() => fileInputRef.current?.click()} className="h-9 border-gray-200 text-gray-700">
                 <Upload className="size-4" />
                 {uploadingLogo ? "Subiendo..." : logoUrl ? "Cambiar logo" : "Subir logo"}
               </Button>
@@ -265,8 +261,9 @@ export function SettingsForm({ settings, companyId, company }: {
         {f("tasas_aparcamiento", "Tasas aparcamiento estimadas", "€")}
       </Section>
 
-      <Section title="💰 Margen comercial y temporada">
+      <Section title="💰 Margen comercial, IVA y temporada">
         {f("margen_beneficio", "Margen de beneficio", "%")}
+        {f("iva", "IVA", "%")}
         {f("descuento_baja_temporada", "Descuento baja temporada", "%")}
         {f("recargo_alta_temporada", "Recargo alta temporada", "%")}
       </Section>

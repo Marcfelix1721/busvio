@@ -80,67 +80,64 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ distanceKm, durationText, precioSugerido: null, desglose: null })
     }
 
-    // 3. CALCULAR COSTE COMBUSTIBLE
+    // 3. COMBUSTIBLE
     const consumo = vehicle_type === "minibus" ? s.consumo_minibus
       : vehicle_type === "autobus" ? s.consumo_autobus
       : s.consumo_autocar
-
     const coste_combustible = (distanceKm * consumo / 100) * s.precio_combustible
 
-    // 4. CALCULAR COSTE VEHÍCULO
+    // 4. VEHÍCULO
     const coste_vehiculo = distanceKm * (s.amortizacion_km + s.mantenimiento_km) + s.seguro_dia
 
-    // 5. CALCULAR PEAJES
+    // 5. PEAJES
     const coste_peajes = distanceKm * s.peajes_nacional / 100
 
-    // 6. CALCULAR COSTE CONDUCTOR
+    // 6. CONDUCTOR
     const horas_totales = (estimated_duration_minutes ?? durationMinutes) / 60
     const coste_conductor_base = horas_totales * s.coste_hora_conductor
 
-    // 7. CALCULAR PLUSES AUTOMÁTICOS
+    // 7. PLUSES AUTOMÁTICOS
     let pluses = 0
     const desglose_pluses: string[] = []
 
     if (trip_date && departure_time) {
       const fecha = new Date(`${trip_date}T${departure_time}`)
-      const diaSemana = fecha.getDay() // 0=domingo, 6=sábado
+      const diaSemana = fecha.getDay()
       const horaInicio = fecha.getHours()
 
-      // Plus sábado
       if (diaSemana === 6) {
         pluses += s.plus_sabado
         desglose_pluses.push(`Plus sábado: ${s.plus_sabado}€`)
       }
-
-      // Plus domingo
       if (diaSemana === 0) {
         pluses += s.plus_domingo
         desglose_pluses.push(`Plus domingo: ${s.plus_domingo}€`)
       }
-
-      // Nocturnidad (salida entre 22h y 4:59h)
       if (horaInicio >= 22 || horaInicio < 5) {
         pluses += s.plus_nocturnidad
         desglose_pluses.push(`Nocturnidad: ${s.plus_nocturnidad}€`)
       }
-
-      // Plus +11 horas
       if (horas_totales > 11) {
         pluses += s.plus_11horas
         desglose_pluses.push(`Plus +11h: ${s.plus_11horas}€`)
       }
     }
 
-    // 8. COSTE TOTAL BASE
+    // 8. COSTE BASE
     const coste_base = coste_combustible + coste_vehiculo + coste_peajes + coste_conductor_base + pluses
 
-    // 9. APLICAR MARGEN
-    const precio_con_margen = coste_base * (1 + s.margen_beneficio / 100)
+    // 9. MARGEN
+    const precio_sin_iva = coste_base * (1 + s.margen_beneficio / 100)
 
-    // 10. APLICAR PRECIO MÍNIMO
-    const precio_final = Math.max(Math.round(precio_con_margen), s.precio_minimo_servicio)
+    // 10. IVA
+    const iva_porcentaje = s.iva ?? 21
+    const importe_iva = precio_sin_iva * (iva_porcentaje / 100)
+    const precio_con_iva = precio_sin_iva + importe_iva
 
-    // 11. DESGLOSE DETALLADO
+    // 11. PRECIO MÍNIMO (sin IVA)
+    const precio_final_sin_iva = Math.max(Math.round(precio_sin_iva), s.precio_minimo_servicio)
+    const precio_final_con_iva = Math.round(precio_final_sin_iva * (1 + iva_porcentaje / 100))
+
     const desglose = {
       combustible: Math.round(coste_combustible),
       vehiculo: Math.round(coste_vehiculo),
@@ -149,11 +146,14 @@ export async function POST(req: NextRequest) {
       pluses: Math.round(pluses),
       desglose_pluses,
       subtotal: Math.round(coste_base),
-      margen: Math.round(precio_con_margen - coste_base),
-      total: precio_final,
+      margen: Math.round(precio_sin_iva - coste_base),
+      base_imponible: precio_final_sin_iva,
+      iva_porcentaje,
+      importe_iva: Math.round(precio_final_sin_iva * iva_porcentaje / 100),
+      total: precio_final_con_iva,
     }
 
-    return NextResponse.json({ distanceKm, durationText, precioSugerido: precio_final, desglose })
+    return NextResponse.json({ distanceKm, durationText, precioSugerido: precio_final_con_iva, desglose })
 
   } catch (err) {
     console.error("Error calcular-ruta:", err)
