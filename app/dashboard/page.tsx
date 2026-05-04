@@ -76,9 +76,20 @@ export default async function DashboardPage({
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect("/login")
 
+  // Obtener company_id del usuario actual
+  const { data: userData } = await supabase
+    .from("users")
+    .select("company_id")
+    .eq("id", session.user.id)
+    .single()
+
+  const companyId = userData?.company_id
+
+  // Solo traer solicitudes de esta empresa
   const { data } = await supabase
     .from("quote_requests")
     .select("*")
+    .eq("company_id", companyId)
     .order("created_at", { ascending: false })
 
   const requests = (data ?? []) as QuoteRequest[]
@@ -130,7 +141,6 @@ export default async function DashboardPage({
               </div>
             </div>
           </header>
-
           <div className="w-full px-6 py-6">
             <section className="mb-6">
               <h1 className="text-[1.75rem] font-semibold text-[#1e3a5f]">
@@ -140,7 +150,6 @@ export default async function DashboardPage({
                 Gestiona y responde a las solicitudes entrantes.
               </p>
             </section>
-
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <MetricCard
                 label="Total solicitudes"
@@ -167,7 +176,6 @@ export default async function DashboardPage({
                 icon={<CircleCheck className="size-4 text-green-500" />}
               />
             </section>
-
             <section className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-200 px-4 py-4">
                 <div className="mb-3 flex flex-wrap gap-2">
@@ -192,7 +200,6 @@ export default async function DashboardPage({
                     )
                   })}
                 </div>
-
                 <form method="GET" className="w-full max-w-sm">
                   <input type="hidden" name="estado" value={selectedStatus} />
                   <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
@@ -207,7 +214,6 @@ export default async function DashboardPage({
                   </div>
                 </form>
               </div>
-
               <div className="w-full overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 text-slate-700">
