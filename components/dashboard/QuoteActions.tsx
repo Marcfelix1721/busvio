@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Save, Send } from "lucide-react"
+import { Calculator, Loader2, Save, Send } from "lucide-react"
 import jsPDF from "jspdf"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -37,6 +37,73 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
   const [internalNotes, setInternalNotes] = useState(quote.internal_notes ?? "")
   const [message, setMessage] = useState("")
   const [saving, setSaving] = useState(false)
+
+  const [calculando, setCalculando] = useState(false)
+  const [rutaInfo, setRutaInfo] = useState<{
+    distanceKm: number
+    durationText: string
+    precioSugerido: number | null
+  } | null>(
+    quote.estimated_km
+      ? { distanceKm: quote.estimated_km, durationText: "", precioSugerido: quote.estimated_price ?? null }
+      : null
+  )
+  const [rutaError, setRutaError] = useState("")
+
+  const calcularRuta = async () => {
+    setCalculando(true)
+    setRutaError("")
+    setRutaInfo(null)
+
+    try {
+      const res = await fetch("/api/calcular-ruta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          origin: quote.origin,
+          destination: quote.destination,
+          stops: quote.stops ?? "",
+        }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setRutaError(data.error ?? "Error al calcular la ruta")
+        return
+      }
+
+      const { distanceKm, durationText } = data
+
+      const { data: pricing } = await supabase
+        .from("pricing_settings")
+        .select("base_price, price_per_km")
+        .eq("company_id", quote.company_id)
+        .maybeSingle()
+
+      let precioSugerido: number | null = null
+      if (pricing) {
+        precioSugerido = Math.round(pricing.base_price + pricing.price_per_km * distanceKm)
+      }
+
+      setRutaInfo({ distanceKm, durationText, precioSugerido })
+
+      await supabase
+        .from("quote_requests")
+        .update({
+          estimated_km: distanceKm,
+          ...(precioSugerido !== null && { estimated_price: precioSugerido }),
+        })
+        .eq("id", quote.id)
+
+      if (precioSugerido !== null && finalPrice === "") {
+        setFinalPrice(precioSugerido)
+      }
+    } catch {
+      setRutaError("Error de conexión al calcular la ruta")
+    } finally {
+      setCalculando(false)
+    }
+  }
 
   const updateStatus = async (nextStatus: QuoteRequest["status"]) => {
     setSaving(true)
@@ -101,6 +168,9 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
     doc.text(`Fecha: ${quote.trip_date ?? "-"}`, 15, 136)
     doc.text(`Pasajeros: ${quote.passengers ?? "-"}`, 110, 136)
     doc.text(`Vehículo: ${quote.vehicle_type ?? "-"}`, 15, 144)
+    if (rutaInfo) {
+      doc.text(`Distancia: ${rutaInfo.distanceKm} km`, 15, 152)
+    }
     doc.setFillColor(30, 58, 95)
     doc.rect(0, 160, 210, 30, "F")
     doc.setTextColor(255, 255, 255)
@@ -119,6 +189,57 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
 
   return (
     <div className="space-y-6">
+      <Card className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <CardHeader className="p-0 mb-4">
+          <CardTitle className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
+            Cálculo de ruta
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 space-y-3">
+          <Button
+            type="button"
+            onClick={calcularRuta}
+            disabled={calculando}
+            className="h-10 w-full bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90"
+          >
+            {calculando ? (
+              <><Loader2 className="size-4 animate-spin" /> Calculando...</>
+            ) : (
+              <><Calculator className="size-4" /> Calcular km y precio</>
+            )}
+          </Button>
+
+          {rutaError && (
+            <p className="text-sm text-red-500">{rutaError}</p>
+          )}
+
+          {rutaInfo && (
+            <div className="rounded-lg bg-blue-50 border border-blue-100 p-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600 font-medium">Distancia:</span>
+                <span className="font-bold text-[#1e3a5f]">{rutaInfo.distanceKm} km</span>
+              </div>
+              {rutaInfo.durationText && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 font-medium">Duración est.:</span>
+                  <span className="font-semibold">{rutaInfo.durationText}</span>
+                </div>
+              )}
+              {rutaInfo.precioSugerido !== null ? (
+                <div className="flex justify-between text-sm border-t border-blue-200 pt-2 mt-2">
+                  <span className="text-gray-600 font-medium">Precio sugerido:</span>
+                  <span className="font-bold text-green-700">{rutaInfo.precioSugerido} €</span>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 pt-1">
+                  Sin tarifas configuradas. Ve a Ajustes para definir precio base y precio/km.
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <CardHeader className="p-0">
           <CardTitle className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">

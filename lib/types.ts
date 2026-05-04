@@ -29,6 +29,7 @@ export type QuoteRequest = {
   passengers: number
   vehicle_type: "minibus" | "autobus" | "autocar"
   comments?: string
+  estimated_km?: number
   estimated_price?: number
   final_price?: number
   internal_notes?: string
