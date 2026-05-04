@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Calculator, Loader2, Save, Send } from "lucide-react"
+import { Calculator, ChevronDown, ChevronUp, Loader2, Save, Send } from "lucide-react"
 import jsPDF from "jspdf"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -30,6 +30,18 @@ const statuses: Array<{ value: QuoteRequest["status"]; label: string }> = [
   { value: "cancelado", label: "Cancelado" },
 ]
 
+type Desglose = {
+  combustible: number
+  vehiculo: number
+  peajes: number
+  conductor: number
+  pluses: number
+  desglose_pluses: string[]
+  subtotal: number
+  margen: number
+  total: number
+}
+
 export function QuoteActions({ quote }: { quote: QuoteRequest }) {
   const supabase = createClient()
   const [status, setStatus] = useState<QuoteRequest["status"]>(quote.status)
@@ -43,12 +55,14 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
     distanceKm: number
     durationText: string
     precioSugerido: number | null
+    desglose: Desglose | null
   } | null>(
     quote.estimated_km
-      ? { distanceKm: quote.estimated_km, durationText: "", precioSugerido: quote.estimated_price ?? null }
+      ? { distanceKm: quote.estimated_km, durationText: "", precioSugerido: quote.estimated_price ?? null, desglose: null }
       : null
   )
   const [rutaError, setRutaError] = useState("")
+  const [mostrarDesglose, setMostrarDesglose] = useState(false)
 
   const calcularRuta = async () => {
     setCalculando(true)
@@ -63,6 +77,10 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
           origin: quote.origin,
           destination: quote.destination,
           stops: quote.stops ?? "",
+          company_id: quote.company_id,
+          vehicle_type: quote.vehicle_type,
+          trip_date: quote.trip_date,
+          departure_time: quote.departure_time,
         }),
       })
       const data = await res.json()
@@ -72,20 +90,9 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
         return
       }
 
-      const { distanceKm, durationText } = data
+      const { distanceKm, durationText, precioSugerido, desglose } = data
 
-      const { data: pricing } = await supabase
-        .from("pricing_settings")
-        .select("base_price, price_per_km")
-        .eq("company_id", quote.company_id)
-        .maybeSingle()
-
-      let precioSugerido: number | null = null
-      if (pricing) {
-        precioSugerido = Math.round(pricing.base_price + pricing.price_per_km * distanceKm)
-      }
-
-      setRutaInfo({ distanceKm, durationText, precioSugerido })
+      setRutaInfo({ distanceKm, durationText, precioSugerido, desglose })
 
       await supabase
         .from("quote_requests")
@@ -178,7 +185,7 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
     doc.setFontSize(12)
     doc.text("PRECIO TOTAL", 15, 172)
     doc.setFontSize(20)
-    doc.text(`${quote.final_price ?? quote.estimated_price ?? "0"} €`, 15, 183)
+    doc.text(`${finalPrice || quote.estimated_price || "0"} €`, 15, 183)
     doc.setTextColor(0, 0, 0)
     doc.setFontSize(8)
     doc.setFont("helvetica", "normal")
@@ -189,10 +196,11 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
 
   return (
     <div className="space-y-6">
+      {/* CARD: Calcular ruta */}
       <Card className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <CardHeader className="p-0 mb-4">
           <CardTitle className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
-            Cálculo de ruta
+            Cálculo de ruta y precio
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 space-y-3">
@@ -209,9 +217,7 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
             )}
           </Button>
 
-          {rutaError && (
-            <p className="text-sm text-red-500">{rutaError}</p>
-          )}
+          {rutaError && <p className="text-sm text-red-500">{rutaError}</p>}
 
           {rutaInfo && (
             <div className="rounded-lg bg-blue-50 border border-blue-100 p-4 space-y-2">
@@ -226,13 +232,56 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
                 </div>
               )}
               {rutaInfo.precioSugerido !== null ? (
-                <div className="flex justify-between text-sm border-t border-blue-200 pt-2 mt-2">
-                  <span className="text-gray-600 font-medium">Precio sugerido:</span>
-                  <span className="font-bold text-green-700">{rutaInfo.precioSugerido} €</span>
-                </div>
+                <>
+                  <div className="flex justify-between text-sm border-t border-blue-200 pt-2 mt-2">
+                    <span className="text-gray-600 font-medium">Precio sugerido:</span>
+                    <span className="font-bold text-green-700 text-base">{rutaInfo.precioSugerido} €</span>
+                  </div>
+
+                  {rutaInfo.desglose && (
+                    <div className="mt-2">
+                      <button
+                        onClick={() => setMostrarDesglose(!mostrarDesglose)}
+                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        {mostrarDesglose ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+                        {mostrarDesglose ? "Ocultar desglose" : "Ver desglose"}
+                      </button>
+
+                      {mostrarDesglose && (
+                        <div className="mt-2 space-y-1 border-t border-blue-200 pt-2">
+                          <DesgloseRow label="⛽ Combustible" value={rutaInfo.desglose.combustible} />
+                          <DesgloseRow label="🔧 Vehículo" value={rutaInfo.desglose.vehiculo} />
+                          <DesgloseRow label="🛣️ Peajes" value={rutaInfo.desglose.peajes} />
+                          <DesgloseRow label="👨‍✈️ Conductor" value={rutaInfo.desglose.conductor} />
+                          {rutaInfo.desglose.pluses > 0 && (
+                            <>
+                              <DesgloseRow label="⏰ Pluses" value={rutaInfo.desglose.pluses} />
+                              {rutaInfo.desglose.desglose_pluses.map((p, i) => (
+                                <p key={i} className="text-xs text-gray-400 pl-4">• {p}</p>
+                              ))}
+                            </>
+                          )}
+                          <div className="flex justify-between text-xs pt-1 border-t border-blue-200">
+                            <span className="text-gray-500">Subtotal</span>
+                            <span className="text-gray-600">{rutaInfo.desglose.subtotal} €</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Margen beneficio</span>
+                            <span className="text-gray-600">+{rutaInfo.desglose.margen} €</span>
+                          </div>
+                          <div className="flex justify-between text-xs font-bold border-t border-blue-300 pt-1">
+                            <span>TOTAL</span>
+                            <span className="text-green-700">{rutaInfo.desglose.total} €</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               ) : (
                 <p className="text-xs text-gray-400 pt-1">
-                  Sin tarifas configuradas. Ve a Ajustes para definir precio base y precio/km.
+                  Sin tarifas configuradas. Ve a Ajustes para definir los costes.
                 </p>
               )}
             </div>
@@ -240,6 +289,7 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
         </CardContent>
       </Card>
 
+      {/* CARD: Estado */}
       <Card className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <CardHeader className="p-0">
           <CardTitle className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
@@ -274,6 +324,7 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
         </CardContent>
       </Card>
 
+      {/* CARD: Precio y notas */}
       <Card className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <CardContent className="grid gap-4 p-0">
           <div className="grid gap-2">
@@ -314,6 +365,15 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
           {message && <p className="text-sm text-slate-500">{message}</p>}
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+function DesgloseRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex justify-between text-xs">
+      <span className="text-gray-500">{label}</span>
+      <span className="text-gray-700 font-medium">{value} €</span>
     </div>
   )
 }
