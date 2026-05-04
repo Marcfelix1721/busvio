@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Calculator, ChevronDown, ChevronUp, Loader2, Save, Send } from "lucide-react"
+import { Calculator, ChevronDown, ChevronUp, Loader2, Mail, Save } from "lucide-react"
 import jsPDF from "jspdf"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,6 +49,7 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
   const [internalNotes, setInternalNotes] = useState(quote.internal_notes ?? "")
   const [message, setMessage] = useState("")
   const [saving, setSaving] = useState(false)
+  const [enviando, setEnviando] = useState(false)
 
   const [calculando, setCalculando] = useState(false)
   const [rutaInfo, setRutaInfo] = useState<{
@@ -91,7 +92,6 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
       }
 
       const { distanceKm, durationText, precioSugerido, desglose } = data
-
       setRutaInfo({ distanceKm, durationText, precioSugerido, desglose })
 
       await supabase
@@ -140,7 +140,7 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
     setMessage("Guardado correctamente")
   }
 
-  const generarPDF = () => {
+  const generarPDFBase64 = (): string => {
     const doc = new jsPDF()
     doc.setFillColor(30, 58, 95)
     doc.rect(0, 0, 210, 35, "F")
@@ -191,7 +191,53 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
     doc.setFont("helvetica", "normal")
     doc.text("Este presupuesto tiene una validez de 30 dias desde la fecha de emision.", 15, 270)
     doc.text("Busvio — Gestion de transporte discrecional", 15, 276)
-    doc.save(`presupuesto-${quote.id.slice(0, 8)}.pdf`)
+    return doc.output("datauristring").split(",")[1]
+  }
+
+  const enviarPresupuesto = async () => {
+    setEnviando(true)
+    setMessage("")
+
+    try {
+      const pdfBase64 = generarPDFBase64()
+      const numeroPresupuesto = `P-${quote.id.slice(0, 8).toUpperCase()}`
+      const precio = finalPrice || quote.estimated_price || 0
+
+      const res = await fetch("/api/enviar-presupuesto", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: quote.requester_email,
+          nombre: quote.requester_name,
+          pdfBase64,
+          numeroPresupuesto,
+          origen: quote.origin,
+          destino: quote.destination,
+          fecha: new Date(quote.trip_date).toLocaleDateString("es-ES"),
+          precio,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setMessage(`❌ Error: ${data.error}`)
+        return
+      }
+
+      // Actualizar estado a "enviado"
+      await supabase
+        .from("quote_requests")
+        .update({ status: "enviado", final_price: precio === 0 ? null : Number(precio) })
+        .eq("id", quote.id)
+
+      setStatus("enviado")
+      setMessage("✅ Presupuesto enviado por email correctamente")
+    } catch {
+      setMessage("❌ Error de conexión al enviar el email")
+    } finally {
+      setEnviando(false)
+    }
   }
 
   return (
@@ -237,7 +283,6 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
                     <span className="text-gray-600 font-medium">Precio sugerido:</span>
                     <span className="font-bold text-green-700 text-base">{rutaInfo.precioSugerido} €</span>
                   </div>
-
                   {rutaInfo.desglose && (
                     <div className="mt-2">
                       <button
@@ -247,7 +292,6 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
                         {mostrarDesglose ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
                         {mostrarDesglose ? "Ocultar desglose" : "Ver desglose"}
                       </button>
-
                       {mostrarDesglose && (
                         <div className="mt-2 space-y-1 border-t border-blue-200 pt-2">
                           <DesgloseRow label="⛽ Combustible" value={rutaInfo.desglose.combustible} />
@@ -359,8 +403,17 @@ export function QuoteActions({ quote }: { quote: QuoteRequest }) {
           <Button type="button" onClick={saveChanges} disabled={saving} variant="outline" className="h-10 w-full border-gray-200 text-gray-800">
             <Save className="size-4" /> Guardar cambios
           </Button>
-          <Button type="button" onClick={generarPDF} className="h-10 w-full bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90">
-            <Send className="size-4" /> Enviar presupuesto
+          <Button
+            type="button"
+            onClick={enviarPresupuesto}
+            disabled={enviando}
+            className="h-10 w-full bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90"
+          >
+            {enviando ? (
+              <><Loader2 className="size-4 animate-spin" /> Enviando...</>
+            ) : (
+              <><Mail className="size-4" /> Enviar presupuesto por email</>
+            )}
           </Button>
           {message && <p className="text-sm text-slate-500">{message}</p>}
         </CardContent>
