@@ -93,7 +93,7 @@ export function SettingsForm({ settings, companyId }: { settings: Settings | nul
     setMessage("")
     const { error } = await supabase
       .from("company_settings")
-      .upsert({ ...values, company_id: companyId, updated_at: new Date().toISOString() })
+      .update({ ...values, updated_at: new Date().toISOString() })
       .eq("company_id", companyId)
     setSaving(false)
     if (error) { setMessage("❌ Error al guardar: " + error.message); return }
