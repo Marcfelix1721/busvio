@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 
 const supabase = createBrowserClient(
@@ -8,7 +8,13 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-type CostVariable = {
+type CostoVehiculo = {
+  concepto: string
+  formula: string
+  coste: number
+}
+
+type DesgloseVariable = {
   id: string
   nombre: string
   tipo: string
@@ -16,6 +22,7 @@ type CostVariable = {
   intervalo_km: number | null
   obligatoria: boolean
   activa: boolean
+  formula: string
   coste: number
 }
 
@@ -23,10 +30,17 @@ type CalcResult = {
   km: number
   dias: number
   horas: number
-  desglose: CostVariable[]
+  vehiculo: { marca_modelo: string; matricula: string } | null
+  costesVehiculo: CostoVehiculo[]
+  totalVehiculo: number
+  desgloseVariables: DesgloseVariable[]
+  totalVariables: number
   subtotal: number
   margen: number
+  margenImporte: number
   iva: number
+  baseImponible: number
+  totalIva: number
   precio_final: number
 }
 
@@ -56,35 +70,38 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
   const [saved, setSaved] = useState(false)
   const [nota, setNota] = useState(quote.internal_notes || '')
 
+  const f = (n: number) => n.toFixed(2) + '€'
+
   const s = {
-    card: { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14, padding: 20, marginBottom: 16, fontFamily: "'DM Sans', system-ui, sans-serif" },
+    card: { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14, padding: 20, marginBottom: 14, fontFamily: "'DM Sans', system-ui, sans-serif" },
     label: { fontSize: 11, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 6, display: 'block' },
-    select: { width: '100%', height: 36, border: '1px solid #e5e7eb', borderRadius: 8, padding: '0 12px', fontSize: 13, background: '#fafafa', fontFamily: "'DM Sans', system-ui, sans-serif" },
+    select: { width: '100%', height: 36, border: '1px solid #e5e7eb', borderRadius: 8, padding: '0 12px', fontSize: 13, background: '#fafafa', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' as const },
     input: { width: '100%', height: 36, border: '1px solid #e5e7eb', borderRadius: 8, padding: '0 12px', fontSize: 13, background: '#fafafa', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' as const },
-    btn: { width: '100%', height: 38, background: '#1e3a5f', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" },
-    btnSecondary: { width: '100%', height: 38, background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" },
-    row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f3f4f6' },
+    btn: { width: '100%', height: 40, background: '#1e3a5f', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" },
+    btnSecondary: { width: '100%', height: 40, background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" },
+    sectionTitle: { fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 8, marginTop: 4 },
+    row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #f3f4f6' },
+    rowLast: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0' },
     rowLabel: { fontSize: 13, color: '#374151' },
-    rowValue: { fontSize: 13, fontWeight: 600, color: '#111827' },
+    rowFormula: { fontSize: 11, color: '#9ca3af', marginTop: 1 },
+    rowValue: { fontSize: 13, fontWeight: 600, color: '#111827', whiteSpace: 'nowrap' as const },
     toggle: (activa: boolean) => ({
-      width: 32, height: 18, borderRadius: 9, cursor: 'pointer',
+      width: 30, height: 17, borderRadius: 9, cursor: 'pointer',
       background: activa ? '#1e3a5f' : '#d1d5db',
-      position: 'relative' as const, flexShrink: 0, transition: 'background 0.2s', border: 'none'
+      position: 'relative' as const, flexShrink: 0,
+      transition: 'background 0.2s', border: 'none', padding: 0,
     }),
     toggleDot: (activa: boolean) => ({
-      width: 12, height: 12, borderRadius: '50%', background: '#fff',
+      width: 11, height: 11, borderRadius: '50%', background: '#fff',
       position: 'absolute' as const, top: 3,
-      left: activa ? 16 : 3, transition: 'left 0.2s'
+      left: activa ? 15 : 3, transition: 'left 0.2s',
     }),
   }
 
   async function calcular() {
     setLoading(true)
     try {
-      const stops = (() => {
-        try { return JSON.parse(quote.stops || '[]') } catch { return [] }
-      })()
-
+      const stops = (() => { try { return JSON.parse(quote.stops || '[]') } catch { return [] } })()
       const res = await fetch('/api/calcular-ruta', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -98,38 +115,29 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
           return_time: quote.return_time,
           company_id: companyId,
           quote_request_id: quote.id,
+          vehicle_id: vehicleId || null,
         }),
       })
-
       const data = await res.json()
       setCalcResult(data)
       setPrecioFinal(String(data.precio_final))
-
-      // Inicializar overrides con el estado actual de cada variable
       const initialOverrides: Record<string, boolean> = {}
-      data.desglose.forEach((v: CostVariable) => {
+      data.desgloseVariables.forEach((v: DesgloseVariable) => {
         initialOverrides[v.id] = v.activa
       })
       setOverrides(initialOverrides)
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) { console.error(e) }
     setLoading(false)
   }
 
   async function toggleOverride(variableId: string, currentActiva: boolean) {
     const newActiva = !currentActiva
-
-    // Guardar override en BD
     await supabase.from('quote_cost_overrides').upsert({
       quote_request_id: quote.id,
       cost_variable_id: variableId,
       activa: newActiva,
     }, { onConflict: 'quote_request_id,cost_variable_id' })
-
     setOverrides(prev => ({ ...prev, [variableId]: newActiva }))
-
-    // Recalcular
     await calcular()
   }
 
@@ -158,9 +166,7 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
       })
       setEstado('enviado')
       await supabase.from('quote_requests').update({ status: 'enviado' }).eq('id', quote.id)
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) { console.error(e) }
     setLoading(false)
   }
 
@@ -173,9 +179,7 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
       <div style={s.card}>
         <label style={s.label}>Estado del presupuesto</label>
         <select style={s.select} value={estado} onChange={e => setEstado(e.target.value)}>
-          {ESTADOS.map(e => (
-            <option key={e.value} value={e.value}>{e.label}</option>
-          ))}
+          {ESTADOS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
         </select>
         {estadoActual && (
           <div style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, background: estadoActual.bg, borderRadius: 6, padding: '4px 10px' }}>
@@ -195,77 +199,140 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
             </option>
           ))}
         </select>
+        {vehicleId && (
+          <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
+            ℹ️ Selecciona el vehículo antes de calcular para usar sus costes propios
+          </p>
+        )}
       </div>
 
-      {/* CÁLCULO */}
-      <div style={s.card}>
-        <label style={s.label}>Cálculo de precio</label>
+      {/* BOTÓN CALCULAR */}
+      <div style={{ marginBottom: 14 }}>
         <button style={s.btn} onClick={calcular} disabled={loading}>
-          {loading ? 'Calculando...' : '🔄 Calcular precio'}
+          {loading ? '⏳ Calculando...' : '🔄 Calcular precio'}
         </button>
+      </div>
 
-        {calcResult && (
-          <div style={{ marginTop: 16 }}>
-            {/* Info del servicio */}
-            <div style={{ background: '#f9fafb', borderRadius: 8, padding: '10px 14px', marginBottom: 14 }}>
-              <div style={{ display: 'flex', gap: 20 }}>
-                <span style={{ fontSize: 12, color: '#6b7280' }}>📍 <strong>{calcResult.km} km</strong></span>
-                <span style={{ fontSize: 12, color: '#6b7280' }}>📅 <strong>{calcResult.dias} día{calcResult.dias !== 1 ? 's' : ''}</strong></span>
-                <span style={{ fontSize: 12, color: '#6b7280' }}>⏱ <strong>{calcResult.horas} horas</strong></span>
+      {/* DESGLOSE COMPLETO */}
+      {calcResult && (
+        <div style={s.card}>
+
+          {/* INFO SERVICIO */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' as const }}>
+            {[
+              { icon: '📍', label: `${calcResult.km} km` },
+              { icon: '📅', label: `${calcResult.dias} día${calcResult.dias !== 1 ? 's' : ''}` },
+              { icon: '⏱', label: `${calcResult.horas} horas` },
+            ].map(item => (
+              <div key={item.label} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 12 }}>{item.icon}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{item.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* COSTES DEL VEHÍCULO */}
+          {calcResult.vehiculo && calcResult.costesVehiculo.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div style={{ height: 1, flex: 1, background: '#e5e7eb' }} />
+                <span style={s.sectionTitle}>🚌 {calcResult.vehiculo.marca_modelo} · {calcResult.vehiculo.matricula}</span>
+                <div style={{ height: 1, flex: 1, background: '#e5e7eb' }} />
+              </div>
+              {calcResult.costesVehiculo.map((c, i) => (
+                <div key={i} style={i < calcResult.costesVehiculo.length - 1 ? s.row : s.rowLast}>
+                  <div>
+                    <div style={s.rowLabel}>{c.concepto}</div>
+                    <div style={s.rowFormula}>{c.formula}</div>
+                  </div>
+                  <span style={{ ...s.rowValue, color: '#1e3a5f' }}>{f(c.coste)}</span>
+                </div>
+              ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', background: '#f0f4ff', borderRadius: 8, padding: '8px 12px', marginTop: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#1e3a5f' }}>Subtotal vehículo</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#1e3a5f' }}>{f(calcResult.totalVehiculo)}</span>
               </div>
             </div>
+          )}
 
-            {/* Desglose de variables */}
-            <div style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-                Desglose de costes
-              </p>
-              {calcResult.desglose.map(v => {
+          {/* VARIABLES DE EMPRESA */}
+          {calcResult.desgloseVariables.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div style={{ height: 1, flex: 1, background: '#e5e7eb' }} />
+                <span style={s.sectionTitle}>⚙️ Variables de la empresa</span>
+                <div style={{ height: 1, flex: 1, background: '#e5e7eb' }} />
+              </div>
+              {calcResult.desgloseVariables.map((v, i) => {
                 const activa = overrides[v.id] !== undefined ? overrides[v.id] : v.activa
+                const isLast = i === calcResult.desgloseVariables.length - 1
                 return (
-                  <div key={v.id} style={{ ...s.row, opacity: activa ? 1 : 0.4 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      {!v.obligatoria && (
-                        <button
-                          style={s.toggle(activa)}
-                          onClick={() => toggleOverride(v.id, activa)}
-                        >
+                  <div key={v.id} style={{ ...(isLast ? s.rowLast : s.row), opacity: activa ? 1 : 0.4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                      {!v.obligatoria ? (
+                        <button style={s.toggle(activa)} onClick={() => toggleOverride(v.id, activa)}>
                           <div style={s.toggleDot(activa)} />
                         </button>
+                      ) : (
+                        <div style={{ width: 30, height: 17, borderRadius: 9, background: '#e5e7eb', position: 'relative', flexShrink: 0 }}>
+                          <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#9ca3af', position: 'absolute', top: 3, left: 15 }} />
+                        </div>
                       )}
-                      {v.obligatoria && <div style={{ width: 32 }} />}
-                      <span style={s.rowLabel}>{v.nombre}</span>
+                      <div>
+                        <div style={{ ...s.rowLabel, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {v.nombre}
+                          {v.obligatoria && (
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#1e3a5f', background: '#eff6ff', borderRadius: 4, padding: '1px 5px' }}>FIJA</span>
+                          )}
+                        </div>
+                        {activa && <div style={s.rowFormula}>{v.formula}</div>}
+                      </div>
                     </div>
-                    <span style={{ ...s.rowValue, color: activa ? '#111827' : '#9ca3af' }}>
-                      {activa ? `${v.coste.toFixed(2)}€` : '—'}
+                    <span style={{ ...s.rowValue, color: activa ? '#111827' : '#d1d5db' }}>
+                      {activa ? f(v.coste) : '—'}
                     </span>
                   </div>
                 )
               })}
+              <div style={{ display: 'flex', justifyContent: 'space-between', background: '#f9fafb', borderRadius: 8, padding: '8px 12px', marginTop: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>Subtotal variables</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>{f(calcResult.totalVariables)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* RESUMEN FINAL */}
+          <div style={{ borderTop: '2px solid #e5e7eb', paddingTop: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <div style={{ height: 1, flex: 1, background: '#e5e7eb' }} />
+              <span style={s.sectionTitle}>💰 Resumen</span>
+              <div style={{ height: 1, flex: 1, background: '#e5e7eb' }} />
             </div>
 
-            {/* Totales */}
-            <div style={{ borderTop: '2px solid #e5e7eb', paddingTop: 12 }}>
-              <div style={s.row}>
-                <span style={s.rowLabel}>Subtotal</span>
-                <span style={s.rowValue}>{calcResult.subtotal.toFixed(2)}€</span>
-              </div>
-              <div style={s.row}>
-                <span style={s.rowLabel}>Margen ({calcResult.margen}%)</span>
-                <span style={s.rowValue}>+{(calcResult.subtotal * calcResult.margen / 100).toFixed(2)}€</span>
-              </div>
-              <div style={s.row}>
-                <span style={s.rowLabel}>IVA ({calcResult.iva}%)</span>
-                <span style={s.rowValue}>+{(calcResult.subtotal * (1 + calcResult.margen / 100) * calcResult.iva / 100).toFixed(2)}€</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10 }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>TOTAL</span>
-                <span style={{ fontSize: 20, fontWeight: 700, color: '#1e3a5f' }}>{calcResult.precio_final.toFixed(2)}€</span>
-              </div>
+            <div style={s.row}>
+              <span style={s.rowLabel}>Subtotal costes</span>
+              <span style={s.rowValue}>{f(calcResult.subtotal)}</span>
+            </div>
+            <div style={s.row}>
+              <span style={s.rowLabel}>Margen ({calcResult.margen}%)</span>
+              <span style={{ ...s.rowValue, color: '#16a34a' }}>+{f(calcResult.margenImporte)}</span>
+            </div>
+            <div style={s.row}>
+              <span style={s.rowLabel}>Base imponible</span>
+              <span style={s.rowValue}>{f(calcResult.baseImponible)}</span>
+            </div>
+            <div style={s.rowLast}>
+              <span style={s.rowLabel}>IVA ({calcResult.iva}%)</span>
+              <span style={{ ...s.rowValue, color: '#6b7280' }}>+{f(calcResult.totalIva)}</span>
+            </div>
+
+            <div style={{ background: '#111827', borderRadius: 10, padding: '14px 16px', marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>TOTAL</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{f(calcResult.precio_final)}</span>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* PRECIO FINAL EDITABLE */}
       <div style={s.card}>
@@ -279,7 +346,7 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
             value={precioFinal}
             onChange={e => setPrecioFinal(e.target.value)}
           />
-          <span style={{ fontSize: 14, color: '#6b7280', whiteSpace: 'nowrap' }}>€ + IVA</span>
+          <span style={{ fontSize: 14, color: '#6b7280', whiteSpace: 'nowrap' as const }}>€ + IVA</span>
         </div>
       </div>
 
@@ -287,7 +354,7 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
       <div style={s.card}>
         <label style={s.label}>Notas internas</label>
         <textarea
-          style={{ ...s.input, height: 80, padding: '8px 12px', resize: 'vertical' }}
+          style={{ ...s.input, height: 80, padding: '8px 12px', resize: 'vertical' as const }}
           placeholder="Notas visibles solo para el equipo..."
           value={nota}
           onChange={e => setNota(e.target.value)}
@@ -295,7 +362,7 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
       </div>
 
       {/* ACCIONES */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
         <button style={s.btn} onClick={handleGuardar} disabled={saving}>
           {saved ? '✓ Guardado' : saving ? 'Guardando...' : 'Guardar cambios'}
         </button>
@@ -303,7 +370,6 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
           📧 Enviar presupuesto por email
         </button>
       </div>
-
     </div>
   )
 }
