@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { SettingsForm } from "@/components/dashboard/SettingsForm"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Bus, ChevronRight } from "lucide-react"
 
 async function createClient() {
   const cookieStore = await cookies()
@@ -21,29 +21,26 @@ export default async function AjustesPage() {
   if (!user) redirect("/login")
 
   const { data: userData } = await supabase
-    .from("users")
-    .select("company_id")
-    .eq("id", user.id)
-    .maybeSingle()
+    .from("users").select("company_id").eq("id", user.id).maybeSingle()
   if (!userData?.company_id) redirect("/dashboard")
 
   const { data: settings } = await supabase
-    .from("company_settings")
-    .select("*")
-    .eq("company_id", userData.company_id)
-    .maybeSingle()
+    .from("company_settings").select("*")
+    .eq("company_id", userData.company_id).maybeSingle()
 
   const { data: company } = await supabase
-    .from("companies")
-    .select("*")
-    .eq("id", userData.company_id)
-    .maybeSingle()
+    .from("companies").select("*")
+    .eq("id", userData.company_id).maybeSingle()
 
   const { data: pricingSettings } = await supabase
     .from("pricing_settings")
     .select("garage_address, parking_address")
+    .eq("company_id", userData.company_id).maybeSingle()
+
+  const { data: vehiculosData } = await supabase
+    .from("vehicles").select("id")
     .eq("company_id", userData.company_id)
-    .maybeSingle()
+  const totalVehiculos = vehiculosData?.length ?? 0
 
   return (
     <div style={{ minHeight: "100vh", background: "#f5f5f4", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
@@ -53,10 +50,7 @@ export default async function AjustesPage() {
       </div>
 
       <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "2rem 1.5rem" }}>
-        <Link
-          href="/dashboard"
-          style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#6b7280", display: "inline-flex", alignItems: "center", gap: "5px", marginBottom: "1.75rem", textDecoration: "none" }}
-        >
+        <Link href="/dashboard" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#6b7280", display: "inline-flex", alignItems: "center", gap: "5px", marginBottom: "1.75rem", textDecoration: "none" }}>
           <ArrowLeft style={{ width: "14px", height: "14px" }} /> Volver al panel
         </Link>
 
@@ -68,6 +62,24 @@ export default async function AjustesPage() {
             Configura los datos, tarifas y parámetros de cálculo
           </p>
         </div>
+
+        {/* ENLACE A VEHÍCULOS */}
+        <Link href="/dashboard/vehiculos" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", padding: "1rem 1.25rem", marginBottom: "1.5rem", textDecoration: "none" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#111827", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Bus style={{ width: "20px", height: "20px", color: "#fff" }} />
+            </div>
+            <div>
+              <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.9375rem", fontWeight: 600, color: "#111827", margin: 0 }}>
+                Flota de vehículos
+              </p>
+              <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8rem", color: "#6b7280", margin: "2px 0 0" }}>
+                {totalVehiculos === 0 ? "Sin vehículos registrados" : `${totalVehiculos} vehículo${totalVehiculos !== 1 ? "s" : ""} registrado${totalVehiculos !== 1 ? "s" : ""}`} · Gestiona tu flota y estado de disponibilidad
+              </p>
+            </div>
+          </div>
+          <ChevronRight style={{ width: "16px", height: "16px", color: "#9ca3af", flexShrink: 0 }} />
+        </Link>
 
         <SettingsForm
           settings={settings}

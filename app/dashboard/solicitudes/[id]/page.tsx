@@ -27,18 +27,18 @@ const statusConfig: Record<QuoteRequest["status"], { label: string; bg: string; 
   nuevo:       { label: "Nuevo",       bg: "bg-sky-50",     text: "text-sky-700",     ring: "ring-sky-200",     dot: "bg-sky-500" },
   en_revision: { label: "En revisión", bg: "bg-amber-50",   text: "text-amber-700",   ring: "ring-amber-200",   dot: "bg-amber-400" },
   enviado:     { label: "Enviado",     bg: "bg-violet-50",  text: "text-violet-700",  ring: "ring-violet-200",  dot: "bg-violet-500" },
-  aceptado:    { label: "Aceptado",   bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200", dot: "bg-emerald-500" },
-  rechazado:   { label: "Rechazado",  bg: "bg-rose-50",    text: "text-rose-600",    ring: "ring-rose-200",    dot: "bg-rose-400" },
-  cancelado:   { label: "Cancelado",  bg: "bg-zinc-50",    text: "text-zinc-500",    ring: "ring-zinc-200",    dot: "bg-zinc-400" },
+  aceptado:    { label: "Aceptado",    bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200", dot: "bg-emerald-500" },
+  rechazado:   { label: "Rechazado",   bg: "bg-rose-50",    text: "text-rose-600",    ring: "ring-rose-200",    dot: "bg-rose-400" },
+  cancelado:   { label: "Cancelado",   bg: "bg-zinc-50",    text: "text-zinc-500",    ring: "ring-zinc-200",    dot: "bg-zinc-400" },
 }
 
 const historialStatusConfig: Record<QuoteRequest["status"], { label: string; class: string }> = {
   nuevo:       { label: "Nuevo",       class: "bg-sky-50 text-sky-700" },
   en_revision: { label: "En revisión", class: "bg-amber-50 text-amber-700" },
   enviado:     { label: "Enviado",     class: "bg-violet-50 text-violet-700" },
-  aceptado:    { label: "Aceptado",   class: "bg-emerald-50 text-emerald-700" },
-  rechazado:   { label: "Rechazado",  class: "bg-rose-50 text-rose-600" },
-  cancelado:   { label: "Cancelado",  class: "bg-zinc-50 text-zinc-500" },
+  aceptado:    { label: "Aceptado",    class: "bg-emerald-50 text-emerald-700" },
+  rechazado:   { label: "Rechazado",   class: "bg-rose-50 text-rose-600" },
+  cancelado:   { label: "Cancelado",   class: "bg-zinc-50 text-zinc-500" },
 }
 
 function extractCommentField(comments: string | undefined, key: string) {
@@ -86,6 +86,13 @@ export default async function QuoteRequestDetailPage({
     .maybeSingle()
   const estadoRelacion = clienteData?.estado_relacion ?? null
 
+  const { data: vehiculosData } = await supabase
+    .from("vehicles")
+    .select("id, matricula, marca_modelo, plazas, tipo, estado")
+    .eq("company_id", quote.company_id)
+    .order("plazas", { ascending: true })
+  const vehicles = vehiculosData ?? []
+
   const serviceType = extractCommentField(quote.comments, "Tipo de servicio") ?? "—"
   const tipoCliente = extractCommentField(quote.comments, "Tipo de cliente") ?? "—"
   const endTime = extractCommentField(quote.comments, "Hora de regreso/finalizacion") ?? "No especificada"
@@ -123,12 +130,12 @@ export default async function QuoteRequestDetailPage({
               </span>
               {esUrgente && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full">
-                  ⚡ Viaje en {dias} día{dias!==1?"s":""}
+                  ⚡ Viaje en {dias} día{dias !== 1 ? "s" : ""}
                 </span>
               )}
               {historial.length > 0 && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full">
-                  <TrendingUp className="size-3"/> Cliente recurrente
+                  <TrendingUp className="size-3" /> Cliente recurrente
                 </span>
               )}
             </div>
@@ -148,19 +155,16 @@ export default async function QuoteRequestDetailPage({
             {/* DATOS DEL SOLICITANTE */}
             <Section title="Datos del solicitante">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <InfoTile icon={<Mail className="size-3.5 text-[#6b7280]"/>} label="Email" value={quote.requester_email} />
-                <InfoTile icon={<Phone className="size-3.5 text-[#6b7280]"/>} label="Teléfono" value={quote.requester_phone ?? "—"} />
-                <InfoTile icon={<Users className="size-3.5 text-[#6b7280]"/>} label="Tipo de cliente" value={tipoCliente} />
+                <InfoTile icon={<Mail className="size-3.5 text-[#6b7280]" />} label="Email" value={quote.requester_email} />
+                <InfoTile icon={<Phone className="size-3.5 text-[#6b7280]" />} label="Teléfono" value={quote.requester_phone ?? "—"} />
+                <InfoTile icon={<Users className="size-3.5 text-[#6b7280]" />} label="Tipo de cliente" value={tipoCliente} />
               </div>
             </Section>
 
             {/* DETALLES DEL VIAJE */}
             <Section title="Detalles del viaje">
-
-              {/* MAPA */}
               <MapaRuta origin={quote.origin} destination={quote.destination} />
 
-              {/* Ruta visual */}
               <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-4 mb-4">
                 <div className="flex items-start gap-4">
                   <div className="flex flex-col items-center gap-1 pt-1">
@@ -188,24 +192,24 @@ export default async function QuoteRequestDetailPage({
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <InfoTile icon={<Calendar className="size-3.5 text-[#6b7280]"/>} label="Fecha viaje" value={fmt(quote.trip_date)} />
-                <InfoTile icon={<Users className="size-3.5 text-[#6b7280]"/>} label="Pasajeros" value={String(quote.passengers)} />
-                <InfoTile icon={<Bus className="size-3.5 text-[#6b7280]"/>} label="Vehículo" value={quote.vehicle_type} />
-                <InfoTile icon={<FileText className="size-3.5 text-[#6b7280]"/>} label="Tipo servicio" value={serviceType} />
-                <InfoTile icon={<Clock className="size-3.5 text-[#6b7280]"/>} label="Hora salida" value={quote.departure_time} />
-                <InfoTile icon={<Clock className="size-3.5 text-[#6b7280]"/>} label="Hora regreso" value={endTime} />
+                <InfoTile icon={<Calendar className="size-3.5 text-[#6b7280]" />} label="Fecha viaje" value={fmt(quote.trip_date)} />
+                <InfoTile icon={<Users className="size-3.5 text-[#6b7280]" />} label="Pasajeros" value={String(quote.passengers)} />
+                <InfoTile icon={<Bus className="size-3.5 text-[#6b7280]" />} label="Vehículo" value={quote.vehicle_type} />
+                <InfoTile icon={<FileText className="size-3.5 text-[#6b7280]" />} label="Tipo servicio" value={serviceType} />
+                <InfoTile icon={<Clock className="size-3.5 text-[#6b7280]" />} label="Hora salida" value={quote.departure_time} />
+                <InfoTile icon={<Clock className="size-3.5 text-[#6b7280]" />} label="Hora llegada" value={endTime} />
                 {quote.estimated_km && (
-                  <InfoTile icon={<MapPin className="size-3.5 text-[#6b7280]"/>} label="Distancia" value={`${quote.estimated_km} km`} />
+                  <InfoTile icon={<MapPin className="size-3.5 text-[#6b7280]" />} label="Distancia" value={`${quote.estimated_km} km`} />
                 )}
                 {quote.estimated_price && (
-                  <InfoTile icon={<FileText className="size-3.5 text-[#6b7280]"/>} label="Precio sugerido" value={`${quote.estimated_price} €`} />
+                  <InfoTile icon={<FileText className="size-3.5 text-[#6b7280]" />} label="Precio sugerido" value={`${quote.estimated_price} €`} />
                 )}
               </div>
             </Section>
 
             {/* COMENTARIOS */}
             {quote.comments && (
-              <Section title="Comentarios del cliente" icon={<MessageSquare className="size-3.5 text-[#6b7280]"/>}>
+              <Section title="Comentarios del cliente" icon={<MessageSquare className="size-3.5 text-[#6b7280]" />}>
                 <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-4">
                   <p className="text-sm text-[#374151] leading-relaxed whitespace-pre-line">{quote.comments}</p>
                 </div>
@@ -222,8 +226,11 @@ export default async function QuoteRequestDetailPage({
             />
 
             {/* HISTORIAL */}
-            <Section title="Historial del cliente" icon={<History className="size-3.5 text-[#6b7280]"/>}
-              badge={historial.length === 0 ? "Primera solicitud" : `${historial.length} anterior${historial.length>1?"es":""}`}>
+            <Section
+              title="Historial del cliente"
+              icon={<History className="size-3.5 text-[#6b7280]" />}
+              badge={historial.length === 0 ? "Primera solicitud" : `${historial.length} anterior${historial.length > 1 ? "es" : ""}`}
+            >
               {historial.length === 0 ? (
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center">
                   <p className="text-sm font-semibold text-blue-700">⭐ Cliente nuevo</p>
@@ -259,7 +266,7 @@ export default async function QuoteRequestDetailPage({
 
           {/* COLUMNA DERECHA */}
           <div className="lg:sticky lg:top-20 space-y-4">
-            <QuoteActions quote={quote} company={company} />
+            <QuoteActions quote={quote} company={company} vehicles={vehicles} />
           </div>
         </div>
       </div>
