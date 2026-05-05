@@ -56,6 +56,30 @@ function diasHasta(d: string) {
   return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000)
 }
 
+async function geocode(address: string, apiKey: string): Promise<{ lat: number; lon: number } | null> {
+  try {
+    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&limit=1&apiKey=${apiKey}`
+    const res = await fetch(url, { next: { revalidate: 3600 } })
+    const data = await res.json()
+    if (data.features?.length > 0) {
+      const [lon, lat] = data.features[0].geometry.coordinates
+      return { lat, lon }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+function buildMapUrl(origin: { lat: number; lon: number }, destination: { lat: number; lon: number }, apiKey: string): string {
+  const markers = [
+    `lonlat:${origin.lon},${origin.lat};type:material;color:%23111827;size:medium;icon:dot;icontype:awesome;whitecircle:no`,
+    `lonlat:${destination.lon},${destination.lat};type:material;color:%23ef4444;size:medium;icon:flag;icontype:awesome;whitecircle:no`,
+  ].join("|")
+
+  return `https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=900&height=400&marker=${markers}&apiKey=${apiKey}`
+}
+
 export default async function QuoteRequestDetailPage({
   params,
 }: {
@@ -84,6 +108,14 @@ export default async function QuoteRequestDetailPage({
     .eq("email", quote.requester_email)
     .maybeSingle()
   const estadoRelacion = clienteData?.estado_relacion ?? null
+
+  // Geocodificar para el mapa
+  const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_KEY ?? ""
+  const [originCoords, destCoords] = await Promise.all([
+    geocode(quote.origin, apiKey),
+    geocode(quote.destination, apiKey),
+  ])
+  const mapUrl = originCoords && destCoords ? buildMapUrl(originCoords, destCoords, apiKey) : null
 
   const serviceType = extractCommentField(quote.comments, "Tipo de servicio") ?? "—"
   const tipoCliente = extractCommentField(quote.comments, "Tipo de cliente") ?? "—"
@@ -115,7 +147,7 @@ export default async function QuoteRequestDetailPage({
         {/* HEADER */}
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
               <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ring-1 ${sCfg.bg} ${sCfg.text} ${sCfg.ring}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${sCfg.dot}`}></span>
                 {sCfg.label}
@@ -155,13 +187,25 @@ export default async function QuoteRequestDetailPage({
 
             {/* DETALLES DEL VIAJE */}
             <Section title="Detalles del viaje">
+
+              {/* MAPA */}
+              {mapUrl && (
+                <div className="rounded-xl overflow-hidden border border-[#e5e7eb] mb-4" style={{height:"220px"}}>
+                  <img
+                    src={mapUrl}
+                    alt={`Ruta de ${quote.origin} a ${quote.destination}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
               {/* Ruta visual */}
               <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-4 mb-4">
                 <div className="flex items-start gap-4">
                   <div className="flex flex-col items-center gap-1 pt-1">
                     <div className="w-2.5 h-2.5 rounded-full bg-[#111827]"></div>
                     <div className="w-px h-8 bg-[#d1d5db]"></div>
-                    <div className="w-2.5 h-2.5 rounded-full border-2 border-[#111827]"></div>
+                    <div className="w-2.5 h-2.5 rounded-full border-2 border-rose-500"></div>
                   </div>
                   <div className="flex-1 space-y-3">
                     <div>
@@ -170,7 +214,7 @@ export default async function QuoteRequestDetailPage({
                     </div>
                     {quote.stops && (
                       <div>
-                        <p className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-0.5">Paradas</p>
+                        <p className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-0.5">Paradas intermedias</p>
                         <p className="text-sm text-[#374151]">{quote.stops}</p>
                       </div>
                     )}
@@ -252,7 +296,7 @@ export default async function QuoteRequestDetailPage({
             </Section>
           </div>
 
-          {/* COLUMNA DERECHA — ACCIONES */}
+          {/* COLUMNA DERECHA */}
           <div className="lg:sticky lg:top-20 space-y-4">
             <QuoteActions quote={quote} company={company} />
           </div>
