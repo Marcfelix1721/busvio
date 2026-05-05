@@ -13,6 +13,7 @@ import {
   MapPin,
   Phone,
   Users,
+  History,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
@@ -35,6 +36,15 @@ const statusClasses: Record<QuoteRequest["status"], string> = {
   aceptado: "bg-green-50 text-green-700 border-green-200",
   rechazado: "bg-red-50 text-red-700 border-red-200",
   cancelado: "bg-gray-50 text-gray-600 border-gray-200",
+}
+
+const statusLabels: Record<QuoteRequest["status"], string> = {
+  nuevo: "Nuevo",
+  en_revision: "En revisión",
+  enviado: "Enviado",
+  aceptado: "Aceptado",
+  rechazado: "Rechazado",
+  cancelado: "Cancelado",
 }
 
 function extractCommentField(comments: string | undefined, key: string) {
@@ -72,6 +82,20 @@ export default async function QuoteRequestDetailPage({
     .select("*")
     .eq("id", quote.company_id)
     .maybeSingle()
+
+  // Historial del cliente — todas las solicitudes del mismo email en esta empresa
+  const { data: historialData } = await supabase
+    .from("quote_requests")
+    .select("id, origin, destination, trip_date, status, created_at")
+    .eq("company_id", quote.company_id)
+    .eq("requester_email", quote.requester_email)
+    .neq("id", quote.id)
+    .order("created_at", { ascending: false })
+
+  const historial = (historialData ?? []) as Pick
+    QuoteRequest,
+    "id" | "origin" | "destination" | "trip_date" | "status" | "created_at"
+  >[]
 
   const serviceType = extractCommentField(quote.comments, "Tipo de servicio") ?? "-"
   const endTime =
@@ -148,6 +172,50 @@ export default async function QuoteRequestDetailPage({
               <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700">
                 {quote.comments || "Sin comentarios"}
               </div>
+            </div>
+
+            {/* HISTORIAL DEL CLIENTE */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <History className="h-4 w-4 text-[#1e3a5f]" />
+                <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Historial del cliente
+                </h2>
+                <span className="ml-auto text-xs text-gray-400">
+                  {historial.length === 0
+                    ? "Primera solicitud"
+                    : `${historial.length} solicitud${historial.length > 1 ? "es" : ""} anterior${historial.length > 1 ? "es" : ""}`}
+                </span>
+              </div>
+
+              {historial.length === 0 ? (
+                <div className="bg-blue-50 rounded-lg p-4 text-center">
+                  <p className="text-sm text-blue-600 font-medium">⭐ Cliente nuevo</p>
+                  <p className="text-xs text-blue-400 mt-1">Es la primera vez que contacta</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {historial.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={`/dashboard/solicitudes/${item.id}`}
+                      className="flex items-center gap-4 bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors group"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">
+                          {item.origin} → {item.destination}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Viaje: {formatDate(item.trip_date)} · Recibida: {formatDate(item.created_at)}
+                        </p>
+                      </div>
+                      <Badge className={`${statusClasses[item.status]} border px-2 py-0.5 text-xs font-semibold flex-shrink-0`}>
+                        {statusLabels[item.status]}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
