@@ -21,12 +21,12 @@ async function createClient() {
 }
 
 const statusConfig: Record<QuoteRequest["status"], { label: string; bg: string; text: string; ring: string; bar: string }> = {
-  nuevo:      { label: "Nuevo",       bg: "bg-sky-50",     text: "text-sky-700",     ring: "ring-sky-200",    bar: "bg-sky-500" },
-  en_revision:{ label: "En revisión", bg: "bg-amber-50",   text: "text-amber-700",   ring: "ring-amber-200",  bar: "bg-amber-400" },
-  enviado:    { label: "Enviado",     bg: "bg-violet-50",  text: "text-violet-700",  ring: "ring-violet-200", bar: "bg-violet-500" },
-  aceptado:   { label: "Aceptado",   bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200",bar: "bg-emerald-500" },
-  rechazado:  { label: "Rechazado",  bg: "bg-rose-50",    text: "text-rose-600",    ring: "ring-rose-200",   bar: "bg-rose-400" },
-  cancelado:  { label: "Cancelado",  bg: "bg-zinc-50",    text: "text-zinc-500",    ring: "ring-zinc-200",   bar: "bg-zinc-300" },
+  nuevo:      { label: "Nuevo",       bg: "bg-sky-50",     text: "text-sky-700",     ring: "ring-sky-200",     bar: "bg-sky-500" },
+  en_revision:{ label: "En revisión", bg: "bg-amber-50",   text: "text-amber-700",   ring: "ring-amber-200",   bar: "bg-amber-400" },
+  enviado:    { label: "Enviado",     bg: "bg-violet-50",  text: "text-violet-700",  ring: "ring-violet-200",  bar: "bg-violet-500" },
+  aceptado:   { label: "Aceptado",   bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200", bar: "bg-emerald-500" },
+  rechazado:  { label: "Rechazado",  bg: "bg-rose-50",    text: "text-rose-600",    ring: "ring-rose-200",    bar: "bg-rose-400" },
+  cancelado:  { label: "Cancelado",  bg: "bg-zinc-50",    text: "text-zinc-500",    ring: "ring-zinc-200",    bar: "bg-zinc-300" },
 }
 
 const relacionConfig: Record<string, { label: string; dot: string }> = {
@@ -38,13 +38,13 @@ const relacionConfig: Record<string, { label: string; dot: string }> = {
 }
 
 const statusOptions: Array<{ value: QuoteRequest["status"] | "todas"; label: string }> = [
-  { value: "todas",       label: "Todas" },
-  { value: "nuevo",       label: "Nuevo" },
-  { value: "en_revision", label: "En revisión" },
-  { value: "enviado",     label: "Enviado" },
-  { value: "aceptado",    label: "Aceptado" },
-  { value: "rechazado",   label: "Rechazado" },
-  { value: "cancelado",   label: "Cancelado" },
+  { value: "todas",        label: "Todas" },
+  { value: "nuevo",        label: "Nuevo" },
+  { value: "en_revision",  label: "En revisión" },
+  { value: "enviado",      label: "Enviado" },
+  { value: "aceptado",     label: "Aceptado" },
+  { value: "rechazado",    label: "Rechazado" },
+  { value: "cancelado",    label: "Cancelado" },
 ]
 
 function fmt(d: string) {
@@ -106,14 +106,6 @@ export default async function DashboardPage({
     return d >= 0 && d <= 7 && !["aceptado","cancelado","rechazado"].includes(r.status)
   })
 
-  // Gráfica últimos 6 meses
-  const meses = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(); d.setMonth(d.getMonth() - (5 - i))
-    return { key: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`, label: d.toLocaleDateString("es-ES",{month:"short"}), count: 0 }
-  })
-  requests.forEach(r => { const m = meses.find(m => m.key === r.created_at.slice(0,7)); if(m) m.count++ })
-  const maxCount = Math.max(...meses.map(m => m.count), 1)
-
   const companyName = companyData?.name ?? "Dashboard"
   const today = new Date().toLocaleDateString("es-ES", { weekday:"long", day:"numeric", month:"long" })
 
@@ -130,16 +122,16 @@ export default async function DashboardPage({
             <span className="text-white font-semibold text-sm tracking-tight">Busvio</span>
           </div>
         </div>
-
         <nav className="flex-1 px-3 py-4 space-y-0.5">
-          <SideLink href="/dashboard" icon={<BarChart3 className="size-3.5"/>} label="Dashboard" active />
+          <p className="text-[10px] font-medium text-white/20 uppercase tracking-widest px-2 pb-1">Principal</p>
+          <SideLink href="/dashboard" icon={<Inbox className="size-3.5"/>} label="Solicitudes" active />
           <SideLink href="/dashboard/clientes" icon={<Users className="size-3.5"/>} label="Clientes" />
+          <SideLink href="/dashboard/analytics" icon={<BarChart3 className="size-3.5"/>} label="Analytics" />
           <div className="pt-4 pb-1 px-2">
             <p className="text-[10px] font-medium text-white/20 uppercase tracking-widest">Config</p>
           </div>
           <SideLink href="/dashboard/ajustes" icon={<Settings className="size-3.5"/>} label="Ajustes" />
         </nav>
-
         <div className="px-3 py-4 border-t border-white/5 space-y-2">
           <p className="text-[11px] text-white/30 truncate px-2">{session.user.email}</p>
           <LogoutButton />
@@ -150,20 +142,18 @@ export default async function DashboardPage({
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-5">
 
-          {/* TOPBAR */}
+          {/* HEADER */}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight">{companyName}</h1>
               <p className="text-[13px] text-[#9ca3af] capitalize mt-0.5">{today}</p>
             </div>
-            <div className="flex items-center gap-2">
-              {urgentes.length > 0 && (
-                <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-medium px-3 py-1.5 rounded-full">
-                  <AlertTriangle className="size-3" />
-                  {urgentes.length} viaje{urgentes.length > 1 ? "s" : ""} urgente{urgentes.length > 1 ? "s" : ""}
-                </div>
-              )}
-            </div>
+            {urgentes.length > 0 && (
+              <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-medium px-3 py-1.5 rounded-full">
+                <AlertTriangle className="size-3" />
+                {urgentes.length} viaje{urgentes.length > 1 ? "s" : ""} urgente{urgentes.length > 1 ? "s" : ""}
+              </div>
+            )}
           </div>
 
           {/* ALERTA URGENTES */}
@@ -172,7 +162,7 @@ export default async function DashboardPage({
               <AlertTriangle className="size-4 text-amber-500 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-amber-900">
-                  {urgentes.length} solicitud{urgentes.length > 1 ? "es" : ""} con viaje en menos de 7 días pendientes de gestionar
+                  {urgentes.length} solicitud{urgentes.length > 1 ? "es" : ""} con viaje en menos de 7 días pendientes
                 </p>
                 <div className="flex flex-wrap gap-3 mt-1.5">
                   {urgentes.map(r => (
@@ -188,66 +178,22 @@ export default async function DashboardPage({
 
           {/* KPIs */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-            <KPI label="Total solicitudes" value={requests.length} sub={`${requests.filter(r=>r.status==="nuevo").length} nuevas sin atender`} icon={<Inbox className="size-4 text-blue-600"/>} iconBg="bg-blue-50" accent="border-l-blue-500" />
-            <KPI label="Tasa de cierre" value={`${tasa}%`} sub={`${aceptadas} aceptadas`} icon={<CircleCheck className="size-4 text-emerald-600"/>} iconBg="bg-emerald-50" accent="border-l-emerald-500" up={tasa > 0} />
-            <KPI label="Facturado" value={`${facturado.toLocaleString("es-ES")} €`} sub={`${clientes} clientes únicos`} icon={<Euro className="size-4 text-violet-600"/>} iconBg="bg-violet-50" accent="border-l-violet-500" />
-            <KPI label="Pendiente de cobro" value={`${pendiente.toLocaleString("es-ES")} €`} sub={`${requests.filter(r=>r.status==="enviado").length} presupuestos enviados`} icon={<Clock3 className="size-4 text-amber-600"/>} iconBg="bg-amber-50" accent="border-l-amber-500" />
-          </div>
-
-          {/* GRÁFICA + PIPELINE */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
-
-            {/* Barras */}
-            <div className="lg:col-span-3 bg-white border border-[#e5e7eb] rounded-xl p-5">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <p className="text-sm font-semibold text-[#111827]">Actividad mensual</p>
-                  <p className="text-xs text-[#9ca3af] mt-0.5">Solicitudes recibidas · últimos 6 meses</p>
-                </div>
-              </div>
-              <div className="flex items-end gap-2 h-28">
-                {meses.map(mes => (
-                  <div key={mes.key} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-[11px] font-semibold text-[#6b7280]">{mes.count > 0 ? mes.count : ""}</span>
-                    <div className="w-full rounded-sm bg-[#f3f4f6]" style={{height:"80px", position:"relative"}}>
-                      <div className="absolute bottom-0 w-full bg-[#111827] rounded-sm transition-all duration-500"
-                        style={{height:`${Math.max((mes.count/maxCount)*100,mes.count>0?8:0)}%`}} />
-                    </div>
-                    <span className="text-[10px] text-[#9ca3af] capitalize">{mes.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Pipeline */}
-            <div className="lg:col-span-2 bg-white border border-[#e5e7eb] rounded-xl p-5">
-              <p className="text-sm font-semibold text-[#111827] mb-1">Pipeline</p>
-              <p className="text-xs text-[#9ca3af] mb-5">Distribución por estado</p>
-              <div className="space-y-3">
-                {statusOptions.filter(s => s.value !== "todas").map(s => {
-                  const cfg = statusConfig[s.value as QuoteRequest["status"]]
-                  const count = requests.filter(r => r.status === s.value).length
-                  const pct = requests.length > 0 ? (count / requests.length) * 100 : 0
-                  return (
-                    <div key={s.value}>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-xs text-[#6b7280]">{cfg.label}</span>
-                        <span className="text-xs font-semibold text-[#111827]">{count}</span>
-                      </div>
-                      <div className="h-1 bg-[#f3f4f6] rounded-full overflow-hidden">
-                        <div className={`h-full ${cfg.bar} rounded-full`} style={{width:`${pct}%`}} />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            <KPI label="Total solicitudes" value={requests.length}
+              sub={`${requests.filter(r=>r.status==="nuevo").length} nuevas · ${requests.filter(r=>r.status==="en_revision").length} en revisión`}
+              icon={<FileText className="size-4 text-blue-600"/>} iconBg="bg-blue-50" accent="border-l-blue-500" />
+            <KPI label="Tasa de cierre" value={`${tasa}%`}
+              sub={`${aceptadas} aceptadas de ${requests.length}`}
+              icon={<CircleCheck className="size-4 text-emerald-600"/>} iconBg="bg-emerald-50" accent="border-l-emerald-500" up={tasa > 0} />
+            <KPI label="Facturado" value={`${facturado.toLocaleString("es-ES")} €`}
+              sub={`${clientes} clientes únicos`}
+              icon={<Euro className="size-4 text-violet-600"/>} iconBg="bg-violet-50" accent="border-l-violet-500" />
+            <KPI label="Pendiente de cobro" value={`${pendiente.toLocaleString("es-ES")} €`}
+              sub={`${requests.filter(r=>r.status==="enviado").length} presupuestos enviados`}
+              icon={<Clock3 className="size-4 text-amber-600"/>} iconBg="bg-amber-50" accent="border-l-amber-500" />
           </div>
 
           {/* TABLA */}
           <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
-
-            {/* Toolbar */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 px-5 py-3.5 border-b border-[#f3f4f6]">
               <div className="flex-1">
                 <p className="text-sm font-semibold text-[#111827]">Solicitudes</p>
@@ -263,7 +209,6 @@ export default async function DashboardPage({
               </form>
             </div>
 
-            {/* Filtros */}
             <div className="flex flex-wrap gap-1.5 px-5 py-2.5 border-b border-[#f3f4f6]">
               {statusOptions.map(opt => {
                 const isActive = selectedStatus === opt.value
@@ -284,7 +229,6 @@ export default async function DashboardPage({
               })}
             </div>
 
-            {/* Filas */}
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#f3f4f6]">
@@ -314,11 +258,11 @@ export default async function DashboardPage({
                   const sCfg = statusConfig[r.status]
                   const precio = r.final_price ?? r.estimated_price
                   return (
-                    <tr key={r.id} className={`border-b border-[#f9fafb] hover:bg-[#fafafa] transition-colors group ${urgente ? "bg-amber-50/40" : ""}`}>
+                    <tr key={r.id} className={`border-b border-[#f9fafb] hover:bg-[#fafafa] transition-colors group ${urgente?"bg-amber-50/40":""}`}>
                       <td className="px-5 py-3.5">
                         <p className="font-semibold text-[#111827] text-[13px] flex items-center gap-1.5">
                           {r.requester_name}
-                          {urgente && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold">HOY −{dias}d</span>}
+                          {urgente && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold">⚡ {dias}d</span>}
                         </p>
                         <p className="text-xs text-[#9ca3af] mt-0.5">{r.requester_email}</p>
                       </td>
@@ -335,7 +279,7 @@ export default async function DashboardPage({
                         ) : <span className="text-xs text-[#d1d5db]">—</span>}
                       </td>
                       <td className="px-5 py-3.5 hidden md:table-cell">
-                        <p className={`text-[13px] font-medium ${urgente ? "text-amber-600" : "text-[#374151]"}`}>{fmtShort(r.trip_date)}</p>
+                        <p className={`text-[13px] font-medium ${urgente?"text-amber-600":"text-[#374151]"}`}>{fmtShort(r.trip_date)}</p>
                         {urgente && <p className="text-[11px] text-amber-500">en {dias} día{dias!==1?"s":""}</p>}
                       </td>
                       <td className="px-5 py-3.5 hidden md:table-cell">
