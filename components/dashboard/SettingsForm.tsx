@@ -1,75 +1,136 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Save, Upload } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase"
+import {
+  Building2, Palette, MapPin, Bus, Wrench, UserRound,
+  Sparkles, TrendingUp, Save, Upload, Check, ChevronRight
+} from "lucide-react"
 
 type Settings = Record<string, number>
 type Company = {
-  id: string
-  name: string
-  slug: string
-  email: string
-  phone: string
-  cif?: string
-  address?: string
-  website?: string
-  logo_url?: string
-  color_primario?: string
+  id: string; name: string; slug: string; email: string; phone: string
+  cif?: string; address?: string; website?: string; logo_url?: string; color_primario?: string
 }
-type PricingSettings = {
-  garage_address?: string
-  parking_address?: string
-}
+type PricingSettings = { garage_address?: string; parking_address?: string }
 
-function Field({ label, id, value, onChange, unit }: {
-  label: string; id: string; value: number
-  onChange: (id: string, val: number) => void; unit?: string
+const NAV = [
+  { id: "empresa", label: "Empresa", icon: Building2 },
+  { id: "operaciones", label: "Base de operaciones", icon: MapPin },
+  { id: "vehiculos", label: "Vehículos", icon: Bus },
+  { id: "costes", label: "Costes del vehículo", icon: Wrench },
+  { id: "conductor", label: "Conductor", icon: UserRound },
+  { id: "extras", label: "Extras y recargos", icon: Sparkles },
+  { id: "comercial", label: "Margen e IVA", icon: TrendingUp },
+]
+
+function SectionWrapper({ id, title, icon: Icon, children, color = "#1e3a5f" }: {
+  id: string; title: string; icon: any; children: React.ReactNode; color?: string
 }) {
   return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id} className="text-sm font-medium text-gray-700">
-        {label} {unit && <span className="text-gray-400 font-normal">({unit})</span>}
-      </Label>
-      <Input id={id} type="number" min={0} step="0.01" value={value}
-        onChange={(e) => onChange(id, parseFloat(e.target.value) || 0)} className="h-9" />
+    <div id={id} className="scroll-mt-6">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 shadow-sm" style={{ background: color }}>
+          <Icon className="h-4 w-4 text-white" />
+        </div>
+        <div>
+          <h2 className="text-[0.9375rem] font-semibold text-[#111827] leading-tight">{title}</h2>
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden">
+        {children}
+      </div>
     </div>
   )
 }
 
-function TextField({ label, id, value, onChange, placeholder }: {
+function FieldGroup({ title, children }: { title?: string; children: React.ReactNode }) {
+  return (
+    <div className="p-6">
+      {title && (
+        <p className="text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-[#9ca3af] mb-4">{title}</p>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function FieldDivider() {
+  return <div className="border-t border-[#f3f4f6]" />
+}
+
+function Field({ label, id, value, onChange, unit, span = false }: {
+  label: string; id: string; value: number
+  onChange: (id: string, val: number) => void; unit?: string; span?: boolean
+}) {
+  return (
+    <div className={`flex flex-col gap-1.5 ${span ? "sm:col-span-2" : ""}`}>
+      <label htmlFor={id} className="text-[0.75rem] font-medium text-[#6b7280]">
+        {label}
+        {unit && <span className="ml-1 text-[#9ca3af] font-normal">· {unit}</span>}
+      </label>
+      <div className="relative">
+        <input
+          id={id} type="number" min={0} step="0.01" value={value}
+          onChange={(e) => onChange(id, parseFloat(e.target.value) || 0)}
+          className="h-9 w-full rounded-lg border border-[#e5e7eb] bg-[#fafafa] px-3 text-[0.8125rem] text-[#111827] outline-none transition-all focus:border-[#1e3a5f] focus:bg-white focus:ring-2 focus:ring-[#1e3a5f]/10"
+        />
+      </div>
+    </div>
+  )
+}
+
+function TextField({ label, id, value, onChange, placeholder, hint, span = false }: {
   label: string; id: string; value: string
+  onChange: (id: string, val: string) => void; placeholder?: string; hint?: string; span?: boolean
+}) {
+  return (
+    <div className={`flex flex-col gap-1.5 ${span ? "sm:col-span-2" : ""}`}>
+      <label htmlFor={id} className="text-[0.75rem] font-medium text-[#6b7280]">{label}</label>
+      <input
+        id={id} type="text" value={value}
+        onChange={(e) => onChange(id, e.target.value)}
+        placeholder={placeholder}
+        className="h-9 w-full rounded-lg border border-[#e5e7eb] bg-[#fafafa] px-3 text-[0.8125rem] text-[#111827] outline-none transition-all focus:border-[#1e3a5f] focus:bg-white focus:ring-2 focus:ring-[#1e3a5f]/10 placeholder:text-[#d1d5db]"
+      />
+      {hint && <p className="text-[0.7rem] text-[#9ca3af]">{hint}</p>}
+    </div>
+  )
+}
+
+function LocationField({ label, sublabel, id, value, onChange, placeholder }: {
+  label: string; sublabel: string; id: string; value: string
   onChange: (id: string, val: string) => void; placeholder?: string
 }) {
   return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id} className="text-sm font-medium text-gray-700">{label}</Label>
-      <Input id={id} type="text" value={value} onChange={(e) => onChange(id, e.target.value)}
-        placeholder={placeholder} className="h-9" />
-    </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
-      <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b pb-2">{title}</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</div>
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-[0.75rem] font-medium text-[#374151]">
+        {label}
+        <span className="ml-1 text-[0.7rem] text-[#9ca3af] font-normal">· {sublabel}</span>
+      </label>
+      <input
+        id={id} type="text" value={value}
+        onChange={(e) => onChange(id, e.target.value)}
+        placeholder={placeholder}
+        className="h-9 w-full rounded-lg border border-[#dbeafe] bg-[#f0f7ff] px-3 text-[0.8125rem] text-[#111827] outline-none transition-all focus:border-[#1e3a5f] focus:bg-white focus:ring-2 focus:ring-[#1e3a5f]/10 placeholder:text-[#bfdbfe]"
+      />
     </div>
   )
 }
 
 export function SettingsForm({ settings, companyId, company, pricingSettings }: {
-  settings: Settings | null
-  companyId: string
-  company: Company | null
-  pricingSettings?: PricingSettings | null
+  settings: Settings | null; companyId: string; company: Company | null; pricingSettings?: PricingSettings | null
 }) {
   const supabase = createClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [activeSection, setActiveSection] = useState("empresa")
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [message, setMessage] = useState("")
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [logoUrl, setLogoUrl] = useState(company?.logo_url ?? "")
 
   const [companyValues, setCompanyValues] = useState({
     name: company?.name ?? "",
@@ -80,9 +141,6 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
     website: company?.website ?? "",
     color_primario: company?.color_primario ?? "#1e3a5f",
   })
-
-  const [logoUrl, setLogoUrl] = useState(company?.logo_url ?? "")
-  const [uploadingLogo, setUploadingLogo] = useState(false)
 
   const [locationValues, setLocationValues] = useState({
     garage_address: pricingSettings?.garage_address ?? "",
@@ -123,12 +181,14 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
     recargo_alta_temporada: settings?.recargo_alta_temporada ?? 15,
   })
 
-  const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState("")
+  const handleChange = (id: string, val: number) => setValues((p) => ({ ...p, [id]: val }))
+  const handleCompanyChange = (id: string, val: string) => setCompanyValues((p) => ({ ...p, [id]: val }))
+  const handleLocationChange = (id: string, val: string) => setLocationValues((p) => ({ ...p, [id]: val }))
 
-  const handleChange = (id: string, val: number) => setValues((prev) => ({ ...prev, [id]: val }))
-  const handleCompanyChange = (id: string, val: string) => setCompanyValues((prev) => ({ ...prev, [id]: val }))
-  const handleLocationChange = (id: string, val: string) => setLocationValues((prev) => ({ ...prev, [id]: val }))
+  const scrollTo = (id: string) => {
+    setActiveSection(id)
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -137,212 +197,289 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
     const ext = file.name.split(".").pop()
     const fileName = `${companyId}.${ext}`
     const { error } = await supabase.storage.from("logos").upload(fileName, file, { upsert: true })
-    if (error) {
-      setMessage("❌ Error al subir el logo: " + error.message)
-      setUploadingLogo(false)
-      return
-    }
+    if (error) { setMessage("❌ Error al subir el logo: " + error.message); setUploadingLogo(false); return }
     const { data } = supabase.storage.from("logos").getPublicUrl(fileName)
     await supabase.from("companies").update({ logo_url: data.publicUrl }).eq("id", companyId)
     setLogoUrl(data.publicUrl + `?t=${Date.now()}`)
     setUploadingLogo(false)
-    setMessage("✅ Logo subido correctamente — recargando...")
-    setTimeout(() => window.location.reload(), 1000)
+    setTimeout(() => window.location.reload(), 800)
   }
 
   const handleSave = async () => {
     setSaving(true)
+    setSaved(false)
     setMessage("")
 
-    // Guardar datos empresa
-    const { error: companyError } = await supabase.from("companies").update({
-      name: companyValues.name,
-      email: companyValues.email,
-      phone: companyValues.phone,
-      cif: companyValues.cif,
-      address: companyValues.address,
-      website: companyValues.website,
+    const { error: e1 } = await supabase.from("companies").update({
+      name: companyValues.name, email: companyValues.email, phone: companyValues.phone,
+      cif: companyValues.cif, address: companyValues.address, website: companyValues.website,
       color_primario: companyValues.color_primario,
     }).eq("id", companyId)
+    if (e1) { setMessage("❌ " + e1.message); setSaving(false); return }
 
-    if (companyError) {
-      setMessage("❌ Error al guardar datos de empresa: " + companyError.message)
-      setSaving(false)
-      return
-    }
-
-    // Guardar garaje y parking en pricing_settings (upsert por si no existe fila)
-    const { error: pricingError } = await supabase.from("pricing_settings").upsert({
+    const { error: e2 } = await supabase.from("pricing_settings").upsert({
       company_id: companyId,
       garage_address: locationValues.garage_address || null,
       parking_address: locationValues.parking_address || null,
     }, { onConflict: "company_id" })
+    if (e2) { setMessage("❌ " + e2.message); setSaving(false); return }
 
-    if (pricingError) {
-      setMessage("❌ Error al guardar garaje/parking: " + pricingError.message)
-      setSaving(false)
-      return
-    }
-
-    // Guardar ajustes de coste
-    const { error } = await supabase.from("company_settings")
+    const { error: e3 } = await supabase.from("company_settings")
       .update({ ...values, updated_at: new Date().toISOString() })
       .eq("company_id", companyId)
+    if (e3) { setMessage("❌ " + e3.message); setSaving(false); return }
 
     setSaving(false)
-    if (error) { setMessage("❌ Error al guardar ajustes: " + error.message); return }
-    setMessage("✅ Ajustes guardados correctamente")
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
   }
 
-  const f = (id: string, label: string, unit?: string) => (
-    <Field key={id} id={id} label={label} value={values[id]} onChange={handleChange} unit={unit} />
-  )
-  const t = (id: string, label: string, placeholder?: string) => (
-    <TextField key={id} id={id} label={label} value={companyValues[id as keyof typeof companyValues]} onChange={handleCompanyChange} placeholder={placeholder} />
+  const f = (id: string, label: string, unit?: string, span?: boolean) => (
+    <Field key={id} id={id} label={label} value={values[id]} onChange={handleChange} unit={unit} span={span} />
   )
 
   return (
-    <div className="space-y-6">
+    <div className="flex gap-8 items-start">
 
-      {/* DATOS EMPRESA */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b pb-2">🏢 Datos de la empresa</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {t("name", "Nombre de la empresa", "Autocares García S.L.")}
-          {t("cif", "CIF", "B12345678")}
-          {t("email", "Email de contacto", "info@empresa.com")}
-          {t("phone", "Teléfono", "+34 600 000 000")}
-          {t("address", "Dirección fiscal", "Calle Mayor 1, 08001 Barcelona")}
-          {t("website", "Web", "www.empresa.com")}
+      {/* NAV LATERAL */}
+      <aside className="hidden lg:flex flex-col w-52 shrink-0 sticky top-6">
+        <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div className="px-3 py-3 border-b border-[#f3f4f6]">
+            <p className="text-[0.65rem] font-bold tracking-[0.1em] uppercase text-[#9ca3af] px-2">Secciones</p>
+          </div>
+          <nav className="p-2 flex flex-col gap-0.5">
+            {NAV.map(({ id, label, icon: Icon }) => {
+              const active = activeSection === id
+              return (
+                <button
+                  key={id}
+                  onClick={() => scrollTo(id)}
+                  className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-left transition-all text-[0.8125rem] font-medium ${
+                    active
+                      ? "bg-[#1e3a5f] text-white shadow-sm"
+                      : "text-[#6b7280] hover:bg-[#f5f5f4] hover:text-[#111827]"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{label}</span>
+                  {active && <ChevronRight className="h-3 w-3 ml-auto shrink-0 opacity-60" />}
+                </button>
+              )
+            })}
+          </nav>
+
+          {/* Botón guardar en el nav */}
+          <div className="p-3 border-t border-[#f3f4f6]">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className={`flex items-center justify-center gap-2 w-full h-9 rounded-lg text-[0.8125rem] font-semibold transition-all ${
+                saved
+                  ? "bg-emerald-500 text-white"
+                  : "bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90 active:scale-[0.98]"
+              }`}
+            >
+              {saved ? <><Check className="h-3.5 w-3.5" /> Guardado</> : saving ? "Guardando..." : <><Save className="h-3.5 w-3.5" /> Guardar</>}
+            </button>
+            {message && <p className="text-[0.7rem] text-red-500 mt-2 text-center">{message}</p>}
+          </div>
         </div>
+      </aside>
 
-        <div className="grid gap-1.5">
-          <Label className="text-sm font-medium text-gray-700">Color corporativo</Label>
-          <div className="flex items-center gap-3">
-            <input type="color" value={companyValues.color_primario}
-              onChange={(e) => handleCompanyChange("color_primario", e.target.value)}
-              className="h-10 w-16 cursor-pointer rounded border border-gray-200" />
-            <span className="text-sm text-gray-500">{companyValues.color_primario}</span>
-            <div className="h-8 w-32 rounded-md text-white text-xs flex items-center justify-center font-semibold"
-              style={{ backgroundColor: companyValues.color_primario }}>
-              Vista previa
+      {/* CONTENIDO */}
+      <div className="flex-1 min-w-0 flex flex-col gap-8">
+
+        {/* EMPRESA */}
+        <SectionWrapper id="empresa" title="Datos de la empresa" icon={Building2}>
+          <FieldGroup>
+            <TextField id="name" label="Nombre de la empresa" value={companyValues.name} onChange={handleCompanyChange} placeholder="Autocares García S.L." />
+            <TextField id="cif" label="CIF / NIF" value={companyValues.cif} onChange={handleCompanyChange} placeholder="B12345678" />
+            <TextField id="email" label="Email de contacto" value={companyValues.email} onChange={handleCompanyChange} placeholder="info@empresa.com" />
+            <TextField id="phone" label="Teléfono" value={companyValues.phone} onChange={handleCompanyChange} placeholder="+34 600 000 000" />
+            <TextField id="address" label="Dirección fiscal" value={companyValues.address} onChange={handleCompanyChange} placeholder="Calle Mayor 1, 08001 Barcelona" span />
+            <TextField id="website" label="Sitio web" value={companyValues.website} onChange={handleCompanyChange} placeholder="www.empresa.com" span />
+          </FieldGroup>
+
+          <FieldDivider />
+
+          <FieldGroup title="Identidad visual">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.75rem] font-medium text-[#6b7280]">Color corporativo</label>
+              <div className="flex items-center gap-3">
+                <div className="relative h-9 w-9 rounded-lg border border-[#e5e7eb] overflow-hidden cursor-pointer shrink-0">
+                  <input
+                    type="color" value={companyValues.color_primario}
+                    onChange={(e) => handleCompanyChange("color_primario", e.target.value)}
+                    className="absolute inset-0 h-full w-full cursor-pointer border-none opacity-0"
+                  />
+                  <div className="h-full w-full rounded-lg" style={{ background: companyValues.color_primario }} />
+                </div>
+                <span className="text-[0.8rem] font-mono text-[#6b7280]">{companyValues.color_primario}</span>
+                <div
+                  className="h-8 px-4 rounded-lg flex items-center text-[0.75rem] font-semibold text-white tracking-wide"
+                  style={{ background: companyValues.color_primario }}
+                >
+                  Vista previa
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.75rem] font-medium text-[#6b7280]">Logo de la empresa</label>
+              <div className="flex items-center gap-3">
+                <div className="h-14 w-14 shrink-0 rounded-xl border border-[#e5e7eb] bg-[#f9fafb] flex items-center justify-center overflow-hidden">
+                  {logoUrl
+                    ? <img src={logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />
+                    : <span className="text-[0.65rem] text-[#d1d5db] text-center leading-tight">Sin<br/>logo</span>
+                  }
+                </div>
+                <div>
+                  <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoUpload} />
+                  <button
+                    type="button" disabled={uploadingLogo}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 h-9 px-4 rounded-lg border border-[#e5e7eb] bg-white text-[0.8125rem] font-medium text-[#374151] hover:bg-[#f9fafb] hover:border-[#d1d5db] transition-all"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    {uploadingLogo ? "Subiendo..." : logoUrl ? "Cambiar logo" : "Subir logo"}
+                  </button>
+                  <p className="text-[0.7rem] text-[#9ca3af] mt-1">PNG, JPG o WebP · Fondo transparente recomendado</p>
+                </div>
+              </div>
+            </div>
+          </FieldGroup>
+        </SectionWrapper>
+
+        {/* BASE DE OPERACIONES */}
+        <SectionWrapper id="operaciones" title="Base de operaciones" icon={MapPin} color="#0f766e">
+          <div className="p-6">
+            <div className="rounded-xl bg-[#f0fdf9] border border-[#99f6e4] p-4 mb-5">
+              <p className="text-[0.8rem] text-[#134e4a] leading-relaxed">
+                Estas direcciones se usan para calcular los <strong className="font-semibold">kilómetros en vacío</strong> — desde el garaje hasta el punto de recogida del cliente — y el coste de parking durante el servicio.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="rounded-xl border border-[#e5e7eb] bg-white p-4 flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-[#f0fdf9] border border-[#99f6e4] flex items-center justify-center">
+                    <MapPin className="h-3.5 w-3.5 text-[#0f766e]" />
+                  </div>
+                  <span className="text-[0.8rem] font-semibold text-[#111827]">Garaje</span>
+                  <span className="text-[0.7rem] text-[#9ca3af]">· salida del bus</span>
+                </div>
+                <LocationField
+                  id="garage_address" label="" sublabel=""
+                  value={locationValues.garage_address}
+                  onChange={handleLocationChange}
+                  placeholder="Calle del Garaje 5, 08001 Barcelona"
+                />
+              </div>
+              <div className="rounded-xl border border-[#e5e7eb] bg-white p-4 flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-[#f0fdf9] border border-[#99f6e4] flex items-center justify-center">
+                    <MapPin className="h-3.5 w-3.5 text-[#0f766e]" />
+                  </div>
+                  <span className="text-[0.8rem] font-semibold text-[#111827]">Parking habitual</span>
+                  <span className="text-[0.7rem] text-[#9ca3af]">· donde espera el bus</span>
+                </div>
+                <LocationField
+                  id="parking_address" label="" sublabel=""
+                  value={locationValues.parking_address}
+                  onChange={handleLocationChange}
+                  placeholder="Parking Central, Madrid"
+                />
+              </div>
             </div>
           </div>
+        </SectionWrapper>
+
+        {/* VEHÍCULOS */}
+        <SectionWrapper id="vehiculos" title="Vehículos — Consumo" icon={Bus} color="#1e40af">
+          <FieldGroup title="Litros cada 100 km por tipo de vehículo">
+            {f("consumo_minibus", "Minibus", "L/100km")}
+            {f("consumo_autobus", "Autobús", "L/100km")}
+            {f("consumo_autocar", "Autocar Gran Turismo", "L/100km")}
+            {f("precio_combustible", "Precio del combustible", "€/litro")}
+          </FieldGroup>
+        </SectionWrapper>
+
+        {/* COSTES */}
+        <SectionWrapper id="costes" title="Costes del vehículo" icon={Wrench} color="#b45309">
+          <FieldGroup title="Desgaste y operación">
+            {f("amortizacion_km", "Amortización", "€/km")}
+            {f("mantenimiento_km", "Mantenimiento", "€/km")}
+            {f("seguro_dia", "Seguro", "€/día")}
+          </FieldGroup>
+          <FieldDivider />
+          <FieldGroup title="Peajes estimados">
+            {f("peajes_nacional", "Nacional", "€/100km")}
+            {f("peajes_internacional", "Internacional", "€/100km")}
+          </FieldGroup>
+        </SectionWrapper>
+
+        {/* CONDUCTOR */}
+        <SectionWrapper id="conductor" title="Conductor — Costes y pluses" icon={UserRound} color="#6d28d9">
+          <FieldGroup title="Costes base">
+            {f("coste_hora_conductor", "Coste por hora", "€/h")}
+            {f("dieta_nacional", "Dieta nacional", "€")}
+            {f("dieta_internacional", "Dieta internacional", "€")}
+            {f("plus_telefono", "Plus teléfono", "€")}
+            {f("plus_disponibilidad", "Plus disponibilidad / limpieza", "€")}
+          </FieldGroup>
+          <FieldDivider />
+          <FieldGroup title="Pluses automáticos según condiciones del servicio">
+            {f("plus_11horas", "Plus +11 horas", "€")}
+            {f("plus_nocturnidad", "Nocturnidad (22h–4:59h)", "€")}
+            {f("plus_sabado", "Plus sábado", "€")}
+            {f("plus_domingo", "Plus domingo", "€")}
+            {f("plus_festivo", "Plus festivo nacional", "€")}
+            {f("plus_noche_fuera_nacional", "Noche fuera nacional", "€")}
+            {f("plus_noche_fuera_internacional", "Noche fuera internacional", "€")}
+          </FieldGroup>
+        </SectionWrapper>
+
+        {/* EXTRAS */}
+        <SectionWrapper id="extras" title="Extras y recargos" icon={Sparkles} color="#be185d">
+          <FieldGroup title="Personal adicional">
+            {f("coste_guia", "Guía turístico", "€/día")}
+            {f("coste_azafata", "Azafata / azafato", "€/día")}
+          </FieldGroup>
+          <FieldDivider />
+          <FieldGroup title="Recargos por tipo de servicio">
+            {f("recargo_ac", "Aire acondicionado", "%")}
+            {f("recargo_internacional", "Servicio internacional", "%")}
+            {f("tasas_aparcamiento", "Tasas de aparcamiento", "€")}
+            {f("precio_minimo_servicio", "Precio mínimo por servicio", "€")}
+          </FieldGroup>
+        </SectionWrapper>
+
+        {/* COMERCIAL */}
+        <SectionWrapper id="comercial" title="Margen comercial e IVA" icon={TrendingUp} color="#0369a1">
+          <FieldGroup title="Rentabilidad">
+            {f("margen_beneficio", "Margen de beneficio", "%")}
+            {f("iva", "IVA aplicado", "%")}
+          </FieldGroup>
+          <FieldDivider />
+          <FieldGroup title="Ajuste por temporada">
+            {f("descuento_baja_temporada", "Descuento baja temporada", "%")}
+            {f("recargo_alta_temporada", "Recargo alta temporada", "%")}
+          </FieldGroup>
+        </SectionWrapper>
+
+        {/* BOTÓN GUARDAR MÓVIL */}
+        <div className="lg:hidden flex flex-col gap-2">
+          {message && <p className="text-sm text-red-500">{message}</p>}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className={`flex items-center justify-center gap-2 h-11 w-full rounded-xl text-[0.9375rem] font-semibold transition-all ${
+              saved ? "bg-emerald-500 text-white" : "bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90"
+            }`}
+          >
+            {saved ? <><Check className="h-4 w-4" /> Guardado correctamente</> : saving ? "Guardando..." : <><Save className="h-4 w-4" /> Guardar ajustes</>}
+          </button>
         </div>
 
-        <div className="grid gap-2">
-          <Label className="text-sm font-medium text-gray-700">Logo de la empresa</Label>
-          <div className="flex items-center gap-4">
-            {logoUrl && (
-              <img src={logoUrl} alt="Logo" className="h-16 w-auto object-contain rounded border border-gray-200 p-1" />
-            )}
-            <div>
-              <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp"
-                className="hidden" onChange={handleLogoUpload} />
-              <Button type="button" variant="outline" disabled={uploadingLogo}
-                onClick={() => fileInputRef.current?.click()} className="h-9 border-gray-200 text-gray-700">
-                <Upload className="size-4" />
-                {uploadingLogo ? "Subiendo..." : logoUrl ? "Cambiar logo" : "Subir logo"}
-              </Button>
-              <p className="text-xs text-gray-400 mt-1">PNG, JPG o WebP. Recomendado: fondo transparente.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* GARAJE Y PARKING */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b pb-2">🅿️ Garaje y parking</h2>
-        <p className="text-xs text-gray-400">Estas direcciones se usan para calcular los kilómetros en vacío (desde el garaje hasta el punto de recogida) y el coste de parking.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="garage_address" className="text-sm font-medium text-gray-700">
-              Dirección del garaje <span className="text-gray-400 font-normal">(salida del bus)</span>
-            </Label>
-            <Input
-              id="garage_address"
-              type="text"
-              value={locationValues.garage_address}
-              onChange={(e) => handleLocationChange("garage_address", e.target.value)}
-              placeholder="Calle del Garaje 5, 08001 Barcelona"
-              className="h-9"
-            />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="parking_address" className="text-sm font-medium text-gray-700">
-              Dirección del parking <span className="text-gray-400 font-normal">(donde espera el bus)</span>
-            </Label>
-            <Input
-              id="parking_address"
-              type="text"
-              value={locationValues.parking_address}
-              onChange={(e) => handleLocationChange("parking_address", e.target.value)}
-              placeholder="Parking Central, Calle Ejemplo 10, Madrid"
-              className="h-9"
-            />
-          </div>
-        </div>
-      </div>
-
-      <Section title="🚌 Vehículos — Consumo (litros/100km)">
-        {f("consumo_minibus", "Minibus")}
-        {f("consumo_autobus", "Autobús")}
-        {f("consumo_autocar", "Autocar")}
-        {f("precio_combustible", "Precio combustible", "€/litro")}
-      </Section>
-
-      <Section title="🔧 Costes del vehículo">
-        {f("amortizacion_km", "Amortización", "€/km")}
-        {f("mantenimiento_km", "Mantenimiento", "€/km")}
-        {f("seguro_dia", "Seguro", "€/día")}
-      </Section>
-
-      <Section title="🛣️ Peajes">
-        {f("peajes_nacional", "Nacional", "€/100km")}
-        {f("peajes_internacional", "Internacional", "€/100km")}
-      </Section>
-
-      <Section title="👨‍✈️ Conductor — Costes base">
-        {f("coste_hora_conductor", "Coste hora", "€/hora")}
-        {f("dieta_nacional", "Dieta nacional", "€")}
-        {f("dieta_internacional", "Dieta internacional", "€")}
-        {f("plus_telefono", "Plus teléfono", "€")}
-        {f("plus_disponibilidad", "Plus disponibilidad/limpieza", "€")}
-      </Section>
-
-      <Section title="⏰ Pluses automáticos del conductor">
-        {f("plus_11horas", "Plus +11 horas", "€")}
-        {f("plus_nocturnidad", "Nocturnidad (salida 22h-4:59h)", "€")}
-        {f("plus_sabado", "Plus sábado", "€")}
-        {f("plus_domingo", "Plus domingo", "€")}
-        {f("plus_festivo", "Plus festivo nacional", "€")}
-        {f("plus_noche_fuera_nacional", "Noche fuera nacional", "€")}
-        {f("plus_noche_fuera_internacional", "Noche fuera internacional", "€")}
-      </Section>
-
-      <Section title="✨ Extras opcionales">
-        {f("coste_guia", "Guía turístico", "€/día")}
-        {f("coste_azafata", "Azafata/o", "€/día")}
-        {f("recargo_ac", "Recargo aire acondicionado", "%")}
-        {f("recargo_internacional", "Recargo servicio internacional", "%")}
-        {f("precio_minimo_servicio", "Precio mínimo por servicio", "€")}
-        {f("tasas_aparcamiento", "Tasas aparcamiento estimadas", "€")}
-      </Section>
-
-      <Section title="💰 Margen comercial, IVA y temporada">
-        {f("margen_beneficio", "Margen de beneficio", "%")}
-        {f("iva", "IVA", "%")}
-        {f("descuento_baja_temporada", "Descuento baja temporada", "%")}
-        {f("recargo_alta_temporada", "Recargo alta temporada", "%")}
-      </Section>
-
-      <div className="flex flex-col gap-3 items-end">
-        {message && <p className="text-sm">{message}</p>}
-        <Button onClick={handleSave} disabled={saving}
-          className="h-11 px-8 bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90">
-          <Save className="size-4" />
-          {saving ? "Guardando..." : "Guardar ajustes"}
-        </Button>
       </div>
     </div>
   )
