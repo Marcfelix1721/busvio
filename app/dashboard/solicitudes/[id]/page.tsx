@@ -11,6 +11,7 @@ import {
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { QuoteActions } from "@/components/dashboard/QuoteActions"
 import { ClienteEstado } from "@/components/dashboard/ClienteEstado"
+import { MapaRuta } from "@/components/dashboard/MapaRuta"
 import { QuoteRequest } from "@/lib/types"
 
 async function createClient() {
@@ -56,30 +57,6 @@ function diasHasta(d: string) {
   return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000)
 }
 
-async function geocode(address: string, apiKey: string): Promise<{ lat: number; lon: number } | null> {
-  try {
-    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&limit=1&apiKey=${apiKey}`
-    const res = await fetch(url, { next: { revalidate: 3600 } })
-    const data = await res.json()
-    if (data.features?.length > 0) {
-      const [lon, lat] = data.features[0].geometry.coordinates
-      return { lat, lon }
-    }
-    return null
-  } catch {
-    return null
-  }
-}
-
-function buildMapUrl(origin: { lat: number; lon: number }, destination: { lat: number; lon: number }, apiKey: string): string {
-  const markers = [
-    `lonlat:${origin.lon},${origin.lat};type:material;color:%23111827;size:medium;icon:dot;icontype:awesome;whitecircle:no`,
-    `lonlat:${destination.lon},${destination.lat};type:material;color:%23ef4444;size:medium;icon:flag;icontype:awesome;whitecircle:no`,
-  ].join("|")
-
-  return `https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=900&height=400&marker=${markers}&apiKey=${apiKey}`
-}
-
 export default async function QuoteRequestDetailPage({
   params,
 }: {
@@ -108,14 +85,6 @@ export default async function QuoteRequestDetailPage({
     .eq("email", quote.requester_email)
     .maybeSingle()
   const estadoRelacion = clienteData?.estado_relacion ?? null
-
-  // Geocodificar para el mapa
-  const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_KEY ?? ""
-  const [originCoords, destCoords] = await Promise.all([
-    geocode(quote.origin, apiKey),
-    geocode(quote.destination, apiKey),
-  ])
-  const mapUrl = originCoords && destCoords ? buildMapUrl(originCoords, destCoords, apiKey) : null
 
   const serviceType = extractCommentField(quote.comments, "Tipo de servicio") ?? "—"
   const tipoCliente = extractCommentField(quote.comments, "Tipo de cliente") ?? "—"
@@ -189,15 +158,7 @@ export default async function QuoteRequestDetailPage({
             <Section title="Detalles del viaje">
 
               {/* MAPA */}
-              {mapUrl && (
-                <div className="rounded-xl overflow-hidden border border-[#e5e7eb] mb-4" style={{height:"220px"}}>
-                  <img
-                    src={mapUrl}
-                    alt={`Ruta de ${quote.origin} a ${quote.destination}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
+              <MapaRuta origin={quote.origin} destination={quote.destination} />
 
               {/* Ruta visual */}
               <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-4 mb-4">
