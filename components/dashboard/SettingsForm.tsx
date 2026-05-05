@@ -28,16 +28,14 @@ function SectionWrapper({ id, title, icon: Icon, children, color = "#1e3a5f" }: 
   id: string; title: string; icon: any; children: React.ReactNode; color?: string
 }) {
   return (
-    <div id={id} className="scroll-mt-6">
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 shadow-sm" style={{ background: color }}>
+    <div id={id} className="scroll-mt-6" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl shadow-sm" style={{ background: color }}>
           <Icon className="h-4 w-4 text-white" />
         </div>
-        <div>
-          <h2 className="text-[0.9375rem] font-semibold text-[#111827] leading-tight">{title}</h2>
-        </div>
+        <h2 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1rem", fontWeight: 600, color: "#111827", letterSpacing: "-0.01em" }}>{title}</h2>
       </div>
-      <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden">
+      <div className="bg-white rounded-2xl border border-[#e5e7eb] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         {children}
       </div>
     </div>
@@ -48,7 +46,7 @@ function FieldGroup({ title, children }: { title?: string; children: React.React
   return (
     <div className="p-6">
       {title && (
-        <p className="text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-[#9ca3af] mb-4">{title}</p>
+        <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9ca3af", marginBottom: "1rem" }}>{title}</p>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
         {children}
@@ -66,55 +64,36 @@ function Field({ label, id, value, onChange, unit, span = false }: {
   onChange: (id: string, val: number) => void; unit?: string; span?: boolean
 }) {
   return (
-    <div className={`flex flex-col gap-1.5 ${span ? "sm:col-span-2" : ""}`}>
-      <label htmlFor={id} className="text-[0.75rem] font-medium text-[#6b7280]">
+    <div className={span ? "sm:col-span-2" : ""} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      <label htmlFor={id} style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 500, color: "#6b7280" }}>
         {label}
-        {unit && <span className="ml-1 text-[#9ca3af] font-normal">· {unit}</span>}
+        {unit && <span style={{ marginLeft: "4px", color: "#9ca3af", fontWeight: 400 }}>· {unit}</span>}
       </label>
-      <div className="relative">
-        <input
-          id={id} type="number" min={0} step="0.01" value={value}
-          onChange={(e) => onChange(id, parseFloat(e.target.value) || 0)}
-          className="h-9 w-full rounded-lg border border-[#e5e7eb] bg-[#fafafa] px-3 text-[0.8125rem] text-[#111827] outline-none transition-all focus:border-[#1e3a5f] focus:bg-white focus:ring-2 focus:ring-[#1e3a5f]/10"
-        />
-      </div>
-    </div>
-  )
-}
-
-function TextField({ label, id, value, onChange, placeholder, hint, span = false }: {
-  label: string; id: string; value: string
-  onChange: (id: string, val: string) => void; placeholder?: string; hint?: string; span?: boolean
-}) {
-  return (
-    <div className={`flex flex-col gap-1.5 ${span ? "sm:col-span-2" : ""}`}>
-      <label htmlFor={id} className="text-[0.75rem] font-medium text-[#6b7280]">{label}</label>
       <input
-        id={id} type="text" value={value}
-        onChange={(e) => onChange(id, e.target.value)}
-        placeholder={placeholder}
-        className="h-9 w-full rounded-lg border border-[#e5e7eb] bg-[#fafafa] px-3 text-[0.8125rem] text-[#111827] outline-none transition-all focus:border-[#1e3a5f] focus:bg-white focus:ring-2 focus:ring-[#1e3a5f]/10 placeholder:text-[#d1d5db]"
+        id={id} type="number" min={0} step="0.01" value={value}
+        onChange={(e) => onChange(id, parseFloat(e.target.value) || 0)}
+        style={{ fontFamily: "'DM Sans', system-ui, sans-serif", height: "36px", width: "100%", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fafafa", padding: "0 10px", fontSize: "0.8125rem", color: "#111827", outline: "none" }}
+        onFocus={e => { e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.08)" }}
+        onBlur={e => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" }}
       />
-      {hint && <p className="text-[0.7rem] text-[#9ca3af]">{hint}</p>}
     </div>
   )
 }
 
-function LocationField({ label, sublabel, id, value, onChange, placeholder }: {
-  label: string; sublabel: string; id: string; value: string
-  onChange: (id: string, val: string) => void; placeholder?: string
+function TextField({ label, id, value, onChange, placeholder, span = false }: {
+  label: string; id: string; value: string
+  onChange: (id: string, val: string) => void; placeholder?: string; span?: boolean
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-[0.75rem] font-medium text-[#374151]">
-        {label}
-        <span className="ml-1 text-[0.7rem] text-[#9ca3af] font-normal">· {sublabel}</span>
-      </label>
+    <div className={span ? "sm:col-span-2" : ""} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      <label htmlFor={id} style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 500, color: "#6b7280" }}>{label}</label>
       <input
         id={id} type="text" value={value}
         onChange={(e) => onChange(id, e.target.value)}
         placeholder={placeholder}
-        className="h-9 w-full rounded-lg border border-[#dbeafe] bg-[#f0f7ff] px-3 text-[0.8125rem] text-[#111827] outline-none transition-all focus:border-[#1e3a5f] focus:bg-white focus:ring-2 focus:ring-[#1e3a5f]/10 placeholder:text-[#bfdbfe]"
+        style={{ fontFamily: "'DM Sans', system-ui, sans-serif", height: "36px", width: "100%", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fafafa", padding: "0 10px", fontSize: "0.8125rem", color: "#111827", outline: "none" }}
+        onFocus={e => { e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.08)" }}
+        onBlur={e => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" }}
       />
     </div>
   )
@@ -238,56 +217,60 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
     <Field key={id} id={id} label={label} value={values[id]} onChange={handleChange} unit={unit} span={span} />
   )
 
+  const navBtnStyle = (active: boolean): React.CSSProperties => ({
+    fontFamily: "'DM Sans', system-ui, sans-serif",
+    display: "flex", alignItems: "center", gap: "10px",
+    width: "100%", padding: "8px 12px", borderRadius: "8px",
+    textAlign: "left", fontSize: "0.8125rem", fontWeight: 500,
+    border: "none", cursor: "pointer", transition: "all 0.15s",
+    background: active ? "#1e3a5f" : "transparent",
+    color: active ? "#fff" : "#6b7280",
+  })
+
   return (
-    <div className="flex gap-8 items-start">
+    <div style={{ display: "flex", gap: "2rem", alignItems: "flex-start", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
 
       {/* NAV LATERAL */}
-      <aside className="hidden lg:flex flex-col w-52 shrink-0 sticky top-6">
-        <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden">
-          <div className="px-3 py-3 border-b border-[#f3f4f6]">
-            <p className="text-[0.65rem] font-bold tracking-[0.1em] uppercase text-[#9ca3af] px-2">Secciones</p>
+      <aside style={{ width: "200px", flexShrink: 0, position: "sticky", top: "1.5rem" }} className="hidden lg:block">
+        <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div style={{ padding: "12px 12px 8px", borderBottom: "1px solid #f3f4f6" }}>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9ca3af", padding: "0 4px" }}>Secciones</p>
           </div>
-          <nav className="p-2 flex flex-col gap-0.5">
+          <nav style={{ padding: "8px", display: "flex", flexDirection: "column", gap: "2px" }}>
             {NAV.map(({ id, label, icon: Icon }) => {
               const active = activeSection === id
               return (
-                <button
-                  key={id}
-                  onClick={() => scrollTo(id)}
-                  className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-left transition-all text-[0.8125rem] font-medium ${
-                    active
-                      ? "bg-[#1e3a5f] text-white shadow-sm"
-                      : "text-[#6b7280] hover:bg-[#f5f5f4] hover:text-[#111827]"
-                  }`}
+                <button key={id} onClick={() => scrollTo(id)} style={navBtnStyle(active)}
+                  onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "#f5f5f4"; (e.currentTarget as HTMLElement).style.color = "#111827" } }}
+                  onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#6b7280" } }}
                 >
-                  <Icon className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{label}</span>
-                  {active && <ChevronRight className="h-3 w-3 ml-auto shrink-0 opacity-60" />}
+                  <Icon style={{ width: "14px", height: "14px", flexShrink: 0 }} />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+                  {active && <ChevronRight style={{ width: "12px", height: "12px", marginLeft: "auto", flexShrink: 0, opacity: 0.6 }} />}
                 </button>
               )
             })}
           </nav>
-
-          {/* Botón guardar en el nav */}
-          <div className="p-3 border-t border-[#f3f4f6]">
+          <div style={{ padding: "10px", borderTop: "1px solid #f3f4f6" }}>
             <button
-              onClick={handleSave}
-              disabled={saving}
-              className={`flex items-center justify-center gap-2 w-full h-9 rounded-lg text-[0.8125rem] font-semibold transition-all ${
-                saved
-                  ? "bg-emerald-500 text-white"
-                  : "bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90 active:scale-[0.98]"
-              }`}
+              onClick={handleSave} disabled={saving}
+              style={{
+                fontFamily: "'DM Sans', system-ui, sans-serif",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                width: "100%", height: "38px", borderRadius: "10px", border: "none",
+                fontSize: "0.8125rem", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer",
+                background: saved ? "#10b981" : "#1e3a5f", color: "#fff", transition: "all 0.2s"
+              }}
             >
-              {saved ? <><Check className="h-3.5 w-3.5" /> Guardado</> : saving ? "Guardando..." : <><Save className="h-3.5 w-3.5" /> Guardar</>}
+              {saved ? <><Check style={{ width: "14px", height: "14px" }} /> Guardado</> : saving ? "Guardando..." : <><Save style={{ width: "14px", height: "14px" }} /> Guardar</>}
             </button>
-            {message && <p className="text-[0.7rem] text-red-500 mt-2 text-center">{message}</p>}
+            {message && <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", color: "#ef4444", marginTop: "8px", textAlign: "center" }}>{message}</p>}
           </div>
         </div>
       </aside>
 
       {/* CONTENIDO */}
-      <div className="flex-1 min-w-0 flex flex-col gap-8">
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "2rem" }}>
 
         {/* EMPRESA */}
         <SectionWrapper id="empresa" title="Datos de la empresa" icon={Building2}>
@@ -303,47 +286,41 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
           <FieldDivider />
 
           <FieldGroup title="Identidad visual">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[0.75rem] font-medium text-[#6b7280]">Color corporativo</label>
-              <div className="flex items-center gap-3">
-                <div className="relative h-9 w-9 rounded-lg border border-[#e5e7eb] overflow-hidden cursor-pointer shrink-0">
-                  <input
-                    type="color" value={companyValues.color_primario}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 500, color: "#6b7280" }}>Color corporativo</label>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ position: "relative", width: "36px", height: "36px", borderRadius: "8px", border: "1px solid #e5e7eb", overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
+                  <input type="color" value={companyValues.color_primario}
                     onChange={(e) => handleCompanyChange("color_primario", e.target.value)}
-                    className="absolute inset-0 h-full w-full cursor-pointer border-none opacity-0"
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", cursor: "pointer", opacity: 0 }}
                   />
-                  <div className="h-full w-full rounded-lg" style={{ background: companyValues.color_primario }} />
+                  <div style={{ width: "100%", height: "100%", background: companyValues.color_primario }} />
                 </div>
-                <span className="text-[0.8rem] font-mono text-[#6b7280]">{companyValues.color_primario}</span>
-                <div
-                  className="h-8 px-4 rounded-lg flex items-center text-[0.75rem] font-semibold text-white tracking-wide"
-                  style={{ background: companyValues.color_primario }}
-                >
+                <span style={{ fontFamily: "monospace", fontSize: "0.8rem", color: "#6b7280" }}>{companyValues.color_primario}</span>
+                <div style={{ height: "32px", padding: "0 14px", borderRadius: "8px", background: companyValues.color_primario, display: "flex", alignItems: "center", fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 600, color: "#fff", letterSpacing: "0.02em" }}>
                   Vista previa
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[0.75rem] font-medium text-[#6b7280]">Logo de la empresa</label>
-              <div className="flex items-center gap-3">
-                <div className="h-14 w-14 shrink-0 rounded-xl border border-[#e5e7eb] bg-[#f9fafb] flex items-center justify-center overflow-hidden">
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 500, color: "#6b7280" }}>Logo de la empresa</label>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ width: "56px", height: "56px", flexShrink: 0, borderRadius: "10px", border: "1px solid #e5e7eb", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                   {logoUrl
-                    ? <img src={logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />
-                    : <span className="text-[0.65rem] text-[#d1d5db] text-center leading-tight">Sin<br/>logo</span>
+                    ? <img src={logoUrl} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: "4px" }} />
+                    : <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.65rem", color: "#d1d5db", textAlign: "center", lineHeight: 1.3 }}>Sin logo</span>
                   }
                 </div>
                 <div>
-                  <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoUpload} />
-                  <button
-                    type="button" disabled={uploadingLogo}
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 h-9 px-4 rounded-lg border border-[#e5e7eb] bg-white text-[0.8125rem] font-medium text-[#374151] hover:bg-[#f9fafb] hover:border-[#d1d5db] transition-all"
+                  <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" style={{ display: "none" }} onChange={handleLogoUpload} />
+                  <button type="button" disabled={uploadingLogo} onClick={() => fileInputRef.current?.click()}
+                    style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "flex", alignItems: "center", gap: "8px", height: "36px", padding: "0 14px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", fontSize: "0.8125rem", fontWeight: 500, color: "#374151", cursor: "pointer" }}
                   >
-                    <Upload className="h-3.5 w-3.5" />
+                    <Upload style={{ width: "14px", height: "14px" }} />
                     {uploadingLogo ? "Subiendo..." : logoUrl ? "Cambiar logo" : "Subir logo"}
                   </button>
-                  <p className="text-[0.7rem] text-[#9ca3af] mt-1">PNG, JPG o WebP · Fondo transparente recomendado</p>
+                  <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", color: "#9ca3af", marginTop: "4px" }}>PNG, JPG o WebP · Fondo transparente recomendado</p>
                 </div>
               </div>
             </div>
@@ -352,43 +329,36 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
 
         {/* BASE DE OPERACIONES */}
         <SectionWrapper id="operaciones" title="Base de operaciones" icon={MapPin} color="#0f766e">
-          <div className="p-6">
-            <div className="rounded-xl bg-[#f0fdf9] border border-[#99f6e4] p-4 mb-5">
-              <p className="text-[0.8rem] text-[#134e4a] leading-relaxed">
-                Estas direcciones se usan para calcular los <strong className="font-semibold">kilómetros en vacío</strong> — desde el garaje hasta el punto de recogida del cliente — y el coste de parking durante el servicio.
+          <div style={{ padding: "1.5rem" }}>
+            <div style={{ borderRadius: "10px", background: "#f0fdf9", border: "1px solid #99f6e4", padding: "14px 16px", marginBottom: "1.25rem" }}>
+              <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#134e4a", lineHeight: 1.6 }}>
+                Estas direcciones se usan para calcular los <strong style={{ fontWeight: 600 }}>kilómetros en vacío</strong> — desde el garaje hasta el punto de recogida — y el coste de parking durante el servicio.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="rounded-xl border border-[#e5e7eb] bg-white p-4 flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-lg bg-[#f0fdf9] border border-[#99f6e4] flex items-center justify-center">
-                    <MapPin className="h-3.5 w-3.5 text-[#0f766e]" />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              {[
+                { id: "garage_address", label: "Garaje", sub: "salida del bus", placeholder: "Calle del Garaje 5, 08001 Barcelona" },
+                { id: "parking_address", label: "Parking habitual", sub: "donde espera el bus", placeholder: "Parking Central, Madrid" },
+              ].map(({ id, label, sub, placeholder }) => (
+                <div key={id} style={{ borderRadius: "10px", border: "1px solid #e5e7eb", background: "#fff", padding: "1rem", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "28px", height: "28px", borderRadius: "7px", background: "#f0fdf9", border: "1px solid #99f6e4", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <MapPin style={{ width: "13px", height: "13px", color: "#0f766e" }} />
+                    </div>
+                    <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#111827" }}>{label}</span>
+                    <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", color: "#9ca3af" }}>· {sub}</span>
                   </div>
-                  <span className="text-[0.8rem] font-semibold text-[#111827]">Garaje</span>
-                  <span className="text-[0.7rem] text-[#9ca3af]">· salida del bus</span>
+                  <input
+                    id={id} type="text"
+                    value={locationValues[id as keyof typeof locationValues]}
+                    onChange={(e) => handleLocationChange(id, e.target.value)}
+                    placeholder={placeholder}
+                    style={{ fontFamily: "'DM Sans', system-ui, sans-serif", height: "36px", width: "100%", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fafafa", padding: "0 10px", fontSize: "0.8125rem", color: "#111827", outline: "none" }}
+                    onFocus={e => { e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.08)" }}
+                    onBlur={e => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" }}
+                  />
                 </div>
-                <LocationField
-                  id="garage_address" label="" sublabel=""
-                  value={locationValues.garage_address}
-                  onChange={handleLocationChange}
-                  placeholder="Calle del Garaje 5, 08001 Barcelona"
-                />
-              </div>
-              <div className="rounded-xl border border-[#e5e7eb] bg-white p-4 flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-lg bg-[#f0fdf9] border border-[#99f6e4] flex items-center justify-center">
-                    <MapPin className="h-3.5 w-3.5 text-[#0f766e]" />
-                  </div>
-                  <span className="text-[0.8rem] font-semibold text-[#111827]">Parking habitual</span>
-                  <span className="text-[0.7rem] text-[#9ca3af]">· donde espera el bus</span>
-                </div>
-                <LocationField
-                  id="parking_address" label="" sublabel=""
-                  value={locationValues.parking_address}
-                  onChange={handleLocationChange}
-                  placeholder="Parking Central, Madrid"
-                />
-              </div>
+              ))}
             </div>
           </div>
         </SectionWrapper>
@@ -467,16 +437,12 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
         </SectionWrapper>
 
         {/* BOTÓN GUARDAR MÓVIL */}
-        <div className="lg:hidden flex flex-col gap-2">
-          {message && <p className="text-sm text-red-500">{message}</p>}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className={`flex items-center justify-center gap-2 h-11 w-full rounded-xl text-[0.9375rem] font-semibold transition-all ${
-              saved ? "bg-emerald-500 text-white" : "bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90"
-            }`}
+        <div className="lg:hidden" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {message && <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#ef4444" }}>{message}</p>}
+          <button onClick={handleSave} disabled={saving}
+            style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", height: "44px", width: "100%", borderRadius: "12px", border: "none", fontSize: "0.9375rem", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", background: saved ? "#10b981" : "#1e3a5f", color: "#fff" }}
           >
-            {saved ? <><Check className="h-4 w-4" /> Guardado correctamente</> : saving ? "Guardando..." : <><Save className="h-4 w-4" /> Guardar ajustes</>}
+            {saved ? <><Check style={{ width: "16px", height: "16px" }} /> Guardado correctamente</> : saving ? "Guardando..." : <><Save style={{ width: "16px", height: "16px" }} /> Guardar ajustes</>}
           </button>
         </div>
 
