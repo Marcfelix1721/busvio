@@ -3,15 +3,11 @@ import { redirect } from "next/navigation"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import {
-  BusFront,
-  FileText,
-  Settings,
-  Users,
-  ChevronRight,
-  Mail,
-  Phone,
+  BusFront, FileText, Settings, Users,
+  ChevronRight, Mail, Phone, BarChart3,
 } from "lucide-react"
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
+import type { ReactNode } from "react"
 
 async function createClient() {
   const cookieStore = await cookies()
@@ -22,18 +18,16 @@ async function createClient() {
   )
 }
 
-const relacionConfig: Record<string, { label: string; class: string }> = {
-  potencial: { label: "🟡 Potencial", class: "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200" },
-  activo: { label: "🟢 Activo", class: "bg-green-50 text-green-700 ring-1 ring-green-200" },
-  recurrente: { label: "🔵 Recurrente", class: "bg-blue-50 text-blue-700 ring-1 ring-blue-200" },
-  inactivo: { label: "⚫ Inactivo", class: "bg-gray-50 text-gray-600 ring-1 ring-gray-200" },
-  perdido: { label: "🔴 Perdido", class: "bg-red-50 text-red-600 ring-1 ring-red-200" },
+const relacionConfig: Record<string, { label: string; dot: string; bg: string; text: string }> = {
+  potencial:  { label: "Potencial",  dot: "bg-amber-400",   bg: "bg-amber-50",   text: "text-amber-700" },
+  activo:     { label: "Activo",     dot: "bg-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700" },
+  recurrente: { label: "Recurrente", dot: "bg-blue-500",    bg: "bg-blue-50",    text: "text-blue-700" },
+  inactivo:   { label: "Inactivo",   dot: "bg-zinc-400",    bg: "bg-zinc-50",    text: "text-zinc-600" },
+  perdido:    { label: "Perdido",    dot: "bg-rose-500",    bg: "bg-rose-50",    text: "text-rose-600" },
 }
 
-function formatDate(dateValue: string) {
-  return new Date(dateValue).toLocaleDateString("es-ES", {
-    day: "2-digit", month: "short", year: "numeric"
-  })
+function fmt(d: string) {
+  return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" })
 }
 
 export default async function ClientesPage() {
@@ -41,193 +35,207 @@ export default async function ClientesPage() {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect("/login")
 
-  const { data: userData } = await supabase
-    .from("users")
-    .select("company_id")
-    .eq("id", session.user.id)
-    .single()
-
+  const { data: userData } = await supabase.from("users").select("company_id").eq("id", session.user.id).single()
   const companyId = userData?.company_id
 
-  // Traer todas las solicitudes agrupadas por email
-  const { data: requestsData } = await supabase
+  const { data: rawRequests } = await supabase
     .from("quote_requests")
-    .select("requester_name, requester_email, requester_phone, created_at, status, final_price, estimated_price")
+    .select("requester_name, requester_email, requester_phone, created_at, status, final_price, estimated_price, trip_date")
     .eq("company_id", companyId)
     .order("created_at", { ascending: false })
 
-  const requests = requestsData ?? []
-
-  // Traer relaciones comerciales
   const { data: clientesData } = await supabase
-    .from("clientes")
-    .select("email, estado_relacion, notas")
-    .eq("company_id", companyId)
+    .from("clientes").select("email, estado_relacion").eq("company_id", companyId)
 
-  const relacionMap = new Map(
-    (clientesData ?? []).map((c) => [c.email, c])
-  )
+  const relacionMap = new Map((clientesData ?? []).map(c => [c.email, c.estado_relacion]))
 
-  // Agrupar por email
-  const clientesMap = new Map<string, {
-    nombre: string
-    email: string
-    telefono: string
-    totalSolicitudes: number
-    aceptadas: number
-    totalFacturado: number
-    ultimaActividad: string
-    estado: string | null
-  }>()
+  type ClienteRow = {
+    nombre: string; email: string; telefono: string
+    total: number; aceptadas: number; facturado: number
+    ultima: string; estado: string | null
+  }
 
-  requests.forEach((r) => {
-    if (!clientesMap.has(r.requester_email)) {
-      clientesMap.set(r.requester_email, {
-        nombre: r.requester_name,
-        email: r.requester_email,
-        telefono: r.requester_phone ?? "",
-        totalSolicitudes: 0,
-        aceptadas: 0,
-        totalFacturado: 0,
-        ultimaActividad: r.created_at,
-        estado: relacionMap.get(r.requester_email)?.estado_relacion ?? null,
+  const map = new Map<string, ClienteRow>()
+  ;(rawRequests ?? []).forEach(r => {
+    if (!map.has(r.requester_email)) {
+      map.set(r.requester_email, {
+        nombre: r.requester_name, email: r.requester_email, telefono: r.requester_phone ?? "",
+        total: 0, aceptadas: 0, facturado: 0, ultima: r.created_at,
+        estado: relacionMap.get(r.requester_email) ?? null,
       })
     }
-    const c = clientesMap.get(r.requester_email)!
-    c.totalSolicitudes++
-    if (r.status === "aceptado") {
-      c.aceptadas++
-      c.totalFacturado += r.final_price ?? r.estimated_price ?? 0
-    }
-    if (r.created_at > c.ultimaActividad) c.ultimaActividad = r.created_at
+    const c = map.get(r.requester_email)!
+    c.total++
+    if (r.status === "aceptado") { c.aceptadas++; c.facturado += r.final_price ?? r.estimated_price ?? 0 }
+    if (r.created_at > c.ultima) c.ultima = r.created_at
   })
 
-  const clientes = Array.from(clientesMap.values())
-    .sort((a, b) => b.ultimaActividad.localeCompare(a.ultimaActividad))
+  const clientes = Array.from(map.values()).sort((a, b) => b.ultima.localeCompare(a.ultima))
+
+  const totalClientes = clientes.length
+  const clientesActivos = clientes.filter(c => c.estado === "activo" || c.estado === "recurrente").length
+  const totalFacturado = clientes.reduce((s, c) => s + c.facturado, 0)
+  const sinClasificar = clientes.filter(c => !c.estado).length
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen bg-[#f5f5f4] overflow-hidden" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
 
-        {/* SIDEBAR */}
-        <aside className="hidden md:flex w-56 flex-col bg-[#1e3a5f] text-white flex-shrink-0">
-          <div className="flex items-center gap-2.5 px-5 py-5 border-b border-white/10">
-            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-              <BusFront className="size-4 text-white" />
+      {/* SIDEBAR */}
+      <aside className="hidden md:flex w-[220px] flex-col bg-[#111827] flex-shrink-0">
+        <div className="px-5 pt-6 pb-5 border-b border-white/5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-blue-500 rounded-md flex items-center justify-center flex-shrink-0">
+              <BusFront className="size-3.5 text-white" />
             </div>
-            <span className="font-bold text-base tracking-tight">Busvio</span>
+            <span className="text-white font-semibold text-sm tracking-tight">Busvio</span>
           </div>
-          <nav className="flex-1 px-3 py-4 space-y-1">
-            <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest px-2 mb-2">Principal</p>
-            <Link href="/dashboard" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-white/70 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors">
-              <FileText className="size-4" /> Solicitudes
-            </Link>
-            <Link href="/dashboard/clientes" className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/10 text-white text-sm font-medium">
-              <Users className="size-4" /> Clientes
-            </Link>
-            <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest px-2 mb-2 mt-4">Configuración</p>
-            <Link href="/dashboard/ajustes" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-white/70 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors">
-              <Settings className="size-4" /> Ajustes
-            </Link>
-          </nav>
-          <div className="px-3 py-4 border-t border-white/10">
-            <p className="text-xs text-white/50 truncate px-2 mb-2">{session.user.email}</p>
-            <LogoutButton />
+        </div>
+        <nav className="flex-1 px-3 py-4 space-y-0.5">
+          <SideLink href="/dashboard" icon={<BarChart3 className="size-3.5"/>} label="Dashboard" />
+          <SideLink href="/dashboard/clientes" icon={<Users className="size-3.5"/>} label="Clientes" active />
+          <div className="pt-4 pb-1 px-2">
+            <p className="text-[10px] font-medium text-white/20 uppercase tracking-widest">Config</p>
           </div>
-        </aside>
+          <SideLink href="/dashboard/ajustes" icon={<Settings className="size-3.5"/>} label="Ajustes" />
+        </nav>
+        <div className="px-3 py-4 border-t border-white/5 space-y-2">
+          <p className="text-[11px] text-white/30 truncate px-2">{session.user.email}</p>
+          <LogoutButton />
+        </div>
+      </aside>
 
-        {/* MAIN */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="px-6 py-6 max-w-7xl mx-auto space-y-6">
+      {/* MAIN */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-5">
 
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Clientes</h1>
-              <p className="text-sm text-slate-400 mt-0.5">{clientes.length} cliente{clientes.length !== 1 ? "s" : ""} en total</p>
+          {/* HEADER */}
+          <div>
+            <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight">Clientes</h1>
+            <p className="text-[13px] text-[#9ca3af] mt-0.5">{totalClientes} cliente{totalClientes !== 1 ? "s" : ""} registrados</p>
+          </div>
+
+          {/* KPIs */}
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+            <MiniKPI label="Total clientes" value={totalClientes} icon={<Users className="size-4 text-blue-600"/>} bg="bg-blue-50" />
+            <MiniKPI label="Activos / Recurrentes" value={clientesActivos} icon={<ChevronRight className="size-4 text-emerald-600"/>} bg="bg-emerald-50" />
+            <MiniKPI label="Facturado total" value={`${totalFacturado.toLocaleString("es-ES")} €`} icon={<FileText className="size-4 text-violet-600"/>} bg="bg-violet-50" />
+            <MiniKPI label="Sin clasificar" value={sinClasificar} icon={<Settings className="size-4 text-amber-600"/>} bg="bg-amber-50" />
+          </div>
+
+          {/* TABLA */}
+          <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-[#f3f4f6]">
+              <p className="text-sm font-semibold text-[#111827]">Todos los clientes</p>
+              <p className="text-xs text-[#9ca3af] mt-0.5">Ordenados por última actividad</p>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100">
-                    <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Cliente</th>
-                    <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider hidden md:table-cell">Contacto</th>
-                    <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Relación</th>
-                    <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider hidden lg:table-cell">Solicitudes</th>
-                    <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider hidden lg:table-cell">Facturado</th>
-                    <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider hidden md:table-cell">Última actividad</th>
-                    <th className="px-5 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {clientes.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-5 py-16 text-center">
-                        <div className="flex flex-col items-center gap-2">
-                          <Users className="size-8 text-slate-200" />
-                          <p className="text-sm font-medium text-slate-400">No hay clientes todavía</p>
-                          <p className="text-xs text-slate-300">Aparecerán aquí cuando recibas solicitudes</p>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#f3f4f6] bg-[#fafafa]">
+                  {["Cliente","Contacto","Relación","Solicitudes","Facturado","Última actividad",""].map((h,i) => (
+                    <th key={i} className={`px-5 py-2.5 text-left text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider ${
+                      i===1?"hidden md:table-cell":i===3||i===4||i===5?"hidden lg:table-cell":""
+                    }`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {clientes.length === 0 ? (
+                  <tr><td colSpan={7} className="py-20 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-10 h-10 bg-[#f3f4f6] rounded-full flex items-center justify-center">
+                        <Users className="size-5 text-[#d1d5db]" />
+                      </div>
+                      <p className="text-sm text-[#9ca3af] font-medium">Sin clientes todavía</p>
+                      <p className="text-xs text-[#d1d5db]">Aparecerán cuando recibas solicitudes</p>
+                    </div>
+                  </td></tr>
+                ) : clientes.map(c => {
+                  const rel = c.estado ? relacionConfig[c.estado] : null
+                  const tasaC = c.total > 0 ? Math.round((c.aceptadas / c.total) * 100) : 0
+                  return (
+                    <tr key={c.email} className="border-b border-[#f9fafb] hover:bg-[#fafafa] transition-colors group">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-[#f3f4f6] rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs font-bold text-[#6b7280]">{c.nombre.charAt(0).toUpperCase()}</span>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-[#111827] text-[13px]">{c.nombre}</p>
+                            <p className="text-xs text-[#9ca3af]">{c.email}</p>
+                          </div>
                         </div>
                       </td>
-                    </tr>
-                  ) : (
-                    clientes.map((cliente) => {
-                      const rel = cliente.estado ? relacionConfig[cliente.estado] : null
-                      return (
-                        <tr key={cliente.email} className="hover:bg-slate-50/80 transition-colors group">
-                          <td className="px-5 py-4">
-                            <p className="font-semibold text-slate-800">{cliente.nombre}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">{cliente.email}</p>
-                          </td>
-                          <td className="px-5 py-4 hidden md:table-cell">
-                            <div className="flex flex-col gap-1">
-                              {cliente.telefono && (
-                                <span className="flex items-center gap-1 text-xs text-slate-500">
-                                  <Phone className="size-3" /> {cliente.telefono}
-                                </span>
-                              )}
-                              <span className="flex items-center gap-1 text-xs text-slate-400">
-                                <Mail className="size-3" /> {cliente.email}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-5 py-4">
-                            {rel ? (
-                              <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full ${rel.class}`}>
-                                {rel.label}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-slate-300">Sin clasificar</span>
-                            )}
-                          </td>
-                          <td className="px-5 py-4 hidden lg:table-cell">
-                            <p className="text-sm font-semibold text-slate-800">{cliente.totalSolicitudes}</p>
-                            <p className="text-xs text-slate-400">{cliente.aceptadas} aceptadas</p>
-                          </td>
-                          <td className="px-5 py-4 hidden lg:table-cell">
-                            <p className="text-sm font-semibold text-slate-800">
-                              {cliente.totalFacturado > 0 ? `${cliente.totalFacturado.toLocaleString("es-ES")} €` : "—"}
+                      <td className="px-5 py-4 hidden md:table-cell">
+                        <div className="space-y-0.5">
+                          {c.telefono && (
+                            <p className="flex items-center gap-1.5 text-xs text-[#6b7280]">
+                              <Phone className="size-3 text-[#9ca3af]"/> {c.telefono}
                             </p>
-                          </td>
-                          <td className="px-5 py-4 hidden md:table-cell">
-                            <p className="text-xs text-slate-400">{formatDate(cliente.ultimaActividad)}</p>
-                          </td>
-                          <td className="px-5 py-4">
-                            <Link
-                              href={`/dashboard?q=${encodeURIComponent(cliente.email)}`}
-                              className="inline-flex items-center gap-1 text-xs font-medium text-[#1e3a5f] hover:text-[#1e3a5f]/70 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              Ver solicitudes <ChevronRight className="size-3" />
-                            </Link>
-                          </td>
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                          )}
+                          <p className="flex items-center gap-1.5 text-xs text-[#9ca3af]">
+                            <Mail className="size-3"/> {c.email}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        {rel ? (
+                          <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ${rel.bg} ${rel.text}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${rel.dot}`}></span>
+                            {rel.label}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-[#d1d5db] italic">Sin clasificar</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 hidden lg:table-cell">
+                        <p className="text-[13px] font-semibold text-[#111827]">{c.total}</p>
+                        <p className="text-xs text-[#9ca3af]">{tasaC}% aceptadas</p>
+                      </td>
+                      <td className="px-5 py-4 hidden lg:table-cell">
+                        <p className="text-[13px] font-semibold text-[#111827]">
+                          {c.facturado > 0 ? `${c.facturado.toLocaleString("es-ES")} €` : "—"}
+                        </p>
+                        {c.aceptadas > 0 && <p className="text-xs text-[#9ca3af]">{c.aceptadas} servicio{c.aceptadas!==1?"s":""}</p>}
+                      </td>
+                      <td className="px-5 py-4 hidden lg:table-cell">
+                        <p className="text-xs text-[#9ca3af]">{fmt(c.ultima)}</p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <Link href={`/dashboard?q=${encodeURIComponent(c.email)}`}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-[#111827] opacity-0 group-hover:opacity-100 transition-opacity hover:text-blue-600">
+                          Ver <ChevronRight className="size-3"/>
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
-        </main>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+function SideLink({ href, icon, label, active }: { href: string; icon: ReactNode; label: string; active?: boolean }) {
+  return (
+    <Link href={href} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${
+      active ? "bg-white/10 text-white" : "text-white/50 hover:text-white hover:bg-white/5"
+    }`}>
+      {icon} {label}
+    </Link>
+  )
+}
+
+function MiniKPI({ label, value, icon, bg }: { label: string; value: string | number; icon: ReactNode; bg: string }) {
+  return (
+    <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 flex items-center gap-3">
+      <div className={`w-9 h-9 ${bg} rounded-lg flex items-center justify-center flex-shrink-0`}>{icon}</div>
+      <div>
+        <p className="text-lg font-bold text-[#111827] leading-none">{value}</p>
+        <p className="text-[11px] text-[#9ca3af] mt-0.5">{label}</p>
       </div>
     </div>
   )
