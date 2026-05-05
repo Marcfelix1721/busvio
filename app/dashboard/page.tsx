@@ -1,249 +1,222 @@
-'use client'
+import Link from "next/link"
+import type { ReactNode } from "react"
+import { redirect } from "next/navigation"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
+import {
+  BusFront, Clock3, FileText, Settings,
+  CircleCheck, Users, Euro, ChevronRight, AlertTriangle,
+  BarChart3, ArrowUpRight, Inbox, Calendar, TrendingUp,
+} from "lucide-react"
+import { LogoutButton } from "@/components/dashboard/LogoutButton"
+import { QuoteRequest } from "@/lib/types"
+import { DashboardClient } from "@/components/dashboard/DashboardClient"
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { Search, Inbox, ChevronRight } from 'lucide-react'
-import { QuoteRequest } from '@/lib/types'
-
-const statusConfig: Record<QuoteRequest["status"], { label: string; color: string; bg: string; dot: string }> = {
-  nuevo:       { label: "Nuevo",       color: "#0369a1", bg: "#f0f9ff", dot: "#0ea5e9" },
-  en_revision: { label: "En revisión", color: "#92400e", bg: "#fffbeb", dot: "#f59e0b" },
-  enviado:     { label: "Enviado",     color: "#5b21b6", bg: "#f5f3ff", dot: "#8b5cf6" },
-  aceptado:    { label: "Aceptado",    color: "#166534", bg: "#f0fdf4", dot: "#22c55e" },
-  rechazado:   { label: "Rechazado",   color: "#991b1b", bg: "#fef2f2", dot: "#ef4444" },
-  cancelado:   { label: "Cancelado",   color: "#6b7280", bg: "#f9fafb", dot: "#d1d5db" },
+async function createClient() {
+  const cookieStore = await cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return cookieStore.getAll() } } }
+  )
 }
 
-const relacionConfig: Record<string, { label: string; color: string; dot: string }> = {
-  potencial:  { label: "Potencial",  color: "#92400e", dot: "#f59e0b" },
-  activo:     { label: "Activo",     color: "#166534", dot: "#22c55e" },
-  recurrente: { label: "Recurrente", color: "#1e40af", dot: "#3b82f6" },
-  inactivo:   { label: "Inactivo",   color: "#6b7280", dot: "#9ca3af" },
-  perdido:    { label: "Perdido",    color: "#991b1b", dot: "#ef4444" },
-}
-
-const statusOptions: Array<{ value: QuoteRequest["status"] | "todas"; label: string }> = [
-  { value: "todas",       label: "Todas" },
-  { value: "nuevo",       label: "Nuevo" },
-  { value: "en_revision", label: "En revisión" },
-  { value: "enviado",     label: "Enviado" },
-  { value: "aceptado",    label: "Aceptado" },
-  { value: "rechazado",   label: "Rechazado" },
-  { value: "cancelado",   label: "Cancelado" },
-]
-
-function fmtShort(d: string) {
-  return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })
-}
-function fmt(d: string) {
-  return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" })
-}
 function diasHasta(d: string) {
   return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000)
 }
 
-type Props = {
-  requests: QuoteRequest[]
-  relacionMap: Record<string, string>
-}
+export default async function DashboardPage() {
+  const supabase = await createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) redirect("/login")
 
-export function DashboardClient({ requests, relacionMap }: Props) {
-  const [q, setQ] = useState('')
-  const [selectedStatus, setSelectedStatus] = useState<QuoteRequest["status"] | "todas">('todas')
+  const { data: userData } = await supabase.from("users").select("company_id").eq("id", session.user.id).single()
+  const companyId = userData?.company_id
 
-  const filtered = requests
-    .filter(r => selectedStatus === 'todas' || r.status === selectedStatus)
-    .filter(r => {
-      if (!q.trim()) return true
-      const search = q.toLowerCase()
-      return [r.requester_name, r.requester_email, r.origin, r.destination, r.requester_phone]
-        .some(f => f?.toLowerCase().includes(search))
-    })
+  const { data: companyData } = await supabase.from("companies").select("name").eq("id", companyId).single()
+
+  const { data: rawData } = await supabase
+    .from("quote_requests").select("*").eq("company_id", companyId).order("created_at", { ascending: false })
+  const requests = (rawData ?? []) as QuoteRequest[]
+
+  const { data: clientesData } = await supabase.from("clientes").select("email, estado_relacion").eq("company_id", companyId)
+  const relacionMap = Object.fromEntries((clientesData ?? []).map(c => [c.email, c.estado_relacion]))
+
+  const facturado = requests.filter(r => r.status === "aceptado").reduce((s, r) => s + (r.final_price ?? r.estimated_price ?? 0), 0)
+  const pendiente = requests.filter(r => r.status === "enviado").reduce((s, r) => s + (r.final_price ?? r.estimated_price ?? 0), 0)
+  const clientes = new Set(requests.map(r => r.requester_email)).size
+  const aceptadas = requests.filter(r => r.status === "aceptado").length
+  const tasa = requests.length > 0 ? Math.round((aceptadas / requests.length) * 100) : 0
+
+  const urgentes = requests.filter(r => {
+    const d = diasHasta(r.trip_date)
+    return d >= 0 && d <= 7 && !["aceptado", "cancelado", "rechazado"].includes(r.status)
+  })
+
+  const companyName = companyData?.name ?? "Dashboard"
+  const today = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })
+
+  const kpis = [
+    {
+      label: "Total solicitudes",
+      value: requests.length,
+      sub: `${requests.filter(r => r.status === "nuevo").length} nuevas · ${requests.filter(r => r.status === "en_revision").length} en revisión`,
+      color: "#2563eb",
+      lightColor: "#eff6ff",
+      icon: "file",
+    },
+    {
+      label: "Tasa de cierre",
+      value: `${tasa}%`,
+      sub: `${aceptadas} aceptadas de ${requests.length}`,
+      color: "#16a34a",
+      lightColor: "#f0fdf4",
+      icon: "check",
+      up: tasa > 0,
+    },
+    {
+      label: "Facturado",
+      value: `${facturado.toLocaleString("es-ES")} €`,
+      sub: `${clientes} clientes únicos`,
+      color: "#7c3aed",
+      lightColor: "#f5f3ff",
+      icon: "euro",
+    },
+    {
+      label: "Pendiente de cobro",
+      value: `${pendiente.toLocaleString("es-ES")} €`,
+      sub: `${requests.filter(r => r.status === "enviado").length} presupuestos enviados`,
+      color: "#d97706",
+      lightColor: "#fffbeb",
+      icon: "clock",
+    },
+  ]
 
   return (
-    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, overflow: 'hidden', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div style={{ display: "flex", height: "100vh", background: "#f5f5f4", fontFamily: "'DM Sans', system-ui, sans-serif", overflow: "hidden" }}>
 
-      {/* TOOLBAR */}
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-        <div>
-          <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: 0 }}>Solicitudes</p>
-          <p style={{ fontSize: 12, color: '#9ca3af', margin: '2px 0 0' }}>{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</p>
+      {/* SIDEBAR */}
+      <aside style={{ width: 228, background: "#111827", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+        {/* Logo */}
+        <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 32, height: 32, background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <BusFront style={{ width: 16, height: 16, color: "#fff" }} />
+            </div>
+            <div>
+              <p style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0, letterSpacing: "-0.01em" }}>Busvio</p>
+              <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, margin: 0 }}>Panel de gestión</p>
+            </div>
+          </div>
         </div>
-        {/* BUSCADOR REACTIVO */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: '8px 14px', width: 280 }}>
-          <Search style={{ width: 14, height: 14, color: '#9ca3af', flexShrink: 0 }} />
-          <input
-            type="text"
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            placeholder="Buscar cliente, ciudad, email..."
-            style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: '#374151', fontFamily: "'DM Sans', system-ui, sans-serif" }}
-          />
-          {q && (
-            <button onClick={() => setQ('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
-          )}
+
+        {/* Nav */}
+        <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
+          <p style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "0 8px", marginBottom: 6 }}>Principal</p>
+          <SideLink href="/dashboard" icon={<Inbox style={{ width: 14, height: 14 }} />} label="Solicitudes" active />
+          <SideLink href="/dashboard/clientes" icon={<Users style={{ width: 14, height: 14 }} />} label="Clientes" />
+          <SideLink href="/dashboard/analytics" icon={<BarChart3 style={{ width: 14, height: 14 }} />} label="Analytics" />
+          <SideLink href="/dashboard/calendario" icon={<Calendar style={{ width: 14, height: 14 }} />} label="Calendario" />
+          <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "12px 0" }} />
+          <p style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "0 8px", marginBottom: 6 }}>Config</p>
+          <SideLink href="/dashboard/ajustes" icon={<Settings style={{ width: 14, height: 14 }} />} label="Ajustes" />
+        </nav>
+
+        {/* Footer */}
+        <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>
+                {session.user.email?.[0]?.toUpperCase()}
+              </span>
+            </div>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {session.user.email}
+            </p>
+          </div>
+          <LogoutButton />
         </div>
-      </div>
+      </aside>
 
-      {/* FILTROS DE ESTADO */}
-      <div style={{ padding: '10px 20px', borderBottom: '1px solid #f3f4f6', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {statusOptions.map(opt => {
-          const isActive = selectedStatus === opt.value
-          const count = opt.value === 'todas' ? requests.length : requests.filter(r => r.status === opt.value).length
-          return (
-            <button
-              key={opt.value}
-              onClick={() => setSelectedStatus(opt.value)}
-              style={{
-                fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                background: isActive ? '#111827' : '#f3f4f6',
-                color: isActive ? '#fff' : '#6b7280',
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                transition: 'all 0.15s',
-              }}
-            >
-              {opt.label}
-              <span style={{ marginLeft: 6, fontSize: 10, opacity: 0.6 }}>{count}</span>
-            </button>
-          )
-        })}
-      </div>
+      {/* MAIN */}
+      <main style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "32px 32px 48px" }}>
 
-      {/* TABLA */}
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
-            {['Cliente', 'Ruta', 'Relación', 'Fecha viaje', 'Precio', 'Estado', 'Recibida', ''].map((h, i) => (
-              <th key={i} style={{ padding: '10px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.length === 0 ? (
-            <tr>
-              <td colSpan={8} style={{ padding: '60px 20px', textAlign: 'center' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 44, height: 44, background: '#f3f4f6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Inbox style={{ width: 20, height: 20, color: '#d1d5db' }} />
-                  </div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: '#9ca3af', margin: 0 }}>Sin resultados</p>
-                  <p style={{ fontSize: 12, color: '#d1d5db', margin: 0 }}>
-                    {q ? `No hay solicitudes que coincidan con "${q}"` : 'Prueba con otro filtro'}
-                  </p>
+          {/* HEADER */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
+            <div>
+              <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", margin: 0, letterSpacing: "-0.02em" }}>{companyName}</h1>
+              <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 4, textTransform: "capitalize" }}>{today}</p>
+            </div>
+            {urgentes.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 20, padding: "6px 14px" }}>
+                <AlertTriangle style={{ width: 13, height: 13, color: "#d97706" }} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>
+                  {urgentes.length} viaje{urgentes.length > 1 ? "s" : ""} urgente{urgentes.length > 1 ? "s" : ""}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* ALERTA URGENTES */}
+          {urgentes.length > 0 && (
+            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: "14px 18px", display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 24 }}>
+              <AlertTriangle style={{ width: 16, height: 16, color: "#f59e0b", marginTop: 2, flexShrink: 0 }} />
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#92400e", margin: 0 }}>
+                  {urgentes.length} solicitud{urgentes.length > 1 ? "es" : ""} con viaje en menos de 7 días pendientes de gestionar
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 }}>
+                  {urgentes.map(r => (
+                    <Link key={r.id} href={`/dashboard/solicitudes/${r.id}`}
+                      style={{ fontSize: 12, color: "#b45309", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 }}>
+                      {r.requester_name} · {new Date(r.trip_date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
+                    </Link>
+                  ))}
                 </div>
-              </td>
-            </tr>
-          ) : filtered.map((r, idx) => {
-            const dias = diasHasta(r.trip_date)
-            const urgente = dias >= 0 && dias <= 7 && !['aceptado', 'cancelado', 'rechazado'].includes(r.status)
-            const rel = relacionMap[r.requester_email]
-            const relCfg = rel ? relacionConfig[rel] : null
-            const sCfg = statusConfig[r.status]
-            const precio = r.final_price ?? r.estimated_price
-            const isLast = idx === filtered.length - 1
+              </div>
+            </div>
+          )}
 
-            return (
-              <tr key={r.id} style={{
-                borderBottom: isLast ? 'none' : '1px solid #f9fafb',
-                background: urgente ? '#fffdf0' : 'transparent',
-                transition: 'background 0.1s',
-              }}
-                onMouseEnter={e => (e.currentTarget.style.background = urgente ? '#fffbeb' : '#fafafa')}
-                onMouseLeave={e => (e.currentTarget.style.background = urgente ? '#fffdf0' : 'transparent')}
-              >
-                {/* Cliente */}
-                <td style={{ padding: '14px 20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>
-                        {r.requester_name?.[0]?.toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{r.requester_name}</span>
-                        {urgente && (
-                          <span style={{ fontSize: 10, fontWeight: 700, background: '#fef3c7', color: '#b45309', borderRadius: 4, padding: '1px 5px' }}>⚡ {dias}d</span>
-                        )}
-                      </div>
-                      <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>{r.requester_email}</p>
-                    </div>
+          {/* KPIs */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+            {kpis.map((kpi, i) => (
+              <div key={i} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: "20px 22px", position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: 0, left: 0, width: 4, height: "100%", background: kpi.color, borderRadius: "16px 0 0 16px" }} />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                  <div style={{ width: 36, height: 36, background: kpi.lightColor, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {i === 0 && <FileText style={{ width: 16, height: 16, color: kpi.color }} />}
+                    {i === 1 && <CircleCheck style={{ width: 16, height: 16, color: kpi.color }} />}
+                    {i === 2 && <Euro style={{ width: 16, height: 16, color: kpi.color }} />}
+                    {i === 3 && <Clock3 style={{ width: 16, height: 16, color: kpi.color }} />}
                   </div>
-                </td>
+                  {kpi.up && <TrendingUp style={{ width: 14, height: 14, color: "#16a34a" }} />}
+                </div>
+                <p style={{ fontSize: 26, fontWeight: 800, color: "#111827", margin: 0, letterSpacing: "-0.02em", lineHeight: 1 }}>{kpi.value}</p>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "#374151", margin: "6px 0 2px" }}>{kpi.label}</p>
+                <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>{kpi.sub}</p>
+              </div>
+            ))}
+          </div>
 
-                {/* Ruta */}
-                <td style={{ padding: '14px 20px' }}>
-                  <p style={{ fontSize: 13, color: '#374151', fontWeight: 500, margin: 0, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {r.origin?.split(',')[0]}
-                  </p>
-                  <p style={{ fontSize: 11, color: '#9ca3af', margin: '2px 0 0', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    → {r.destination?.split(',')[0]}
-                  </p>
-                </td>
+          {/* TABLA — componente cliente para buscador reactivo */}
+          <DashboardClient requests={requests} relacionMap={relacionMap} />
 
-                {/* Relación */}
-                <td style={{ padding: '14px 20px' }}>
-                  {relCfg ? (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: relCfg.color, fontWeight: 500 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: relCfg.dot, flexShrink: 0 }} />
-                      {relCfg.label}
-                    </span>
-                  ) : <span style={{ fontSize: 12, color: '#d1d5db' }}>—</span>}
-                </td>
-
-                {/* Fecha viaje */}
-                <td style={{ padding: '14px 20px' }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: urgente ? '#b45309' : '#374151', margin: 0 }}>
-                    {fmtShort(r.trip_date)}
-                  </p>
-                  {urgente && <p style={{ fontSize: 11, color: '#f59e0b', margin: '2px 0 0' }}>en {dias} día{dias !== 1 ? 's' : ''}</p>}
-                </td>
-
-                {/* Precio */}
-                <td style={{ padding: '14px 20px' }}>
-                  {precio ? (
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>
-                      {precio.toLocaleString('es-ES')} €
-                    </span>
-                  ) : <span style={{ fontSize: 12, color: '#e5e7eb' }}>—</span>}
-                </td>
-
-                {/* Estado */}
-                <td style={{ padding: '14px 20px' }}>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 5,
-                    fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20,
-                    background: sCfg.bg, color: sCfg.color,
-                    border: `1px solid ${sCfg.dot}33`,
-                  }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: sCfg.dot }} />
-                    {sCfg.label}
-                  </span>
-                </td>
-
-                {/* Recibida */}
-                <td style={{ padding: '14px 20px' }}>
-                  <span style={{ fontSize: 12, color: '#9ca3af' }}>{fmt(r.created_at)}</span>
-                </td>
-
-                {/* Abrir */}
-                <td style={{ padding: '14px 20px' }}>
-                  <Link href={`/dashboard/solicitudes/${r.id}`} style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                    fontSize: 12, fontWeight: 600, color: '#111827', textDecoration: 'none',
-                    background: '#f3f4f6', borderRadius: 6, padding: '5px 10px',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    Abrir <ChevronRight style={{ width: 12, height: 12 }} />
-                  </Link>
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+        </div>
+      </main>
     </div>
+  )
+}
+
+function SideLink({ href, icon, label, active }: { href: string; icon: ReactNode; label: string; active?: boolean }) {
+  return (
+    <Link href={href} style={{
+      display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8,
+      fontSize: 13, fontWeight: 500, textDecoration: "none", transition: "all 0.15s",
+      background: active ? "rgba(255,255,255,0.1)" : "transparent",
+      color: active ? "#fff" : "rgba(255,255,255,0.45)",
+    }}>
+      {icon} {label}
+    </Link>
   )
 }
