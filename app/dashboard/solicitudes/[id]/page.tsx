@@ -12,6 +12,7 @@ import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { QuoteActions } from "@/components/dashboard/QuoteActions"
 import { ClienteEstado } from "@/components/dashboard/ClienteEstado"
 import { MapaRuta } from "@/components/dashboard/MapaRuta"
+import { ServiceAssignments } from "@/components/dashboard/ServiceAssignments"
 import { QuoteRequest } from "@/lib/types"
 
 async function createClient() {
@@ -93,6 +94,17 @@ export default async function QuoteRequestDetailPage({
     .order("plazas", { ascending: true })
   const vehicles = vehiculosData ?? []
 
+  const { data: staffData } = await supabase
+    .from("staff")
+    .select("id, nombre, rol, estado")
+    .eq("company_id", quote.company_id)
+    .order("rol").order("nombre")
+
+  const { data: assignmentsData } = await supabase
+    .from("service_assignments")
+    .select("id, staff_id, rol_en_servicio, staff(nombre, rol)")
+    .eq("quote_request_id", quote.id)
+
   const serviceType = extractCommentField(quote.comments, "Tipo de servicio") ?? "—"
   const tipoCliente = extractCommentField(quote.comments, "Tipo de cliente") ?? "—"
   const endTime = extractCommentField(quote.comments, "Hora de regreso/finalizacion") ?? "No especificada"
@@ -113,7 +125,7 @@ export default async function QuoteRequestDetailPage({
           <span className="text-white/70 text-sm font-medium truncate max-w-[200px]">{quote.requester_name}</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-white/40 text-xs hidden md:block">#{quote.id.slice(0,8).toUpperCase()}</span>
+          <span className="text-white/40 text-xs hidden md:block">#{quote.id.slice(0, 8).toUpperCase()}</span>
           <LogoutButton />
         </div>
       </div>
@@ -205,6 +217,16 @@ export default async function QuoteRequestDetailPage({
                   <InfoTile icon={<FileText className="size-3.5 text-[#6b7280]" />} label="Precio sugerido" value={`${quote.estimated_price} €`} />
                 )}
               </div>
+            </Section>
+
+            {/* PERSONAL ASIGNADO */}
+            <Section title="Personal asignado" icon={<Users className="size-3.5 text-[#6b7280]" />}>
+              <ServiceAssignments
+                quoteId={quote.id}
+                tripDate={quote.trip_date}
+                initialAssignments={(assignmentsData ?? []) as any}
+                staff={(staffData ?? []) as any}
+              />
             </Section>
 
             {/* COMENTARIOS */}

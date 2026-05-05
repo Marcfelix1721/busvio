@@ -6,7 +6,7 @@ import { cookies } from "next/headers"
 import {
   BusFront, Clock3, FileText, Search, Settings,
   CircleCheck, Users, Euro, ChevronRight, AlertTriangle,
-  BarChart3, ArrowUpRight, Inbox,
+  BarChart3, ArrowUpRight, Inbox, Calendar,
 } from "lucide-react"
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { QuoteRequest } from "@/lib/types"
@@ -21,12 +21,12 @@ async function createClient() {
 }
 
 const statusConfig: Record<QuoteRequest["status"], { label: string; bg: string; text: string; ring: string; bar: string }> = {
-  nuevo:      { label: "Nuevo",       bg: "bg-sky-50",     text: "text-sky-700",     ring: "ring-sky-200",     bar: "bg-sky-500" },
-  en_revision:{ label: "En revisión", bg: "bg-amber-50",   text: "text-amber-700",   ring: "ring-amber-200",   bar: "bg-amber-400" },
-  enviado:    { label: "Enviado",     bg: "bg-violet-50",  text: "text-violet-700",  ring: "ring-violet-200",  bar: "bg-violet-500" },
-  aceptado:   { label: "Aceptado",   bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200", bar: "bg-emerald-500" },
-  rechazado:  { label: "Rechazado",  bg: "bg-rose-50",    text: "text-rose-600",    ring: "ring-rose-200",    bar: "bg-rose-400" },
-  cancelado:  { label: "Cancelado",  bg: "bg-zinc-50",    text: "text-zinc-500",    ring: "ring-zinc-200",    bar: "bg-zinc-300" },
+  nuevo:       { label: "Nuevo",       bg: "bg-sky-50",     text: "text-sky-700",     ring: "ring-sky-200",     bar: "bg-sky-500" },
+  en_revision: { label: "En revisión", bg: "bg-amber-50",   text: "text-amber-700",   ring: "ring-amber-200",   bar: "bg-amber-400" },
+  enviado:     { label: "Enviado",     bg: "bg-violet-50",  text: "text-violet-700",  ring: "ring-violet-200",  bar: "bg-violet-500" },
+  aceptado:    { label: "Aceptado",    bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200", bar: "bg-emerald-500" },
+  rechazado:   { label: "Rechazado",   bg: "bg-rose-50",    text: "text-rose-600",    ring: "ring-rose-200",    bar: "bg-rose-400" },
+  cancelado:   { label: "Cancelado",   bg: "bg-zinc-50",    text: "text-zinc-500",    ring: "ring-zinc-200",    bar: "bg-zinc-300" },
 }
 
 const relacionConfig: Record<string, { label: string; dot: string }> = {
@@ -38,13 +38,13 @@ const relacionConfig: Record<string, { label: string; dot: string }> = {
 }
 
 const statusOptions: Array<{ value: QuoteRequest["status"] | "todas"; label: string }> = [
-  { value: "todas",        label: "Todas" },
-  { value: "nuevo",        label: "Nuevo" },
-  { value: "en_revision",  label: "En revisión" },
-  { value: "enviado",      label: "Enviado" },
-  { value: "aceptado",     label: "Aceptado" },
-  { value: "rechazado",    label: "Rechazado" },
-  { value: "cancelado",    label: "Cancelado" },
+  { value: "todas",       label: "Todas" },
+  { value: "nuevo",       label: "Nuevo" },
+  { value: "en_revision", label: "En revisión" },
+  { value: "enviado",     label: "Enviado" },
+  { value: "aceptado",    label: "Aceptado" },
+  { value: "rechazado",   label: "Rechazado" },
+  { value: "cancelado",   label: "Cancelado" },
 ]
 
 function fmt(d: string) {
@@ -60,9 +60,6 @@ function extractServiceType(comments?: string) {
   if (!comments) return null
   const line = comments.split("\n").find(l => l.toLowerCase().startsWith("tipo de servicio:"))
   return line ? line.replace(/^tipo de servicio:\s*/i, "").trim() : null
-}
-function getServiceType(r: QuoteRequest) {
-  return (r as any).service_type || extractServiceType(r.comments) || "—"
 }
 
 export default async function DashboardPage({
@@ -107,7 +104,7 @@ export default async function DashboardPage({
   })
 
   const companyName = companyData?.name ?? "Dashboard"
-  const today = new Date().toLocaleDateString("es-ES", { weekday:"long", day:"numeric", month:"long" })
+  const today = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })
 
   return (
     <div className="flex h-screen bg-[#f5f5f4] overflow-hidden" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
@@ -124,13 +121,14 @@ export default async function DashboardPage({
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           <p className="text-[10px] font-medium text-white/20 uppercase tracking-widest px-2 pb-1">Principal</p>
-          <SideLink href="/dashboard" icon={<Inbox className="size-3.5"/>} label="Solicitudes" active />
-          <SideLink href="/dashboard/clientes" icon={<Users className="size-3.5"/>} label="Clientes" />
-          <SideLink href="/dashboard/analytics" icon={<BarChart3 className="size-3.5"/>} label="Analytics" />
+          <SideLink href="/dashboard" icon={<Inbox className="size-3.5" />} label="Solicitudes" active />
+          <SideLink href="/dashboard/clientes" icon={<Users className="size-3.5" />} label="Clientes" />
+          <SideLink href="/dashboard/analytics" icon={<BarChart3 className="size-3.5" />} label="Analytics" />
+          <SideLink href="/dashboard/calendario" icon={<Calendar className="size-3.5" />} label="Calendario" />
           <div className="pt-4 pb-1 px-2">
             <p className="text-[10px] font-medium text-white/20 uppercase tracking-widest">Config</p>
           </div>
-          <SideLink href="/dashboard/ajustes" icon={<Settings className="size-3.5"/>} label="Ajustes" />
+          <SideLink href="/dashboard/ajustes" icon={<Settings className="size-3.5" />} label="Ajustes" />
         </nav>
         <div className="px-3 py-4 border-t border-white/5 space-y-2">
           <p className="text-[11px] text-white/30 truncate px-2">{session.user.email}</p>
@@ -179,17 +177,17 @@ export default async function DashboardPage({
           {/* KPIs */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
             <KPI label="Total solicitudes" value={requests.length}
-              sub={`${requests.filter(r=>r.status==="nuevo").length} nuevas · ${requests.filter(r=>r.status==="en_revision").length} en revisión`}
-              icon={<FileText className="size-4 text-blue-600"/>} iconBg="bg-blue-50" accent="border-l-blue-500" />
+              sub={`${requests.filter(r => r.status === "nuevo").length} nuevas · ${requests.filter(r => r.status === "en_revision").length} en revisión`}
+              icon={<FileText className="size-4 text-blue-600" />} iconBg="bg-blue-50" accent="border-l-blue-500" />
             <KPI label="Tasa de cierre" value={`${tasa}%`}
               sub={`${aceptadas} aceptadas de ${requests.length}`}
-              icon={<CircleCheck className="size-4 text-emerald-600"/>} iconBg="bg-emerald-50" accent="border-l-emerald-500" up={tasa > 0} />
+              icon={<CircleCheck className="size-4 text-emerald-600" />} iconBg="bg-emerald-50" accent="border-l-emerald-500" up={tasa > 0} />
             <KPI label="Facturado" value={`${facturado.toLocaleString("es-ES")} €`}
               sub={`${clientes} clientes únicos`}
-              icon={<Euro className="size-4 text-violet-600"/>} iconBg="bg-violet-50" accent="border-l-violet-500" />
+              icon={<Euro className="size-4 text-violet-600" />} iconBg="bg-violet-50" accent="border-l-violet-500" />
             <KPI label="Pendiente de cobro" value={`${pendiente.toLocaleString("es-ES")} €`}
-              sub={`${requests.filter(r=>r.status==="enviado").length} presupuestos enviados`}
-              icon={<Clock3 className="size-4 text-amber-600"/>} iconBg="bg-amber-50" accent="border-l-amber-500" />
+              sub={`${requests.filter(r => r.status === "enviado").length} presupuestos enviados`}
+              icon={<Clock3 className="size-4 text-amber-600" />} iconBg="bg-amber-50" accent="border-l-amber-500" />
           </div>
 
           {/* TABLA */}
@@ -197,7 +195,7 @@ export default async function DashboardPage({
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 px-5 py-3.5 border-b border-[#f3f4f6]">
               <div className="flex-1">
                 <p className="text-sm font-semibold text-[#111827]">Solicitudes</p>
-                <p className="text-xs text-[#9ca3af]">{filtered.length} resultado{filtered.length!==1?"s":""}</p>
+                <p className="text-xs text-[#9ca3af]">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</p>
               </div>
               <form method="GET">
                 <input type="hidden" name="estado" value={selectedStatus} />
@@ -232,9 +230,9 @@ export default async function DashboardPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#f3f4f6]">
-                  {["Cliente","Ruta","Relación","Fecha viaje","Precio","Estado","Recibida",""].map((h,i) => (
+                  {["Cliente","Ruta","Relación","Fecha viaje","Precio","Estado","Recibida",""].map((h, i) => (
                     <th key={i} className={`px-5 py-2.5 text-left text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider ${
-                      i===2?"hidden lg:table-cell":i===3||i===4||i===6?"hidden md:table-cell":""
+                      i === 2 ? "hidden lg:table-cell" : i === 3 || i === 4 || i === 6 ? "hidden md:table-cell" : ""
                     }`}>{h}</th>
                   ))}
                 </tr>
@@ -258,7 +256,7 @@ export default async function DashboardPage({
                   const sCfg = statusConfig[r.status]
                   const precio = r.final_price ?? r.estimated_price
                   return (
-                    <tr key={r.id} className={`border-b border-[#f9fafb] hover:bg-[#fafafa] transition-colors group ${urgente?"bg-amber-50/40":""}`}>
+                    <tr key={r.id} className={`border-b border-[#f9fafb] hover:bg-[#fafafa] transition-colors group ${urgente ? "bg-amber-50/40" : ""}`}>
                       <td className="px-5 py-3.5">
                         <p className="font-semibold text-[#111827] text-[13px] flex items-center gap-1.5">
                           {r.requester_name}
@@ -279,8 +277,8 @@ export default async function DashboardPage({
                         ) : <span className="text-xs text-[#d1d5db]">—</span>}
                       </td>
                       <td className="px-5 py-3.5 hidden md:table-cell">
-                        <p className={`text-[13px] font-medium ${urgente?"text-amber-600":"text-[#374151]"}`}>{fmtShort(r.trip_date)}</p>
-                        {urgente && <p className="text-[11px] text-amber-500">en {dias} día{dias!==1?"s":""}</p>}
+                        <p className={`text-[13px] font-medium ${urgente ? "text-amber-600" : "text-[#374151]"}`}>{fmtShort(r.trip_date)}</p>
+                        {urgente && <p className="text-[11px] text-amber-500">en {dias} día{dias !== 1 ? "s" : ""}</p>}
                       </td>
                       <td className="px-5 py-3.5 hidden md:table-cell">
                         {precio ? (
@@ -299,7 +297,7 @@ export default async function DashboardPage({
                       <td className="px-5 py-3.5">
                         <Link href={`/dashboard/solicitudes/${r.id}`}
                           className="inline-flex items-center gap-1 text-xs font-medium text-[#111827] opacity-0 group-hover:opacity-100 transition-opacity hover:text-blue-600">
-                          Abrir <ChevronRight className="size-3"/>
+                          Abrir <ChevronRight className="size-3" />
                         </Link>
                       </td>
                     </tr>

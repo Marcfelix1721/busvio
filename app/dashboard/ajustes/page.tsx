@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { SettingsForm } from "@/components/dashboard/SettingsForm"
 import Link from "next/link"
-import { ArrowLeft, Bus, ChevronRight } from "lucide-react"
+import { ArrowLeft, Bus, ChevronRight, Users } from "lucide-react"
 
 async function createClient() {
   const cookieStore = await cookies()
@@ -42,6 +42,11 @@ export default async function AjustesPage() {
     .eq("company_id", userData.company_id)
   const totalVehiculos = vehiculosData?.length ?? 0
 
+  const { data: staffData } = await supabase
+    .from("staff").select("id")
+    .eq("company_id", userData.company_id)
+  const totalStaff = staffData?.length ?? 0
+
   return (
     <div style={{ minHeight: "100vh", background: "#f5f5f4", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <div style={{ background: "#111827", padding: "0 1.5rem", height: "56px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -63,23 +68,50 @@ export default async function AjustesPage() {
           </p>
         </div>
 
-        {/* ENLACE A VEHÍCULOS */}
-        <Link href="/dashboard/vehiculos" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", padding: "1rem 1.25rem", marginBottom: "1.5rem", textDecoration: "none" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#111827", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Bus style={{ width: "20px", height: "20px", color: "#fff" }} />
+        {/* ACCESOS RÁPIDOS */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "1.5rem" }}>
+
+          {/* VEHÍCULOS */}
+          <Link href="/dashboard/vehiculos" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", padding: "1rem 1.25rem", textDecoration: "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#111827", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Bus style={{ width: "20px", height: "20px", color: "#fff" }} />
+              </div>
+              <div>
+                <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.9375rem", fontWeight: 600, color: "#111827", margin: 0 }}>
+                  Flota de vehículos
+                </p>
+                <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8rem", color: "#6b7280", margin: "2px 0 0" }}>
+                  {totalVehiculos === 0
+                    ? "Sin vehículos registrados"
+                    : `${totalVehiculos} vehículo${totalVehiculos !== 1 ? "s" : ""} registrado${totalVehiculos !== 1 ? "s" : ""}`}
+                </p>
+              </div>
             </div>
-            <div>
-              <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.9375rem", fontWeight: 600, color: "#111827", margin: 0 }}>
-                Flota de vehículos
-              </p>
-              <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8rem", color: "#6b7280", margin: "2px 0 0" }}>
-                {totalVehiculos === 0 ? "Sin vehículos registrados" : `${totalVehiculos} vehículo${totalVehiculos !== 1 ? "s" : ""} registrado${totalVehiculos !== 1 ? "s" : ""}`} · Gestiona tu flota y estado de disponibilidad
-              </p>
+            <ChevronRight style={{ width: "16px", height: "16px", color: "#9ca3af", flexShrink: 0 }} />
+          </Link>
+
+          {/* PERSONAL */}
+          <Link href="/dashboard/staff" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", padding: "1rem 1.25rem", textDecoration: "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#0f766e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Users style={{ width: "20px", height: "20px", color: "#fff" }} />
+              </div>
+              <div>
+                <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.9375rem", fontWeight: 600, color: "#111827", margin: 0 }}>
+                  Personal
+                </p>
+                <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8rem", color: "#6b7280", margin: "2px 0 0" }}>
+                  {totalStaff === 0
+                    ? "Sin personal registrado"
+                    : `${totalStaff} persona${totalStaff !== 1 ? "s" : ""} registrada${totalStaff !== 1 ? "s" : ""}`}
+                </p>
+              </div>
             </div>
-          </div>
-          <ChevronRight style={{ width: "16px", height: "16px", color: "#9ca3af", flexShrink: 0 }} />
-        </Link>
+            <ChevronRight style={{ width: "16px", height: "16px", color: "#9ca3af", flexShrink: 0 }} />
+          </Link>
+
+        </div>
 
         <SettingsForm
           settings={settings}
