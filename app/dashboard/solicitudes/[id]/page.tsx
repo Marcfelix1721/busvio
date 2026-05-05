@@ -76,26 +76,21 @@ export default async function QuoteRequestDetailPage({
   const quote = data as QuoteRequest | null
   if (!quote) redirect("/dashboard")
 
-  // Obtener datos de la empresa
   const { data: company } = await supabase
     .from("companies")
     .select("*")
     .eq("id", quote.company_id)
     .maybeSingle()
 
-  // Historial del cliente — todas las solicitudes del mismo email en esta empresa
   const { data: historialData } = await supabase
     .from("quote_requests")
-    .select("id, origin, destination, trip_date, status, created_at")
+    .select("*")
     .eq("company_id", quote.company_id)
     .eq("requester_email", quote.requester_email)
     .neq("id", quote.id)
     .order("created_at", { ascending: false })
 
-  const historial = (historialData ?? []) as Pick
-    QuoteRequest,
-    "id" | "origin" | "destination" | "trip_date" | "status" | "created_at"
-  >[]
+  const historial = (historialData ?? []) as QuoteRequest[]
 
   const serviceType = extractCommentField(quote.comments, "Tipo de servicio") ?? "-"
   const endTime =
@@ -121,7 +116,7 @@ export default async function QuoteRequestDetailPage({
             <p className="text-sm text-gray-500 mt-1">Recibida el {formatDate(quote.created_at)}</p>
           </div>
           <Badge className={`${statusClasses[quote.status]} border px-3 py-1 text-sm font-semibold`}>
-            {quote.status}
+            {statusLabels[quote.status]}
           </Badge>
         </div>
 
@@ -174,7 +169,6 @@ export default async function QuoteRequestDetailPage({
               </div>
             </div>
 
-            {/* HISTORIAL DEL CLIENTE */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-center gap-2 mb-4">
                 <History className="h-4 w-4 text-[#1e3a5f]" />
@@ -199,7 +193,7 @@ export default async function QuoteRequestDetailPage({
                     <Link
                       key={item.id}
                       href={`/dashboard/solicitudes/${item.id}`}
-                      className="flex items-center gap-4 bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors group"
+                      className="flex items-center gap-4 bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-800 truncate">
