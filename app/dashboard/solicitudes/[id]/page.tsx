@@ -9,7 +9,7 @@ import {
   MessageSquare, TrendingUp,
 } from "lucide-react"
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
-import { QuoteActions } from "@/components/dashboard/QuoteActions"
+import QuoteActions from "@/components/dashboard/QuoteActions"
 import { ClienteEstado } from "@/components/dashboard/ClienteEstado"
 import { MapaRuta } from "@/components/dashboard/MapaRuta"
 import { ServiceAssignments } from "@/components/dashboard/ServiceAssignments"
@@ -51,9 +51,11 @@ function extractCommentField(comments: string | undefined, key: string) {
 function fmt(d: string) {
   return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })
 }
+
 function fmtShort(d: string) {
   return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })
 }
+
 function diasHasta(d: string) {
   return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000)
 }
@@ -65,7 +67,6 @@ export default async function QuoteRequestDetailPage({
 }) {
   const { id } = await params
   const supabase = await createClient()
-
   const { data } = await supabase.from("quote_requests").select("*").eq("id", id).maybeSingle()
   const quote = data as QuoteRequest | null
   if (!quote) redirect("/dashboard")
@@ -114,7 +115,6 @@ export default async function QuoteRequestDetailPage({
 
   return (
     <div className="min-h-screen bg-[#f5f5f4]" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-
       {/* TOPBAR */}
       <div className="bg-[#111827] px-6 py-3.5 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-4">
@@ -131,7 +131,6 @@ export default async function QuoteRequestDetailPage({
       </div>
 
       <div className="max-w-[1300px] mx-auto px-6 py-6">
-
         {/* HEADER */}
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
@@ -160,10 +159,8 @@ export default async function QuoteRequestDetailPage({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5 items-start">
-
           {/* COLUMNA IZQUIERDA */}
           <div className="space-y-4">
-
             {/* DATOS DEL SOLICITANTE */}
             <Section title="Datos del solicitante">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -176,7 +173,6 @@ export default async function QuoteRequestDetailPage({
             {/* DETALLES DEL VIAJE */}
             <Section title="Detalles del viaje">
               <MapaRuta origin={quote.origin} destination={quote.destination} />
-
               <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-4 mb-4">
                 <div className="flex items-start gap-4">
                   <div className="flex flex-col items-center gap-1 pt-1">
@@ -202,7 +198,6 @@ export default async function QuoteRequestDetailPage({
                   </div>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <InfoTile icon={<Calendar className="size-3.5 text-[#6b7280]" />} label="Fecha viaje" value={fmt(quote.trip_date)} />
                 <InfoTile icon={<Users className="size-3.5 text-[#6b7280]" />} label="Pasajeros" value={String(quote.passengers)} />
@@ -288,7 +283,11 @@ export default async function QuoteRequestDetailPage({
 
           {/* COLUMNA DERECHA */}
           <div className="lg:sticky lg:top-20 space-y-4">
-            <QuoteActions quote={quote} company={company} vehicles={vehicles} />
+            <QuoteActions
+              quote={quote}
+              companyId={quote.company_id}
+              vehicles={vehicles}
+            />
           </div>
         </div>
       </div>
