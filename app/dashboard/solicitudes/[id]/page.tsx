@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { QuoteActions } from "@/components/dashboard/QuoteActions"
+import { ClienteEstado } from "@/components/dashboard/ClienteEstado"
 import { QuoteRequest } from "@/lib/types"
 
 async function createClient() {
@@ -91,6 +92,16 @@ export default async function QuoteRequestDetailPage({
     .order("created_at", { ascending: false })
 
   const historial = (historialData ?? []) as QuoteRequest[]
+
+  // Estado de relación comercial del cliente
+  const { data: clienteData } = await supabase
+    .from("clientes")
+    .select("estado_relacion")
+    .eq("company_id", quote.company_id)
+    .eq("email", quote.requester_email)
+    .maybeSingle()
+
+  const estadoRelacion = clienteData?.estado_relacion ?? null
 
   const serviceType = extractCommentField(quote.comments, "Tipo de servicio") ?? "-"
   const endTime =
@@ -169,6 +180,16 @@ export default async function QuoteRequestDetailPage({
               </div>
             </div>
 
+            {/* RELACIÓN COMERCIAL */}
+            <ClienteEstado
+              companyId={quote.company_id}
+              email={quote.requester_email}
+              nombre={quote.requester_name}
+              telefono={quote.requester_phone ?? ''}
+              estadoInicial={estadoRelacion}
+            />
+
+            {/* HISTORIAL DEL CLIENTE */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-center gap-2 mb-4">
                 <History className="h-4 w-4 text-[#1e3a5f]" />
