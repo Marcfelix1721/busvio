@@ -13,6 +13,11 @@ type Vehicle = {
   plazas: number
   tipo: "minibus" | "autobus" | "autocar"
   estado: "activo" | "reparacion" | "baja"
+  consumo: number | null
+  precio_combustible: number | null
+  amortizacion_km: number | null
+  mantenimiento_km: number | null
+  seguro_dia: number | null
   created_at: string
 }
 
@@ -22,10 +27,10 @@ const tipoLabel: Record<string, string> = {
   autocar: "Autocar",
 }
 
-const estadoConfig: Record<string, { label: string; bg: string; text: string; dot: string }> = {
-  activo:    { label: "Activo",        bg: "#f0fdf4", text: "#15803d", dot: "#22c55e" },
-  reparacion:{ label: "En reparación", bg: "#fffbeb", text: "#b45309", dot: "#f59e0b" },
-  baja:      { label: "De baja",       bg: "#fef2f2", text: "#dc2626", dot: "#ef4444" },
+const estadoConfig: Record<string, { label: string; bg: string; text: string }> = {
+  activo:     { label: "Activo",        bg: "#f0fdf4", text: "#15803d" },
+  reparacion: { label: "En reparación", bg: "#fffbeb", text: "#b45309" },
+  baja:       { label: "De baja",       bg: "#fef2f2", text: "#dc2626" },
 }
 
 const tipoIconColor: Record<string, string> = {
@@ -34,9 +39,14 @@ const tipoIconColor: Record<string, string> = {
   autocar: "#6d28d9",
 }
 
-const emptyForm = { matricula: "", marca_modelo: "", anio: "", plazas: "", tipo: "autocar", estado: "activo" }
+const emptyForm = {
+  matricula: "", marca_modelo: "", anio: "", plazas: "", tipo: "autocar", estado: "activo",
+  consumo: "", precio_combustible: "", amortizacion_km: "", mantenimiento_km: "", seguro_dia: "",
+}
 
-export function VehiculosManager({ companyId, initialVehiculos }: { companyId: string; initialVehiculos: Vehicle[] }) {
+export function VehiculosManager({ companyId, initialVehiculos }: {
+  companyId: string; initialVehiculos: Vehicle[]
+}) {
   const supabase = createClient()
   const [vehiculos, setVehiculos] = useState<Vehicle[]>(initialVehiculos)
   const [showForm, setShowForm] = useState(false)
@@ -50,15 +60,27 @@ export function VehiculosManager({ companyId, initialVehiculos }: { companyId: s
 
   const openNew = () => { setForm({ ...emptyForm }); setEditingId(null); setShowForm(true); setMessage("") }
   const openEdit = (v: Vehicle) => {
-    setForm({ matricula: v.matricula, marca_modelo: v.marca_modelo, anio: v.anio?.toString() ?? "", plazas: v.plazas.toString(), tipo: v.tipo, estado: v.estado })
+    setForm({
+      matricula: v.matricula, marca_modelo: v.marca_modelo,
+      anio: v.anio?.toString() ?? "", plazas: v.plazas.toString(),
+      tipo: v.tipo, estado: v.estado,
+      consumo: v.consumo?.toString() ?? "",
+      precio_combustible: v.precio_combustible?.toString() ?? "",
+      amortizacion_km: v.amortizacion_km?.toString() ?? "",
+      mantenimiento_km: v.mantenimiento_km?.toString() ?? "",
+      seguro_dia: v.seguro_dia?.toString() ?? "",
+    })
     setEditingId(v.id); setShowForm(true); setMessage("")
   }
   const closeForm = () => { setShowForm(false); setEditingId(null) }
 
+  const parseNum = (v: string) => v.trim() === "" ? null : parseFloat(v)
+
   const handleSave = async () => {
-    if (!form.matricula || !form.marca_modelo || !form.plazas) { setMessage("Matrícula, modelo y plazas son obligatorios"); return }
-    setSaving(true)
-    setMessage("")
+    if (!form.matricula || !form.marca_modelo || !form.plazas) {
+      setMessage("Matrícula, modelo y plazas son obligatorios"); return
+    }
+    setSaving(true); setMessage("")
     const payload = {
       company_id: companyId,
       matricula: form.matricula.toUpperCase().trim(),
@@ -67,6 +89,11 @@ export function VehiculosManager({ companyId, initialVehiculos }: { companyId: s
       plazas: parseInt(form.plazas),
       tipo: form.tipo as Vehicle["tipo"],
       estado: form.estado as Vehicle["estado"],
+      consumo: parseNum(form.consumo),
+      precio_combustible: parseNum(form.precio_combustible),
+      amortizacion_km: parseNum(form.amortizacion_km),
+      mantenimiento_km: parseNum(form.mantenimiento_km),
+      seguro_dia: parseNum(form.seguro_dia),
     }
     if (editingId) {
       const { data, error } = await supabase.from("vehicles").update(payload).eq("id", editingId).select().single()
@@ -77,8 +104,7 @@ export function VehiculosManager({ companyId, initialVehiculos }: { companyId: s
       if (error) { setMessage("❌ " + error.message); setSaving(false); return }
       setVehiculos(prev => [data, ...prev])
     }
-    setSaving(false)
-    closeForm()
+    setSaving(false); closeForm()
   }
 
   const handleDelete = async (id: string) => {
@@ -100,10 +126,19 @@ export function VehiculosManager({ companyId, initialVehiculos }: { companyId: s
     border: "1px solid #e5e7eb", background: "#fafafa",
     padding: "0 10px", fontSize: "0.8125rem", color: "#111827", outline: "none",
   }
-
+  const focusHandlers = {
+    onFocus: (e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.08)" },
+    onBlur: (e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" },
+  }
   const labelStyle: React.CSSProperties = {
     fontFamily: "'DM Sans', system-ui, sans-serif",
     fontSize: "0.75rem", fontWeight: 500, color: "#6b7280", marginBottom: "5px", display: "block",
+  }
+  const sectionLabel: React.CSSProperties = {
+    fontFamily: "'DM Sans', system-ui, sans-serif",
+    fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.08em",
+    textTransform: "uppercase" as const, color: "#9ca3af",
+    margin: "1rem 0 0.75rem", display: "block",
   }
 
   return (
@@ -141,34 +176,25 @@ export function VehiculosManager({ companyId, initialVehiculos }: { companyId: s
               <X style={{ width: "18px", height: "18px" }} />
             </button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+
+          {/* DATOS BÁSICOS */}
+          <span style={sectionLabel}>Datos del vehículo</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "0.5rem" }}>
             <div>
               <label style={labelStyle}>Matrícula *</label>
-              <input value={form.matricula} onChange={e => handleField("matricula", e.target.value)} placeholder="1234 ABC" style={inputStyle}
-                onFocus={e => { e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.08)" }}
-                onBlur={e => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" }}
-              />
+              <input value={form.matricula} onChange={e => handleField("matricula", e.target.value)} placeholder="1234 ABC" style={inputStyle} {...focusHandlers} />
             </div>
             <div>
               <label style={labelStyle}>Marca / Modelo *</label>
-              <input value={form.marca_modelo} onChange={e => handleField("marca_modelo", e.target.value)} placeholder="Mercedes Tourismo" style={inputStyle}
-                onFocus={e => { e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.08)" }}
-                onBlur={e => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" }}
-              />
+              <input value={form.marca_modelo} onChange={e => handleField("marca_modelo", e.target.value)} placeholder="Mercedes Tourismo" style={inputStyle} {...focusHandlers} />
             </div>
             <div>
               <label style={labelStyle}>Año</label>
-              <input type="number" value={form.anio} onChange={e => handleField("anio", e.target.value)} placeholder="2019" style={inputStyle}
-                onFocus={e => { e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.08)" }}
-                onBlur={e => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" }}
-              />
+              <input type="number" value={form.anio} onChange={e => handleField("anio", e.target.value)} placeholder="2019" style={inputStyle} {...focusHandlers} />
             </div>
             <div>
               <label style={labelStyle}>Plazas *</label>
-              <input type="number" value={form.plazas} onChange={e => handleField("plazas", e.target.value)} placeholder="55" style={inputStyle}
-                onFocus={e => { e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.08)" }}
-                onBlur={e => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" }}
-              />
+              <input type="number" value={form.plazas} onChange={e => handleField("plazas", e.target.value)} placeholder="55" style={inputStyle} {...focusHandlers} />
             </div>
             <div>
               <label style={labelStyle}>Tipo</label>
@@ -187,8 +213,35 @@ export function VehiculosManager({ companyId, initialVehiculos }: { companyId: s
               </select>
             </div>
           </div>
-          {message && <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8rem", color: "#dc2626", marginBottom: "0.75rem" }}>{message}</p>}
-          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+
+          {/* COSTES PROPIOS */}
+          <span style={sectionLabel}>Costes propios del vehículo <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, color: "#b0b7c3" }}>— déjalo vacío para usar los valores globales de Ajustes</span></span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            <div>
+              <label style={labelStyle}>Consumo <span style={{ color: "#9ca3af", fontWeight: 400 }}>· L/100km</span></label>
+              <input type="number" step="0.1" value={form.consumo} onChange={e => handleField("consumo", e.target.value)} placeholder="Ej: 28" style={inputStyle} {...focusHandlers} />
+            </div>
+            <div>
+              <label style={labelStyle}>Precio combustible <span style={{ color: "#9ca3af", fontWeight: 400 }}>· €/litro</span></label>
+              <input type="number" step="0.01" value={form.precio_combustible} onChange={e => handleField("precio_combustible", e.target.value)} placeholder="Ej: 1.65" style={inputStyle} {...focusHandlers} />
+            </div>
+            <div>
+              <label style={labelStyle}>Amortización <span style={{ color: "#9ca3af", fontWeight: 400 }}>· €/km</span></label>
+              <input type="number" step="0.01" value={form.amortizacion_km} onChange={e => handleField("amortizacion_km", e.target.value)} placeholder="Ej: 0.15" style={inputStyle} {...focusHandlers} />
+            </div>
+            <div>
+              <label style={labelStyle}>Mantenimiento <span style={{ color: "#9ca3af", fontWeight: 400 }}>· €/km</span></label>
+              <input type="number" step="0.01" value={form.mantenimiento_km} onChange={e => handleField("mantenimiento_km", e.target.value)} placeholder="Ej: 0.08" style={inputStyle} {...focusHandlers} />
+            </div>
+            <div>
+              <label style={labelStyle}>Seguro <span style={{ color: "#9ca3af", fontWeight: 400 }}>· €/día</span></label>
+              <input type="number" step="0.01" value={form.seguro_dia} onChange={e => handleField("seguro_dia", e.target.value)} placeholder="Ej: 35" style={inputStyle} {...focusHandlers} />
+            </div>
+          </div>
+
+          {message && <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8rem", color: "#dc2626", margin: "0.75rem 0 0" }}>{message}</p>}
+
+          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "1.25rem" }}>
             <button onClick={closeForm} style={{ fontFamily: "'DM Sans', system-ui, sans-serif", height: "36px", padding: "0 14px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", fontSize: "0.8125rem", fontWeight: 500, color: "#374151", cursor: "pointer" }}>
               Cancelar
             </button>
@@ -214,14 +267,13 @@ export function VehiculosManager({ companyId, initialVehiculos }: { companyId: s
           {vehiculos.map(v => {
             const eCfg = estadoConfig[v.estado]
             const color = tipoIconColor[v.tipo]
+            const tieneCostePropios = v.consumo || v.amortizacion_km || v.mantenimiento_km || v.seguro_dia
             return (
               <div key={v.id} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", padding: "1rem 1.25rem", display: "flex", alignItems: "center", gap: "1rem" }}>
-                {/* Icono tipo */}
                 <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: color + "15", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <Bus style={{ width: "20px", height: "20px", color }} />
                 </div>
 
-                {/* Info principal */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                     <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.9375rem", fontWeight: 700, color: "#111827", letterSpacing: "0.02em" }}>{v.matricula}</span>
@@ -230,29 +282,30 @@ export function VehiculosManager({ companyId, initialVehiculos }: { companyId: s
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px", flexWrap: "wrap" }}>
                     <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#6b7280" }}>{tipoLabel[v.tipo]}</span>
-                    <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#9ca3af" }}>·</span>
+                    <span style={{ color: "#d1d5db", fontSize: "0.75rem" }}>·</span>
                     <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#6b7280" }}>{v.plazas} plazas</span>
+                    {tieneCostePropios ? (
+                      <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", fontWeight: 600, padding: "1px 7px", borderRadius: "999px", background: "#f0fdf4", color: "#15803d" }}>
+                        Costes propios
+                      </span>
+                    ) : (
+                      <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", padding: "1px 7px", borderRadius: "999px", background: "#f3f4f6", color: "#9ca3af" }}>
+                        Costes globales
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* Estado selector */}
                 <select
                   value={v.estado}
                   onChange={e => handleEstado(v.id, e.target.value as Vehicle["estado"])}
-                  style={{
-                    fontFamily: "'DM Sans', system-ui, sans-serif",
-                    fontSize: "0.75rem", fontWeight: 600,
-                    padding: "4px 10px", borderRadius: "999px",
-                    border: "none", cursor: "pointer", outline: "none",
-                    background: eCfg.bg, color: eCfg.text,
-                  }}
+                  style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 600, padding: "4px 10px", borderRadius: "999px", border: "none", cursor: "pointer", outline: "none", background: eCfg.bg, color: eCfg.text }}
                 >
                   <option value="activo">Activo</option>
                   <option value="reparacion">En reparación</option>
                   <option value="baja">De baja</option>
                 </select>
 
-                {/* Acciones */}
                 <div style={{ display: "flex", gap: "4px" }}>
                   <button onClick={() => openEdit(v)} style={{ width: "32px", height: "32px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#6b7280" }}>
                     <Pencil style={{ width: "13px", height: "13px" }} />

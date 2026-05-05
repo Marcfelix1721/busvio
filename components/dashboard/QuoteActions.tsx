@@ -78,7 +78,6 @@ export function QuoteActions({ quote, company, vehicles = [] }: {
   const [calculando, setCalculando] = useState(false)
   const [mostrarDesglose, setMostrarDesglose] = useState(false)
 
-  // Sugerencia automática: vehículo activo más pequeño que quepa
   const sugerido = vehicles
     .filter(v => v.estado === "activo" && v.plazas >= (quote.passengers ?? 0))
     .sort((a, b) => a.plazas - b.plazas)[0] ?? null
@@ -128,6 +127,7 @@ export function QuoteActions({ quote, company, vehicles = [] }: {
           stops: quote.stops ?? "",
           company_id: quote.company_id,
           vehicle_type: vehicleType,
+          vehicle_id: selectedVehicleId || null,
           trip_date: quote.trip_date,
           departure_time: quote.departure_time,
         }),
@@ -273,10 +273,13 @@ export function QuoteActions({ quote, company, vehicles = [] }: {
       })
       const data = await res.json()
       if (!res.ok) { setMessage(`❌ Error: ${data.error}`); return }
-      await supabase.from("quote_requests").update({ status: "enviado", final_price: precio === 0 ? null : Number(precio) }).eq("id", quote.id)
+      await supabase.from("quote_requests").update({
+        status: "enviado",
+        final_price: precio === 0 ? null : Number(precio),
+      }).eq("id", quote.id)
       setStatus("enviado")
       setMessage("✅ Presupuesto enviado por email correctamente")
-    } catch (err) {
+    } catch {
       setMessage("❌ Error de conexión al enviar el email")
     } finally {
       setEnviando(false)
@@ -293,7 +296,7 @@ export function QuoteActions({ quote, company, vehicles = [] }: {
             Vehículo asignado
           </p>
 
-          {sugerido && !( quote as any).vehicle_id && (
+          {sugerido && !(quote as any).vehicle_id && (
             <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "8px 12px", marginBottom: "10px", display: "flex", alignItems: "center", gap: "6px" }}>
               <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#15803d" }}>
                 ✓ Sugerido: <strong>{sugerido.marca_modelo}</strong> ({sugerido.plazas} plazas) — {sugerido.matricula}
@@ -310,7 +313,7 @@ export function QuoteActions({ quote, company, vehicles = [] }: {
               <option value="">— Sin asignar —</option>
               {vehicles.map(v => (
                 <option key={v.id} value={v.id} disabled={v.estado !== "activo"}>
-                  {v.matricula} · {v.marca_modelo} · {v.plazas}pax {v.estado !== "activo" ? `(${v.estado === "reparacion" ? "En reparación" : "De baja"})` : ""}
+                  {v.matricula} · {v.marca_modelo} · {v.plazas}pax{v.estado !== "activo" ? ` (${v.estado === "reparacion" ? "En reparación" : "De baja"})` : ""}
                 </option>
               ))}
             </select>
@@ -321,7 +324,9 @@ export function QuoteActions({ quote, company, vehicles = [] }: {
               {savingVehicle ? "..." : "Asignar"}
             </button>
           </div>
-          {vehicleMessage && <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#059669", marginTop: "6px" }}>{vehicleMessage}</p>}
+          {vehicleMessage && (
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#059669", marginTop: "6px" }}>{vehicleMessage}</p>
+          )}
         </div>
       )}
 
@@ -365,7 +370,10 @@ export function QuoteActions({ quote, company, vehicles = [] }: {
                   </div>
                   {rutaInfo.desglose && (
                     <div className="mt-2">
-                      <button onClick={() => setMostrarDesglose(!mostrarDesglose)} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium">
+                      <button
+                        onClick={() => setMostrarDesglose(!mostrarDesglose)}
+                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      >
                         {mostrarDesglose ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
                         {mostrarDesglose ? "Ocultar desglose interno" : "Ver desglose interno"}
                       </button>
@@ -428,9 +436,13 @@ export function QuoteActions({ quote, company, vehicles = [] }: {
           <p className="mb-2 text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">Cambiar estado</p>
           <div className="grid grid-cols-2 gap-2">
             {statuses.map(nextStatus => (
-              <Button key={nextStatus.value} type="button" variant={nextStatus.value === status ? "default" : "outline"}
+              <Button key={nextStatus.value} type="button"
+                variant={nextStatus.value === status ? "default" : "outline"}
                 onClick={() => updateStatus(nextStatus.value)} disabled={saving}
-                className={nextStatus.value === status ? "h-8 rounded-md bg-[#1e3a5f] px-3 py-1 text-xs text-white hover:bg-[#1e3a5f]/90" : "h-8 rounded-md border-gray-200 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"}>
+                className={nextStatus.value === status
+                  ? "h-8 rounded-md bg-[#1e3a5f] px-3 py-1 text-xs text-white hover:bg-[#1e3a5f]/90"
+                  : "h-8 rounded-md border-gray-200 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                }>
                 {nextStatus.label}
               </Button>
             ))}
@@ -465,6 +477,7 @@ export function QuoteActions({ quote, company, vehicles = [] }: {
           {message && <p className="text-sm text-slate-500">{message}</p>}
         </CardContent>
       </Card>
+
     </div>
   )
 }

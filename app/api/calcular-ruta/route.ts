@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
       stops,
       company_id,
       vehicle_type,
+      vehicle_id,
       trip_date,
       departure_time,
       estimated_duration_minutes,
@@ -40,7 +41,9 @@ export async function POST(req: NextRequest) {
 
     const waypointCoords: [number, number][] = []
     if (stops) {
-      const stopList = stops.split(",").map((s: string) => s.trim()).filter(Boolean)
+      const stopList = Array.isArray(stops)
+        ? stops
+        : stops.split(",").map((s: string) => s.trim()).filter(Boolean)
       for (const stop of stopList) {
         const coords = await geocode(stop)
         if (coords) waypointCoords.push(coords)
@@ -80,23 +83,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ distanceKm, durationText, precioSugerido: null, desglose: null })
     }
 
-    // 3. COMBUSTIBLE
-    const consumo = vehicle_type === "minibus" ? s.consumo_minibus
-      : vehicle_type === "autobus" ? s.consumo_autobus
+    // 3. OBTENER COSTES DEL VEHÍCULO ASIGNADO (si existe)
+    let vehicleData: any = null
+    if (vehicle_id) {
+      const { data } = await supabase
+        .from("vehicles")
+        .select("consumo, precio_combustible, amortizacion_km, mantenimiento_km, seguro_dia, tipo")
+        .eq("id", vehicle_id)
+        .maybeSingle()
+      vehicleData = data
+    }
+
+    // Tipo de vehículo — del vehículo asignado o del campo vehicle_type
+    const tipoVehiculo = vehicleData?.tipo ?? vehicle_type
+
+    // Consumo — del vehículo asignado o fallback global por tipo
+    const consumo = vehicleData?.consumo ?? (
+      tipoVehiculo === "minibus" ? s.consumo_minibus
+      : tipoVehiculo === "autobus" ? s.consumo_autobus
       : s.consumo_autocar
-    const coste_combustible = (distanceKm * consumo / 100) * s.precio_combustible
+    )
 
-    // 4. VEHÍCULO
-    const coste_vehiculo = distanceKm * (s.amortizacion_km + s.mantenimiento_km) + s.seguro_dia
+    // Precio combustible — del vehículo asignado o fallback global
+    const precio_combustible = vehicleData?.precio_combustible ?? s.precio_combustible
 
-    // 5. PEAJES
+    // Amortización, mantenimiento y seguro — del vehículo asignado o fallback global
+    const amortizacion_km = vehicleData?.amortizacion_km ?? s.amortizacion_km
+    const mantenimiento_km = vehicleData?.mantenimiento_km ?? s.mantenimiento_km
+    const seguro_dia = vehicleData?.seguro_dia ?? s.seguro_dia
+
+    // 4. COMBUSTIBLE
+    const coste_combustible = (distanceKm * consumo / 100) * precio_combustible
+
+    // 5. VEHÍCULO
+    const coste_vehiculo = distanceKm * (amortizacion_km + mantenimiento_km) + seguro_dia
+
+    // 6. PEAJES
     const coste_peajes = distanceKm * s.peajes_nacional / 100
 
-    // 6. CONDUCTOR
+    // 7. CONDUCTOR
     const horas_totales = (estimated_duration_minutes ?? durationMinutes) / 60
     const coste_conductor_base = horas_totales * s.coste_hora_conductor
 
-    // 7. PLUSES AUTOMÁTICOS
+    // 8. PLUSES AUTOMÁTICOS
     let pluses = 0
     const desglose_pluses: string[] = []
 
@@ -123,18 +152,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 8. COSTE BASE
+    // 9. COSTE BASE
     const coste_base = coste_combustible + coste_vehiculo + coste_peajes + coste_conductor_base + pluses
 
-    // 9. MARGEN
+    // 10. MARGEN
     const precio_sin_iva = coste_base * (1 + s.margen_beneficio / 100)
 
-    // 10. IVA
+    // 11. IVA
     const iva_porcentaje = s.iva ?? 21
     const importe_iva = precio_sin_iva * (iva_porcentaje / 100)
     const precio_con_iva = precio_sin_iva + importe_iva
 
-    // 11. PRECIO MÍNIMO (sin IVA)
+    // 12. PRECIO MÍNIMO
     const precio_final_sin_iva = Math.max(Math.round(precio_sin_iva), s.precio_minimo_servicio)
     const precio_final_con_iva = Math.round(precio_final_sin_iva * (1 + iva_porcentaje / 100))
 
@@ -151,6 +180,8 @@ export async function POST(req: NextRequest) {
       iva_porcentaje,
       importe_iva: Math.round(precio_final_sin_iva * iva_porcentaje / 100),
       total: precio_final_con_iva,
+      vehiculo_nombre: vehicleData ? null : null,
+      usando_costes_propios: !!vehicleData,
     }
 
     return NextResponse.json({ distanceKm, durationText, precioSugerido: precio_final_con_iva, desglose })
