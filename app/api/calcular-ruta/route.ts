@@ -1,193 +1,202 @@
-import { NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
-const GEOAPIFY_KEY = process.env.NEXT_PUBLIC_GEOAPIFY_KEY!
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
-async function geocode(address: string): Promise<[number, number] | null> {
-  const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&apiKey=${GEOAPIFY_KEY}`
-  const res = await fetch(url)
-  const data = await res.json()
-  const feature = data.features?.[0]
-  if (!feature) return null
-  const [lon, lat] = feature.geometry.coordinates
-  return [lat, lon]
+async function calcularKmGeoapify(origin: string, destination: string, stops: string[]): Promise<number> {
+  const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_KEY!
+  const waypoints = [origin, ...stops, destination]
+  const coords: { lat: number; lon: number }[] = []
+
+  for (const place of waypoints) {
+    const res = await fetch(
+      `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(place)}&apiKey=${apiKey}`
+    )
+    const data = await res.json()
+    if (data.features?.length > 0) {
+      const { lat, lon } = data.features[0].properties
+      coords.push({ lat, lon })
+    }
+  }
+
+  if (coords.length < 2) return 0
+
+  const waypointsStr = coords.map(c => `${c.lat},${c.lon}`).join('|')
+  const routeRes = await fetch(
+    `https://api.geoapify.com/v1/routing?waypoints=${waypointsStr}&mode=drive&apiKey=${apiKey}`
+  )
+  const routeData = await routeRes.json()
+
+  if (routeData.features?.length > 0) {
+    const distanceM = routeData.features[0].properties.distance
+    return Math.round(distanceM / 1000)
+  }
+
+  return 0
+}
+
+function calcularDias(fechaSalida: string, fechaRegreso: string | null): number {
+  if (!fechaRegreso) return 1
+  const inicio = new Date(fechaSalida)
+  const fin = new Date(fechaRegreso)
+  const diff = Math.ceil((fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24))
+  return Math.max(1, diff + 1)
+}
+
+function calcularHoras(horaSalida: string, horaRegreso: string | null, dias: number): number {
+  if (!horaRegreso || !horaSalida) return dias * 8
+  const [hS, mS] = horaSalida.split(':').map(Number)
+  const [hR, mR] = horaRegreso.split(':').map(Number)
+  const minutosS = hS * 60 + mS
+  const minutosR = hR * 60 + mR
+  let minutosTotales = (minutosR - minutosS) + (dias - 1) * 24 * 60
+  if (minutosTotales <= 0) minutosTotales += 24 * 60
+  return Math.max(1, Math.round(minutosTotales / 60))
+}
+
+function calcularCosteVariable(
+  variable: {
+    tipo: string
+    valor: number
+    intervalo_km: number | null
+  },
+  km: number,
+  dias: number,
+  horas: number
+): number {
+  switch (variable.tipo) {
+    case 'per_km':
+      return variable.valor * km
+    case 'per_day':
+      return variable.valor * dias
+    case 'per_hour':
+      return variable.valor * horas
+    case 'per_x_km':
+      if (!variable.intervalo_km || variable.intervalo_km === 0) return 0
+      return (variable.valor / variable.intervalo_km) * km
+    case 'fixed':
+      return variable.valor
+    default:
+      return 0
+  }
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const body = await req.json()
     const {
       origin,
       destination,
-      stops,
-      company_id,
-      vehicle_type,
-      vehicle_id,
+      stops = [],
       trip_date,
+      return_date,
       departure_time,
-      estimated_duration_minutes,
-    } = await req.json()
+      return_time,
+      company_id,
+      quote_request_id,
+    } = body
 
-    if (!origin || !destination) {
-      return NextResponse.json({ error: "Origen y destino son obligatorios" }, { status: 400 })
-    }
+    // 1. Calcular km reales
+    const km = await calcularKmGeoapify(origin, destination, stops)
 
-    // 1. CALCULAR KM CON GEOAPIFY
-    const originCoords = await geocode(origin)
-    if (!originCoords) return NextResponse.json({ error: `No se encontró: ${origin}` }, { status: 400 })
+    // 2. Calcular días y horas
+    const dias = calcularDias(trip_date, return_date)
+    const horas = calcularHoras(departure_time, return_time, dias)
 
-    const destinationCoords = await geocode(destination)
-    if (!destinationCoords) return NextResponse.json({ error: `No se encontró: ${destination}` }, { status: 400 })
+    // 3. Obtener variables de coste de la empresa
+    const { data: variables, error: varError } = await supabase
+      .from('cost_variables')
+      .select('*')
+      .eq('company_id', company_id)
+      .eq('activa', true)
+      .order('orden')
 
-    const waypointCoords: [number, number][] = []
-    if (stops) {
-      const stopList = Array.isArray(stops)
-        ? stops
-        : stops.split(",").map((s: string) => s.trim()).filter(Boolean)
-      for (const stop of stopList) {
-        const coords = await geocode(stop)
-        if (coords) waypointCoords.push(coords)
+    if (varError) throw varError
+
+    // 4. Si hay quote_request_id, obtener overrides
+    let overrides: Record<string, { activa: boolean; valor_custom: number | null }> = {}
+    if (quote_request_id) {
+      const { data: overrideData } = await supabase
+        .from('quote_cost_overrides')
+        .select('*')
+        .eq('quote_request_id', quote_request_id)
+
+      if (overrideData) {
+        overrideData.forEach((o: any) => {
+          overrides[o.cost_variable_id] = {
+            activa: o.activa,
+            valor_custom: o.valor_custom,
+          }
+        })
       }
     }
 
-    const allPoints = [originCoords, ...waypointCoords, destinationCoords]
-    const waypoints = allPoints.map(([lat, lon]) => `${lat},${lon}`).join("|")
-    const routeUrl = `https://api.geoapify.com/v1/routing?waypoints=${waypoints}&mode=drive&apiKey=${GEOAPIFY_KEY}`
+    // 5. Calcular coste de cada variable
+    const desglose: {
+      id: string
+      nombre: string
+      tipo: string
+      valor: number
+      intervalo_km: number | null
+      obligatoria: boolean
+      activa: boolean
+      coste: number
+    }[] = []
 
-    const routeRes = await fetch(routeUrl)
-    const routeData = await routeRes.json()
-    const feature = routeData.features?.[0]
-    if (!feature) return NextResponse.json({ error: "No se pudo calcular la ruta" }, { status: 400 })
+    let subtotal = 0
 
-    const distanceKm = Math.round(feature.properties.distance / 1000)
-    const durationMinutes = Math.round(feature.properties.time / 60)
-    const hours = Math.floor(durationMinutes / 60)
-    const minutes = durationMinutes % 60
-    const durationText = hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`
+    for (const variable of variables || []) {
+      const override = overrides[variable.id]
 
-    // 2. OBTENER AJUSTES DE LA EMPRESA
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { getAll() { return cookieStore.getAll() } } }
-    )
+      // Si es opcional y hay override que la desactiva, saltar
+      if (!variable.obligatoria && override && !override.activa) {
+        desglose.push({ ...variable, coste: 0, activa: false })
+        continue
+      }
 
-    const { data: s } = await supabase
-      .from("company_settings")
-      .select("*")
-      .eq("company_id", company_id)
-      .maybeSingle()
+      // Usar valor_custom si existe
+      const valorFinal = override?.valor_custom ?? variable.valor
+      const coste = calcularCosteVariable(
+        { tipo: variable.tipo, valor: valorFinal, intervalo_km: variable.intervalo_km },
+        km,
+        dias,
+        horas
+      )
 
-    if (!s) {
-      return NextResponse.json({ distanceKm, durationText, precioSugerido: null, desglose: null })
+      desglose.push({ ...variable, valor: valorFinal, coste, activa: true })
+      subtotal += coste
     }
 
-    // 3. OBTENER COSTES DEL VEHÍCULO ASIGNADO (si existe)
-    let vehicleData: any = null
-    if (vehicle_id) {
-      const { data } = await supabase
-        .from("vehicles")
-        .select("consumo, precio_combustible, amortizacion_km, mantenimiento_km, seguro_dia, tipo")
-        .eq("id", vehicle_id)
-        .maybeSingle()
-      vehicleData = data
-    }
+    // 6. Obtener margen e IVA de company_settings
+    const { data: settings } = await supabase
+      .from('company_settings')
+      .select('margen_beneficio, iva, precio_minimo_servicio')
+      .eq('company_id', company_id)
+      .single()
 
-    // Tipo de vehículo — del vehículo asignado o del campo vehicle_type
-    const tipoVehiculo = vehicleData?.tipo ?? vehicle_type
+    const margen = settings?.margen_beneficio ?? 20
+    const iva = settings?.iva ?? 10
+    const precioMinimo = settings?.precio_minimo_servicio ?? 0
 
-    // Consumo — del vehículo asignado o fallback global por tipo
-    const consumo = vehicleData?.consumo ?? (
-      tipoVehiculo === "minibus" ? s.consumo_minibus
-      : tipoVehiculo === "autobus" ? s.consumo_autobus
-      : s.consumo_autocar
-    )
+    const conMargen = subtotal * (1 + margen / 100)
+    const conIva = conMargen * (1 + iva / 100)
+    const precioFinal = Math.max(conIva, precioMinimo)
 
-    // Precio combustible — del vehículo asignado o fallback global
-    const precio_combustible = vehicleData?.precio_combustible ?? s.precio_combustible
-
-    // Amortización, mantenimiento y seguro — del vehículo asignado o fallback global
-    const amortizacion_km = vehicleData?.amortizacion_km ?? s.amortizacion_km
-    const mantenimiento_km = vehicleData?.mantenimiento_km ?? s.mantenimiento_km
-    const seguro_dia = vehicleData?.seguro_dia ?? s.seguro_dia
-
-    // 4. COMBUSTIBLE
-    const coste_combustible = (distanceKm * consumo / 100) * precio_combustible
-
-    // 5. VEHÍCULO
-    const coste_vehiculo = distanceKm * (amortizacion_km + mantenimiento_km) + seguro_dia
-
-    // 6. PEAJES
-    const coste_peajes = distanceKm * s.peajes_nacional / 100
-
-    // 7. CONDUCTOR
-    const horas_totales = (estimated_duration_minutes ?? durationMinutes) / 60
-    const coste_conductor_base = horas_totales * s.coste_hora_conductor
-
-    // 8. PLUSES AUTOMÁTICOS
-    let pluses = 0
-    const desglose_pluses: string[] = []
-
-    if (trip_date && departure_time) {
-      const fecha = new Date(`${trip_date}T${departure_time}`)
-      const diaSemana = fecha.getDay()
-      const horaInicio = fecha.getHours()
-
-      if (diaSemana === 6) {
-        pluses += s.plus_sabado
-        desglose_pluses.push(`Plus sábado: ${s.plus_sabado}€`)
-      }
-      if (diaSemana === 0) {
-        pluses += s.plus_domingo
-        desglose_pluses.push(`Plus domingo: ${s.plus_domingo}€`)
-      }
-      if (horaInicio >= 22 || horaInicio < 5) {
-        pluses += s.plus_nocturnidad
-        desglose_pluses.push(`Nocturnidad: ${s.plus_nocturnidad}€`)
-      }
-      if (horas_totales > 11) {
-        pluses += s.plus_11horas
-        desglose_pluses.push(`Plus +11h: ${s.plus_11horas}€`)
-      }
-    }
-
-    // 9. COSTE BASE
-    const coste_base = coste_combustible + coste_vehiculo + coste_peajes + coste_conductor_base + pluses
-
-    // 10. MARGEN
-    const precio_sin_iva = coste_base * (1 + s.margen_beneficio / 100)
-
-    // 11. IVA
-    const iva_porcentaje = s.iva ?? 21
-    const importe_iva = precio_sin_iva * (iva_porcentaje / 100)
-    const precio_con_iva = precio_sin_iva + importe_iva
-
-    // 12. PRECIO MÍNIMO
-    const precio_final_sin_iva = Math.max(Math.round(precio_sin_iva), s.precio_minimo_servicio)
-    const precio_final_con_iva = Math.round(precio_final_sin_iva * (1 + iva_porcentaje / 100))
-
-    const desglose = {
-      combustible: Math.round(coste_combustible),
-      vehiculo: Math.round(coste_vehiculo),
-      peajes: Math.round(coste_peajes),
-      conductor: Math.round(coste_conductor_base),
-      pluses: Math.round(pluses),
-      desglose_pluses,
-      subtotal: Math.round(coste_base),
-      margen: Math.round(precio_sin_iva - coste_base),
-      base_imponible: precio_final_sin_iva,
-      iva_porcentaje,
-      importe_iva: Math.round(precio_final_sin_iva * iva_porcentaje / 100),
-      total: precio_final_con_iva,
-      vehiculo_nombre: vehicleData ? null : null,
-      usando_costes_propios: !!vehicleData,
-    }
-
-    return NextResponse.json({ distanceKm, durationText, precioSugerido: precio_final_con_iva, desglose })
-
-  } catch (err) {
-    console.error("Error calcular-ruta:", err)
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
+    return NextResponse.json({
+      km,
+      dias,
+      horas,
+      desglose,
+      subtotal: Math.round(subtotal * 100) / 100,
+      margen,
+      iva,
+      precio_final: Math.round(precioFinal * 100) / 100,
+    })
+  } catch (error: any) {
+    console.error('Error calcular-ruta:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

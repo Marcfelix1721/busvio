@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { SettingsForm } from "@/components/dashboard/SettingsForm"
+import CostVariablesManager from "@/components/dashboard/CostVariablesManager"
 import Link from "next/link"
 import { ArrowLeft, Bus, ChevronRight, Users } from "lucide-react"
 
@@ -71,7 +72,6 @@ export default async function AjustesPage() {
         {/* ACCESOS RÁPIDOS */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "1.5rem" }}>
 
-          {/* VEHÍCULOS */}
           <Link href="/dashboard/vehiculos" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", padding: "1rem 1.25rem", textDecoration: "none" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#111827", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -91,7 +91,6 @@ export default async function AjustesPage() {
             <ChevronRight style={{ width: "16px", height: "16px", color: "#9ca3af", flexShrink: 0 }} />
           </Link>
 
-          {/* PERSONAL */}
           <Link href="/dashboard/staff" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", padding: "1rem 1.25rem", textDecoration: "none" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#0f766e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -111,6 +110,11 @@ export default async function AjustesPage() {
             <ChevronRight style={{ width: "16px", height: "16px", color: "#9ca3af", flexShrink: 0 }} />
           </Link>
 
+        </div>
+
+        {/* VARIABLES DE COSTE */}
+        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", padding: "1.5rem", marginBottom: "1.5rem" }}>
+          <CostVariablesManager companyId={userData.company_id} />
         </div>
 
         <SettingsForm
