@@ -106,19 +106,21 @@ export function StaffManager({ companyId, initialStaff }: {
   const guias = staff.filter(s => s.rol === "guia").length
   const monitores = staff.filter(s => s.rol === "monitor").length
 
+  const kpis = [
+    { titulo: "Conductores", count: conductores, color: rolConfig.conductor.color },
+    { titulo: "Guías",       count: guias,       color: rolConfig.guia.color },
+    { titulo: "Monitores",   count: monitores,   color: rolConfig.monitor.color },
+  ]
+
   return (
     <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
 
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "1.5rem" }}>
-        {[
-          { label: "Conductores", count: conductores, ...rolConfig.conductor },
-          { label: "Guías", count: guias, ...rolConfig.guia },
-          { label: "Monitores", count: monitores, ...rolConfig.monitor },
-        ].map(item => (
-          <div key={item.label} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "1rem" }}>
+        {kpis.map(item => (
+          <div key={item.titulo} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "1rem" }}>
             <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.5rem", fontWeight: 700, color: item.color, margin: 0 }}>{item.count}</p>
-            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#6b7280", margin: "2px 0 0" }}>{item.label}</p>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#6b7280", margin: "2px 0 0" }}>{item.titulo}</p>
           </div>
         ))}
       </div>
