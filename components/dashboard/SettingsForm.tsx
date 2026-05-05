@@ -20,6 +20,10 @@ type Company = {
   logo_url?: string
   color_primario?: string
 }
+type PricingSettings = {
+  garage_address?: string
+  parking_address?: string
+}
 
 function Field({ label, id, value, onChange, unit }: {
   label: string; id: string; value: number
@@ -58,8 +62,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-export function SettingsForm({ settings, companyId, company }: {
-  settings: Settings | null; companyId: string; company: Company | null
+export function SettingsForm({ settings, companyId, company, pricingSettings }: {
+  settings: Settings | null
+  companyId: string
+  company: Company | null
+  pricingSettings?: PricingSettings | null
 }) {
   const supabase = createClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -76,6 +83,11 @@ export function SettingsForm({ settings, companyId, company }: {
 
   const [logoUrl, setLogoUrl] = useState(company?.logo_url ?? "")
   const [uploadingLogo, setUploadingLogo] = useState(false)
+
+  const [locationValues, setLocationValues] = useState({
+    garage_address: pricingSettings?.garage_address ?? "",
+    parking_address: pricingSettings?.parking_address ?? "",
+  })
 
   const [values, setValues] = useState<Settings>({
     precio_combustible: settings?.precio_combustible ?? 1.65,
@@ -116,6 +128,7 @@ export function SettingsForm({ settings, companyId, company }: {
 
   const handleChange = (id: string, val: number) => setValues((prev) => ({ ...prev, [id]: val }))
   const handleCompanyChange = (id: string, val: string) => setCompanyValues((prev) => ({ ...prev, [id]: val }))
+  const handleLocationChange = (id: string, val: string) => setLocationValues((prev) => ({ ...prev, [id]: val }))
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -140,6 +153,8 @@ export function SettingsForm({ settings, companyId, company }: {
   const handleSave = async () => {
     setSaving(true)
     setMessage("")
+
+    // Guardar datos empresa
     const { error: companyError } = await supabase.from("companies").update({
       name: companyValues.name,
       email: companyValues.email,
@@ -149,14 +164,31 @@ export function SettingsForm({ settings, companyId, company }: {
       website: companyValues.website,
       color_primario: companyValues.color_primario,
     }).eq("id", companyId)
+
     if (companyError) {
       setMessage("❌ Error al guardar datos de empresa: " + companyError.message)
       setSaving(false)
       return
     }
+
+    // Guardar garaje y parking en pricing_settings (upsert por si no existe fila)
+    const { error: pricingError } = await supabase.from("pricing_settings").upsert({
+      company_id: companyId,
+      garage_address: locationValues.garage_address || null,
+      parking_address: locationValues.parking_address || null,
+    }, { onConflict: "company_id" })
+
+    if (pricingError) {
+      setMessage("❌ Error al guardar garaje/parking: " + pricingError.message)
+      setSaving(false)
+      return
+    }
+
+    // Guardar ajustes de coste
     const { error } = await supabase.from("company_settings")
       .update({ ...values, updated_at: new Date().toISOString() })
       .eq("company_id", companyId)
+
     setSaving(false)
     if (error) { setMessage("❌ Error al guardar ajustes: " + error.message); return }
     setMessage("✅ Ajustes guardados correctamente")
@@ -171,6 +203,8 @@ export function SettingsForm({ settings, companyId, company }: {
 
   return (
     <div className="space-y-6">
+
+      {/* DATOS EMPRESA */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b pb-2">🏢 Datos de la empresa</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -178,7 +212,7 @@ export function SettingsForm({ settings, companyId, company }: {
           {t("cif", "CIF", "B12345678")}
           {t("email", "Email de contacto", "info@empresa.com")}
           {t("phone", "Teléfono", "+34 600 000 000")}
-          {t("address", "Dirección", "Calle Mayor 1, 08001 Barcelona")}
+          {t("address", "Dirección fiscal", "Calle Mayor 1, 08001 Barcelona")}
           {t("website", "Web", "www.empresa.com")}
         </div>
 
@@ -212,6 +246,40 @@ export function SettingsForm({ settings, companyId, company }: {
               </Button>
               <p className="text-xs text-gray-400 mt-1">PNG, JPG o WebP. Recomendado: fondo transparente.</p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* GARAJE Y PARKING */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b pb-2">🅿️ Garaje y parking</h2>
+        <p className="text-xs text-gray-400">Estas direcciones se usan para calcular los kilómetros en vacío (desde el garaje hasta el punto de recogida) y el coste de parking.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid gap-1.5">
+            <Label htmlFor="garage_address" className="text-sm font-medium text-gray-700">
+              Dirección del garaje <span className="text-gray-400 font-normal">(salida del bus)</span>
+            </Label>
+            <Input
+              id="garage_address"
+              type="text"
+              value={locationValues.garage_address}
+              onChange={(e) => handleLocationChange("garage_address", e.target.value)}
+              placeholder="Calle del Garaje 5, 08001 Barcelona"
+              className="h-9"
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="parking_address" className="text-sm font-medium text-gray-700">
+              Dirección del parking <span className="text-gray-400 font-normal">(donde espera el bus)</span>
+            </Label>
+            <Input
+              id="parking_address"
+              type="text"
+              value={locationValues.parking_address}
+              onChange={(e) => handleLocationChange("parking_address", e.target.value)}
+              placeholder="Parking Central, Calle Ejemplo 10, Madrid"
+              className="h-9"
+            />
           </div>
         </div>
       </div>
