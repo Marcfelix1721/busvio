@@ -1,27 +1,28 @@
-import Link from "next/link";
+import Link from "next/link"
+import { BusFront, ArrowRight, Zap, FileText, LayoutDashboard } from "lucide-react"
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white font-sans">
+    <div style={{ minHeight: "100vh", background: "#fff", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+
       {/* NAVBAR */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="1" y="3" width="22" height="13" rx="2" />
-                <path d="M5 3v13M19 3v13M1 9h22" />
-                <circle cx="7" cy="19" r="2" />
-                <circle cx="17" cy="19" r="2" />
-              </svg>
+      <nav style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
+        background: "rgba(255,255,255,0.92)", backdropFilter: "blur(12px)",
+        borderBottom: "1px solid #f3f4f6",
+      }}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 1.5rem", height: "56px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#111827", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <BusFront style={{ width: "17px", height: "17px", color: "#fff" }} />
             </div>
-            <span className="text-xl font-bold text-gray-900 tracking-tight">Busvio</span>
+            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1rem", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>Busvio</span>
           </div>
-          <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Link href="/login" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 500, color: "#6b7280", padding: "6px 14px", borderRadius: "8px", textDecoration: "none" }}>
               Iniciar sesión
             </Link>
-            <Link href="/registro" className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+            <Link href="/registro" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#fff", background: "#111827", padding: "7px 16px", borderRadius: "9px", textDecoration: "none" }}>
               Empieza gratis
             </Link>
           </div>
@@ -29,81 +30,101 @@ export default function LandingPage() {
       </nav>
 
       {/* HERO */}
-      <section className="pt-32 pb-24 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-sm font-medium px-4 py-1.5 rounded-full mb-8">
-            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-            Diseñado para empresas de transporte discrecional
+      <section style={{ paddingTop: "120px", paddingBottom: "80px", paddingLeft: "1.5rem", paddingRight: "1.5rem" }}>
+        <div style={{ maxWidth: "760px", margin: "0 auto", textAlign: "center" }}>
+
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#f0f9ff", border: "1px solid #bae6fd", color: "#0369a1", fontSize: "0.75rem", fontWeight: 600, padding: "5px 12px", borderRadius: "999px", marginBottom: "1.75rem", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#0ea5e9", display: "inline-block" }} />
+            Diseñado para transporte discrecional
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight mb-6 tracking-tight">
+
+          <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "clamp(2.25rem, 5vw, 3.25rem)", fontWeight: 700, color: "#111827", letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "1.25rem" }}>
             Presupuesta más rápido,<br />
-            <span className="text-blue-600">cierra más viajes</span>
+            <span style={{ color: "#1e3a5f" }}>cierra más viajes</span>
           </h1>
-          <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Busvio calcula automáticamente el precio real de cada servicio —
-            combustible, conductor, peajes, pluses y margen — y envía el
-            presupuesto al cliente en segundos.
+
+          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1rem", color: "#6b7280", maxWidth: "520px", margin: "0 auto 2rem", lineHeight: 1.7 }}>
+            Busvio calcula automáticamente el precio real de cada servicio — combustible, conductor, peajes y margen — y envía el presupuesto al cliente en segundos.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/registro" className="w-full sm:w-auto bg-blue-600 text-white px-8 py-3.5 rounded-xl text-base font-semibold hover:bg-blue-700 transition-all hover:shadow-lg hover:shadow-blue-100 hover:-translate-y-0.5">
-              Empieza gratis — sin tarjeta
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", flexWrap: "wrap", marginBottom: "1rem" }}>
+            <Link href="/registro" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "inline-flex", alignItems: "center", gap: "6px", background: "#111827", color: "#fff", padding: "10px 22px", borderRadius: "10px", fontSize: "0.875rem", fontWeight: 600, textDecoration: "none" }}>
+              Empieza gratis <ArrowRight style={{ width: "14px", height: "14px" }} />
             </Link>
-            <Link href="/demo" className="w-full sm:w-auto border border-gray-200 text-gray-700 px-8 py-3.5 rounded-xl text-base font-medium hover:border-gray-300 hover:bg-gray-50 transition-all">
-              Ver demo en vivo →
+            <Link href="/demo" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "inline-flex", alignItems: "center", gap: "6px", background: "#fff", color: "#374151", padding: "10px 22px", borderRadius: "10px", fontSize: "0.875rem", fontWeight: 500, border: "1px solid #e5e7eb", textDecoration: "none" }}>
+              Ver demo en vivo
             </Link>
           </div>
-          <p className="text-sm text-gray-400 mt-4">
+
+          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#9ca3af" }}>
             Configuración en menos de 5 minutos · Sin permanencia
           </p>
         </div>
 
-        {/* Mockup dashboard */}
-        <div className="max-w-5xl mx-auto mt-16">
-          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-1 shadow-xl shadow-gray-100">
-            <div className="bg-white rounded-xl overflow-hidden border border-gray-100">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-300"></div>
-                  <div className="w-3 h-3 rounded-full bg-amber-300"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-300"></div>
+        {/* MOCKUP */}
+        <div style={{ maxWidth: "900px", margin: "3.5rem auto 0" }}>
+          <div style={{ background: "#f5f5f4", border: "1px solid #e5e7eb", borderRadius: "16px", padding: "6px", boxShadow: "0 20px 60px rgba(0,0,0,0.08)" }}>
+            <div style={{ background: "#fff", borderRadius: "12px", overflow: "hidden", border: "1px solid #f3f4f6" }}>
+              {/* Browser bar */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 16px", borderBottom: "1px solid #f3f4f6", background: "#fafafa" }}>
+                <div style={{ display: "flex", gap: "5px" }}>
+                  {["#fca5a5","#fcd34d","#86efac"].map(c => <div key={c} style={{ width: "10px", height: "10px", borderRadius: "50%", background: c }} />)}
                 </div>
-                <div className="flex-1 mx-4 bg-white border border-gray-200 rounded-md px-3 py-1 text-xs text-gray-400">
-                  busvio.vercel.app/dashboard
+                <div style={{ flex: 1, maxWidth: "260px", margin: "0 auto", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "6px", padding: "4px 12px", fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", color: "#9ca3af" }}>
+                  app.busvio.com/dashboard
                 </div>
               </div>
-              <div className="p-6 bg-gray-50">
-                <div className="grid grid-cols-4 gap-4 mb-6">
-                  {[
-                    { label: "Solicitudes hoy", value: "12", color: "text-gray-900" },
-                    { label: "En revisión", value: "5", color: "text-amber-600" },
-                    { label: "Enviados", value: "4", color: "text-blue-600" },
-                    { label: "Aceptados", value: "3", color: "text-green-600" },
-                  ].map((stat) => (
-                    <div key={stat.label} className="bg-white rounded-xl p-4 border border-gray-100">
-                      <p className="text-xs text-gray-400 mb-1">{stat.label}</p>
-                      <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+              {/* Dashboard mockup */}
+              <div style={{ display: "flex", minHeight: "280px" }}>
+                {/* Sidebar */}
+                <div style={{ width: "160px", background: "#111827", padding: "1rem 0.75rem", display: "flex", flexDirection: "column", gap: "4px", flexShrink: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 8px", marginBottom: "8px" }}>
+                    <div style={{ width: "22px", height: "22px", borderRadius: "6px", background: "#1e3a5f", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <BusFront style={{ width: "12px", height: "12px", color: "#fff" }} />
+                    </div>
+                    <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 700, color: "#fff" }}>Busvio</span>
+                  </div>
+                  {["Solicitudes","Clientes","Analytics","Ajustes"].map((item, i) => (
+                    <div key={item} style={{ padding: "6px 8px", borderRadius: "6px", background: i === 0 ? "#1e3a5f" : "transparent", fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", fontWeight: 500, color: i === 0 ? "#fff" : "#6b7280" }}>
+                      {item}
                     </div>
                   ))}
                 </div>
-                <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Solicitudes recientes</span>
-                    <span className="text-xs text-gray-400">Hoy</span>
-                  </div>
-                  {[
-                    { origin: "Madrid", dest: "Barcelona", client: "Viajes Pérez S.L.", price: "1.240 €", status: "Enviado", statusColor: "bg-blue-50 text-blue-700" },
-                    { origin: "Sevilla", dest: "Granada", client: "Grupo Escolar Sur", price: "420 €", status: "Aceptado", statusColor: "bg-green-50 text-green-700" },
-                    { origin: "Valencia", dest: "Alicante", client: "Club Deportivo FC", price: "310 €", status: "En revisión", statusColor: "bg-amber-50 text-amber-700" },
-                  ].map((row, i) => (
-                    <div key={i} className="px-4 py-3 flex items-center gap-4 border-b border-gray-50 last:border-0">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{row.origin} → {row.dest}</p>
-                        <p className="text-xs text-gray-400 truncate">{row.client}</p>
+                {/* Content */}
+                <div style={{ flex: 1, padding: "1.25rem", background: "#f5f5f4" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "10px", marginBottom: "1rem" }}>
+                    {[
+                      { label: "Solicitudes", value: "12", color: "#111827" },
+                      { label: "En revisión", value: "5", color: "#d97706" },
+                      { label: "Enviados", value: "4", color: "#1e3a5f" },
+                      { label: "Aceptados", value: "3", color: "#059669" },
+                    ].map(s => (
+                      <div key={s.label} style={{ background: "#fff", borderRadius: "8px", padding: "10px 12px", border: "1px solid #e5e7eb" }}>
+                        <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.6rem", color: "#9ca3af", marginBottom: "3px" }}>{s.label}</p>
+                        <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.25rem", fontWeight: 700, color: s.color }}>{s.value}</p>
                       </div>
-                      <span className="text-sm font-semibold text-gray-900">{row.price}</span>
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${row.statusColor}`}>{row.status}</span>
+                    ))}
+                  </div>
+                  <div style={{ background: "#fff", borderRadius: "8px", border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                    <div style={{ padding: "8px 12px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", fontWeight: 600, color: "#374151" }}>Solicitudes recientes</span>
+                      <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.65rem", color: "#9ca3af" }}>Hoy</span>
                     </div>
-                  ))}
+                    {[
+                      { route: "Madrid → Barcelona", client: "Viajes Pérez S.L.", price: "1.240 €", status: "Enviado", sc: { bg: "#eff6ff", color: "#1d4ed8" } },
+                      { route: "Sevilla → Granada", client: "Grupo Escolar Sur", price: "420 €", status: "Aceptado", sc: { bg: "#f0fdf4", color: "#15803d" } },
+                      { route: "Valencia → Alicante", client: "Club Deportivo FC", price: "310 €", status: "En revisión", sc: { bg: "#fffbeb", color: "#b45309" } },
+                    ].map((row, i) => (
+                      <div key={i} style={{ padding: "8px 12px", display: "flex", alignItems: "center", gap: "10px", borderBottom: i < 2 ? "1px solid #f9fafb" : "none" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", fontWeight: 600, color: "#111827" }}>{row.route}</p>
+                          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.65rem", color: "#9ca3af" }}>{row.client}</p>
+                        </div>
+                        <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", fontWeight: 700, color: "#111827" }}>{row.price}</span>
+                        <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.6rem", fontWeight: 600, padding: "2px 8px", borderRadius: "999px", background: row.sc.bg, color: row.sc.color }}>{row.status}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -112,40 +133,28 @@ export default function LandingPage() {
       </section>
 
       {/* FEATURES */}
-      <section className="py-24 px-6 bg-gray-50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
+      <section style={{ padding: "5rem 1.5rem", background: "#f5f5f4" }}>
+        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: "3rem" }}>
+            <h2 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "clamp(1.5rem,3vw,2rem)", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em", marginBottom: "0.75rem" }}>
               Todo lo que necesitas para presupuestar
             </h2>
-            <p className="text-lg text-gray-500 max-w-xl mx-auto">
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.9375rem", color: "#6b7280", maxWidth: "400px", margin: "0 auto" }}>
               Sin hojas de cálculo. Sin cálculos manuales. Sin errores.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px,1fr))", gap: "1rem" }}>
             {[
-              {
-                icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>,
-                title: "Cálculo automático del precio",
-                desc: "Introduce el origen y destino y Busvio calcula los kilómetros reales, el coste de combustible, conductor, peajes y margen de beneficio al instante.",
-              },
-              {
-                icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>,
-                title: "PDF profesional en un clic",
-                desc: "Genera un presupuesto en PDF con tu logo, colores corporativos y datos fiscales. Se envía automáticamente al cliente por email.",
-              },
-              {
-                icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>,
-                title: "Dashboard centralizado",
-                desc: "Gestiona todas tus solicitudes desde un panel. Filtra por estado, busca por cliente o destino, y actualiza el precio final antes de enviar.",
-              },
-            ].map((feature, i) => (
-              <div key={i} className="bg-white rounded-2xl p-8 border border-gray-100 hover:border-blue-100 hover:shadow-lg hover:shadow-blue-50 transition-all group">
-                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                  {feature.icon}
+              { icon: Zap, title: "Cálculo automático del precio", desc: "Introduce el origen y destino y Busvio calcula los kilómetros reales, combustible, conductor, peajes y margen al instante.", color: "#1e3a5f" },
+              { icon: FileText, title: "PDF profesional en un clic", desc: "Genera un presupuesto en PDF con tu logo y colores corporativos. Se envía automáticamente al cliente por email.", color: "#0f766e" },
+              { icon: LayoutDashboard, title: "Dashboard centralizado", desc: "Gestiona todas tus solicitudes desde un panel. Filtra por estado, busca por cliente y actualiza precios antes de enviar.", color: "#6d28d9" },
+            ].map(({ icon: Icon, title, desc, color }, i) => (
+              <div key={i} style={{ background: "#fff", borderRadius: "16px", padding: "1.75rem", border: "1px solid #e5e7eb" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: color, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.25rem" }}>
+                  <Icon style={{ width: "18px", height: "18px", color: "#fff" }} />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">{feature.title}</h3>
-                <p className="text-gray-500 leading-relaxed text-sm">{feature.desc}</p>
+                <h3 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.9375rem", fontWeight: 600, color: "#111827", marginBottom: "0.625rem", letterSpacing: "-0.01em" }}>{title}</h3>
+                <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#6b7280", lineHeight: 1.65 }}>{desc}</p>
               </div>
             ))}
           </div>
@@ -153,71 +162,69 @@ export default function LandingPage() {
       </section>
 
       {/* CÓMO FUNCIONA */}
-      <section className="py-24 px-6 bg-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
+      <section style={{ padding: "5rem 1.5rem", background: "#fff" }}>
+        <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: "3rem" }}>
+            <h2 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "clamp(1.5rem,3vw,2rem)", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>
               Cómo funciona
             </h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px,1fr))", gap: "2rem" }}>
             {[
               { step: "01", title: "Tu cliente rellena el formulario", desc: "Comparte tu enlace personalizado. El cliente introduce el origen, destino, fecha y pasajeros." },
               { step: "02", title: "Busvio calcula el precio", desc: "En segundos tienes el coste real del servicio con desglose completo visible solo para ti." },
               { step: "03", title: "Envías el presupuesto en PDF", desc: "Con un clic envías el PDF por email con tu imagen de marca. El cliente acepta o negocia." },
             ].map((item, i) => (
-              <div key={i} className="relative z-10">
-                <span className="text-5xl font-black text-blue-50 select-none">{item.step}</span>
-                <h3 className="text-base font-semibold text-gray-900 mt-1 mb-2">{item.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+              <div key={i}>
+                <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "2.5rem", fontWeight: 800, color: "#f3f4f6", display: "block", lineHeight: 1 }}>{item.step}</span>
+                <h3 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.9375rem", fontWeight: 600, color: "#111827", margin: "0.5rem 0 0.5rem", letterSpacing: "-0.01em" }}>{item.title}</h3>
+                <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#6b7280", lineHeight: 1.65 }}>{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA FINAL */}
-      <section className="py-24 px-6">
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-blue-600 rounded-3xl p-12 text-center relative overflow-hidden">
-            <div className="absolute -top-8 -right-8 w-32 h-32 bg-blue-500 rounded-full opacity-50"></div>
-            <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-blue-700 rounded-full opacity-40"></div>
-            <div className="relative z-10">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
-                Empieza a usarlo hoy mismo
-              </h2>
-              <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">
-                Configura tu empresa en menos de 5 minutos y empieza a enviar presupuestos profesionales al instante.
-              </p>
-              <Link href="/registro" className="inline-block bg-white text-blue-600 font-semibold px-8 py-3.5 rounded-xl hover:bg-blue-50 transition-all hover:shadow-xl hover:-translate-y-0.5 text-base">
-                Crear mi cuenta gratis →
-              </Link>
-              <p className="text-blue-200 text-sm mt-4">Sin tarjeta de crédito · Sin compromiso</p>
-            </div>
+      {/* CTA */}
+      <section style={{ padding: "5rem 1.5rem", background: "#f5f5f4" }}>
+        <div style={{ maxWidth: "640px", margin: "0 auto" }}>
+          <div style={{ background: "#111827", borderRadius: "20px", padding: "3rem 2rem", textAlign: "center" }}>
+            <h2 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "clamp(1.5rem,3vw,2rem)", fontWeight: 700, color: "#fff", letterSpacing: "-0.02em", marginBottom: "0.75rem" }}>
+              Empieza a usarlo hoy mismo
+            </h2>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.9375rem", color: "#9ca3af", marginBottom: "2rem", lineHeight: 1.6 }}>
+              Configura tu empresa en menos de 5 minutos y empieza a enviar presupuestos profesionales al instante.
+            </p>
+            <Link href="/registro" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "inline-flex", alignItems: "center", gap: "6px", background: "#fff", color: "#111827", fontWeight: 600, fontSize: "0.875rem", padding: "11px 24px", borderRadius: "10px", textDecoration: "none" }}>
+              Crear mi cuenta gratis <ArrowRight style={{ width: "14px", height: "14px" }} />
+            </Link>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#4b5563", marginTop: "1rem" }}>
+              Sin tarjeta de crédito · Sin compromiso
+            </p>
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-gray-100 py-8 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="1" y="3" width="22" height="13" rx="2" /><circle cx="7" cy="19" r="2" /><circle cx="17" cy="19" r="2" />
-              </svg>
+      <footer style={{ borderTop: "1px solid #f3f4f6", padding: "1.5rem", background: "#fff" }}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+            <div style={{ width: "24px", height: "24px", borderRadius: "6px", background: "#111827", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <BusFront style={{ width: "13px", height: "13px", color: "#fff" }} />
             </div>
-            <span className="text-sm font-semibold text-gray-700">Busvio</span>
+            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#374151" }}>Busvio</span>
           </div>
-          <p className="text-sm text-gray-400">
+          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#9ca3af" }}>
             © {new Date().getFullYear()} Busvio · Gestión de presupuestos para transporte discrecional
           </p>
-          <div className="flex gap-6">
-            <Link href="/login" className="text-sm text-gray-400 hover:text-gray-600 transition-colors">Acceder</Link>
-            <Link href="/registro" className="text-sm text-gray-400 hover:text-gray-600 transition-colors">Registro</Link>
+          <div style={{ display: "flex", gap: "1.5rem" }}>
+            {[["Acceder", "/login"], ["Registro", "/registro"]].map(([label, href]) => (
+              <Link key={href} href={href} style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#9ca3af", textDecoration: "none" }}>{label}</Link>
+            ))}
           </div>
         </div>
       </footer>
+
     </div>
-  );
+  )
 }
