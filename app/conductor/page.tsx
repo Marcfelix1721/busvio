@@ -44,6 +44,10 @@ export default async function ConductorPage() {
     .select(`
       id,
       rol_en_servicio,
+      estado_conductor,
+      visto_at,
+      iniciado_at,
+      finalizado_at,
       quote_requests (
         id,
         origin,
@@ -67,6 +71,7 @@ export default async function ConductorPage() {
     .map((a: any) => ({
       assignment_id: a.id,
       rol: a.rol_en_servicio,
+      estado_conductor: a.estado_conductor || 'asignado',
       ...a.quote_requests,
     }))
 

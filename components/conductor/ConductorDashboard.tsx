@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { BusFront, MapPin, Clock, Users, LogOut, CheckCircle, PlayCircle, Calendar } from 'lucide-react'
+import { BusFront, LogOut, ChevronRight, MapPin, Clock, Users, Bus, AlertTriangle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,39 +21,42 @@ type Servicio = {
   return_time: string | null
   passengers: number
   comments: string | null
+  vehicle_id: string | null
   rol: string
-}
-
-type Log = {
-  id: string
-  quote_request_id: string
-  staff_id: string
-  inicio: string | null
-  fin: string | null
+  assignment_id: string
+  estado_conductor: string
 }
 
 type Props = {
   conductor: { id: string; nombre: string; rol: string } | null
   company: { name: string; logo_url: string | null; color_primario: string | null } | null
   servicios: Servicio[]
-  logs: Log[]
+  logs: any[]
   staffId: string
 }
 
-function fmt(d: string) {
-  return new Date(d).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+const ESTADO_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+  asignado:   { label: 'Asignado',   color: '#1e40af', bg: '#eff6ff', dot: '#3b82f6' },
+  visto:      { label: 'Visto',      color: '#6b7280', bg: '#f9fafb', dot: '#9ca3af' },
+  iniciado:   { label: 'En curso',   color: '#b45309', bg: '#fffbeb', dot: '#f59e0b' },
+  finalizado: { label: 'Finalizado', color: '#166534', bg: '#f0fdf4', dot: '#22c55e' },
+  incidencia: { label: 'Incidencia', color: '#991b1b', bg: '#fef2f2', dot: '#ef4444' },
 }
-function fmtShort(d: string) {
-  return new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
-}
-function fmtTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-}
+
 function isToday(d: string) {
   return new Date(d).toDateString() === new Date().toDateString()
 }
 function isFuture(d: string) {
-  return new Date(d) > new Date()
+  const date = new Date(d)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return date > today && !isToday(d)
+}
+function isPast(d: string) {
+  return !isToday(d) && !isFuture(d)
+}
+function fmtShort(d: string) {
+  return new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
 }
 function diasHasta(d: string) {
   return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000)
@@ -67,59 +71,12 @@ const ROL_LABELS: Record<string, string> = {
 
 export default function ConductorDashboard({ conductor, company, servicios, logs, staffId }: Props) {
   const router = useRouter()
-  const [logsState, setLogsState] = useState<Log[]>(logs)
-  const [loading, setLoading] = useState<string | null>(null)
   const accentColor = company?.color_primario || '#1e3a5f'
-
   const today = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
 
   const serviciosHoy = servicios.filter(s => isToday(s.trip_date))
-  const serviciosProximos = servicios.filter(s => isFuture(s.trip_date) && !isToday(s.trip_date))
-  const serviciosPasados = servicios.filter(s => !isFuture(s.trip_date) && !isToday(s.trip_date))
-
-  function getLog(quoteId: string) {
-    return logsState.find(l => l.quote_request_id === quoteId)
-  }
-
-  async function handleInicio(quoteId: string) {
-    setLoading(quoteId + '_inicio')
-    const { data, error } = await supabase
-      .from('service_logs')
-      .upsert({
-        quote_request_id: quoteId,
-        staff_id: staffId,
-        inicio: new Date().toISOString(),
-      }, { onConflict: 'quote_request_id,staff_id' })
-      .select()
-      .single()
-
-    if (!error && data) {
-      setLogsState(prev => {
-        const exists = prev.find(l => l.quote_request_id === quoteId)
-        if (exists) return prev.map(l => l.quote_request_id === quoteId ? data : l)
-        return [...prev, data]
-      })
-    }
-    setLoading(null)
-  }
-
-  async function handleFin(quoteId: string) {
-    setLoading(quoteId + '_fin')
-    const log = getLog(quoteId)
-    if (!log) return
-
-    const { data, error } = await supabase
-      .from('service_logs')
-      .update({ fin: new Date().toISOString() })
-      .eq('id', log.id)
-      .select()
-      .single()
-
-    if (!error && data) {
-      setLogsState(prev => prev.map(l => l.id === log.id ? data : l))
-    }
-    setLoading(null)
-  }
+  const serviciosProximos = servicios.filter(s => isFuture(s.trip_date))
+  const serviciosPasados = servicios.filter(s => isPast(s.trip_date))
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -128,150 +85,73 @@ export default function ConductorDashboard({ conductor, company, servicios, logs
 
   const s = {
     page: { minHeight: '100vh', background: '#f5f5f4', fontFamily: "'DM Sans', system-ui, sans-serif" },
-    header: { background: '#111827', padding: '0 20px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-    main: { maxWidth: 640, margin: '0 auto', padding: '24px 16px 48px' },
-    sectionTitle: { fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 12, marginTop: 28 },
-    card: { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 20, marginBottom: 12 },
-    btnPrimary: (color: string) => ({
-      flex: 1, height: 44, background: color, color: '#fff', border: 'none',
-      borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer',
-      fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex',
-      alignItems: 'center', justifyContent: 'center', gap: 6,
-    }),
-    btnSecondary: {
-      flex: 1, height: 44, background: '#f3f4f6', color: '#374151', border: 'none',
-      borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-      fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex',
-      alignItems: 'center', justifyContent: 'center', gap: 6,
-    } as React.CSSProperties,
-    btnDanger: {
-      flex: 1, height: 44, background: '#fef2f2', color: '#dc2626', border: 'none',
-      borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer',
-      fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex',
-      alignItems: 'center', justifyContent: 'center', gap: 6,
-    } as React.CSSProperties,
+    header: { background: '#111827', padding: '0 20px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky' as const, top: 0, zIndex: 10 },
+    main: { maxWidth: 640, margin: '0 auto', padding: '24px 16px 80px' },
+    sectionTitle: { fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 10, marginTop: 24 },
   }
 
-  function ServicioCard({ servicio, destacado }: { servicio: Servicio; destacado?: boolean }) {
-    const log = getLog(servicio.id)
-    const iniciado = !!log?.inicio
-    const finalizado = !!log?.fin
+  function ServicioCard({ servicio }: { servicio: Servicio }) {
+    const estadoCfg = ESTADO_CONFIG[servicio.estado_conductor] || ESTADO_CONFIG.asignado
     const dias = diasHasta(servicio.trip_date)
-
-    let estadoLabel = ''
-    let estadoColor = ''
-    let estadoBg = ''
-
-    if (finalizado) {
-      estadoLabel = '✅ Completado'
-      estadoColor = '#166534'
-      estadoBg = '#f0fdf4'
-    } else if (iniciado) {
-      estadoLabel = '🟢 En curso'
-      estadoColor = '#b45309'
-      estadoBg = '#fffbeb'
-    } else if (isToday(servicio.trip_date)) {
-      estadoLabel = '⏳ Pendiente hoy'
-      estadoColor = '#1e40af'
-      estadoBg = '#eff6ff'
-    } else {
-      estadoLabel = `📅 En ${dias} día${dias !== 1 ? 's' : ''}`
-      estadoColor = '#6b7280'
-      estadoBg = '#f9fafb'
-    }
+    const urgente = dias >= 0 && dias <= 1 && isToday(servicio.trip_date)
 
     return (
-      <div style={{
-        ...s.card,
-        border: destacado && !finalizado ? `2px solid ${accentColor}` : '1px solid #e5e7eb',
-        position: 'relative',
-      }}>
-        {/* Estado badge */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, background: estadoBg, color: estadoColor, borderRadius: 6, padding: '3px 8px' }}>
-            {estadoLabel}
-          </span>
-          <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>
-            {ROL_LABELS[servicio.rol] || servicio.rol}
-          </span>
-        </div>
+      <Link href={`/conductor/servicios/${servicio.id}`} style={{ textDecoration: 'none' }}>
+        <div style={{
+          background: '#fff',
+          border: urgente ? `2px solid ${accentColor}` : '1px solid #e5e7eb',
+          borderRadius: 16,
+          padding: 18,
+          marginBottom: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          cursor: 'pointer',
+        }}>
+          {/* Hora */}
+          <div style={{ textAlign: 'center', minWidth: 48, flexShrink: 0 }}>
+            <p style={{ fontSize: 18, fontWeight: 800, color: accentColor, margin: 0, lineHeight: 1 }}>
+              {servicio.departure_time}
+            </p>
+            <p style={{ fontSize: 10, color: '#9ca3af', margin: '2px 0 0' }}>
+              {fmtShort(servicio.trip_date)}
+            </p>
+          </div>
 
-        {/* Ruta */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#111827', flexShrink: 0 }} />
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>{servicio.origin.split(',')[0]}</span>
-          </div>
-          <div style={{ width: 1, height: 16, background: '#d1d5db', marginLeft: 3.5, marginBottom: 6 }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>{servicio.destination.split(',')[0]}</span>
-          </div>
-        </div>
+          {/* Separador */}
+          <div style={{ width: 1, height: 40, background: '#e5e7eb', flexShrink: 0 }} />
 
-        {/* Info */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-          <div style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px' }}>
-            <p style={{ fontSize: 10, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 2px' }}>Fecha</p>
-            <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: 0 }}>{fmtShort(servicio.trip_date)}</p>
-          </div>
-          <div style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px' }}>
-            <p style={{ fontSize: 10, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 2px' }}>Salida</p>
-            <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: 0 }}>{servicio.departure_time}</p>
-          </div>
-          <div style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px' }}>
-            <p style={{ fontSize: 10, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 2px' }}>Pasajeros</p>
-            <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: 0 }}>{servicio.passengers} pax</p>
-          </div>
-          {servicio.return_time && (
-            <div style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px' }}>
-              <p style={{ fontSize: 10, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 2px' }}>Regreso</p>
-              <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: 0 }}>{servicio.return_time}</p>
+          {/* Info */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                {servicio.origin.split(',')[0]}
+              </span>
+              <span style={{ fontSize: 11, color: '#9ca3af', flexShrink: 0 }}>→</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                {servicio.destination.split(',')[0]}
+              </span>
             </div>
-          )}
-        </div>
-
-        {/* Fichaje info */}
-        {iniciado && (
-          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', marginBottom: 12, display: 'flex', gap: 16 }}>
-            <div>
-              <p style={{ fontSize: 10, color: '#6b7280', fontWeight: 600, margin: '0 0 2px' }}>INICIO</p>
-              <p style={{ fontSize: 13, fontWeight: 700, color: '#166534', margin: 0 }}>{fmtTime(log!.inicio!)}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 11, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 3 }}>
+                <Users style={{ width: 11, height: 11 }} /> {servicio.passengers} pax
+              </span>
+              <span style={{ fontSize: 11, color: '#6b7280' }}>
+                {ROL_LABELS[servicio.rol] || servicio.rol}
+              </span>
             </div>
-            {finalizado && (
-              <div>
-                <p style={{ fontSize: 10, color: '#6b7280', fontWeight: 600, margin: '0 0 2px' }}>FIN</p>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#166534', margin: 0 }}>{fmtTime(log!.fin!)}</p>
-              </div>
-            )}
           </div>
-        )}
 
-        {/* Botones fichaje */}
-        {!finalizado && isToday(servicio.trip_date) && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            {!iniciado ? (
-              <button
-                style={s.btnPrimary(accentColor)}
-                onClick={() => handleInicio(servicio.id)}
-                disabled={loading === servicio.id + '_inicio'}
-              >
-                <PlayCircle style={{ width: 16, height: 16 }} />
-                {loading === servicio.id + '_inicio' ? 'Registrando...' : 'Iniciar servicio'}
-              </button>
-            ) : (
-              <button
-                style={s.btnDanger}
-                onClick={() => handleFin(servicio.id)}
-                disabled={loading === servicio.id + '_fin'}
-              >
-                <CheckCircle style={{ width: 16, height: 16 }} />
-                {loading === servicio.id + '_fin' ? 'Registrando...' : 'Finalizar servicio'}
-              </button>
-            )}
+          {/* Estado + arrow */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, background: estadoCfg.bg, color: estadoCfg.color, borderRadius: 20, padding: '3px 8px', whiteSpace: 'nowrap' as const }}>
+              <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: '50%', background: estadoCfg.dot, marginRight: 4, verticalAlign: 'middle' }} />
+              {estadoCfg.label}
+            </span>
+            <ChevronRight style={{ width: 14, height: 14, color: '#9ca3af' }} />
           </div>
-        )}
-      </div>
+        </div>
+      </Link>
     )
   }
 
@@ -297,25 +177,25 @@ export default function ConductorDashboard({ conductor, company, servicios, logs
       </div>
 
       <div style={s.main}>
+
         {/* SALUDO */}
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 20 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: 0 }}>
             Hola{conductor?.nombre ? `, ${conductor.nombre.split(' ')[0]}` : ''} 👋
           </h1>
-          <p style={{ fontSize: 13, color: '#9ca3af', marginTop: 4, textTransform: 'capitalize' }}>{today}</p>
+          <p style={{ fontSize: 13, color: '#9ca3af', marginTop: 4, textTransform: 'capitalize' as const }}>{today}</p>
         </div>
 
-        {/* RESUMEN */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 8 }}>
+        {/* KPIs */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 4 }}>
           {[
-            { label: 'Hoy', value: serviciosHoy.length, icon: <Clock style={{ width: 14, height: 14 }} />, color: accentColor },
-            { label: 'Próximos', value: serviciosProximos.length, icon: <Calendar style={{ width: 14, height: 14 }} />, color: '#6b7280' },
-            { label: 'Realizados', value: serviciosPasados.length, icon: <CheckCircle style={{ width: 14, height: 14 }} />, color: '#16a34a' },
+            { label: 'Hoy', value: serviciosHoy.length, color: accentColor, bg: '#eff6ff' },
+            { label: 'Próximos', value: serviciosProximos.length, color: '#6b7280', bg: '#f9fafb' },
+            { label: 'Realizados', value: serviciosPasados.length, color: '#16a34a', bg: '#f0fdf4' },
           ].map((item, i) => (
-            <div key={i} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '14px 12px', textAlign: 'center' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6, color: item.color }}>{item.icon}</div>
-              <p style={{ fontSize: 22, fontWeight: 800, color: '#111827', margin: 0 }}>{item.value}</p>
-              <p style={{ fontSize: 11, color: '#9ca3af', margin: '2px 0 0', fontWeight: 500 }}>{item.label}</p>
+            <div key={i} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14, padding: '14px 12px', textAlign: 'center' as const }}>
+              <p style={{ fontSize: 24, fontWeight: 800, color: '#111827', margin: 0, lineHeight: 1 }}>{item.value}</p>
+              <p style={{ fontSize: 11, color: '#9ca3af', margin: '4px 0 0', fontWeight: 500 }}>{item.label}</p>
             </div>
           ))}
         </div>
@@ -324,12 +204,12 @@ export default function ConductorDashboard({ conductor, company, servicios, logs
         {serviciosHoy.length > 0 && (
           <>
             <p style={s.sectionTitle}>🚌 Servicios de hoy</p>
-            {serviciosHoy.map(s => <ServicioCard key={s.id} servicio={s} destacado />)}
+            {serviciosHoy.map(s => <ServicioCard key={s.id} servicio={s} />)}
           </>
         )}
 
         {serviciosHoy.length === 0 && (
-          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '28px 20px', textAlign: 'center', marginTop: 16 }}>
+          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '32px 20px', textAlign: 'center' as const, marginTop: 16 }}>
             <p style={{ fontSize: 32, margin: '0 0 8px' }}>☀️</p>
             <p style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: 0 }}>Sin servicios hoy</p>
             <p style={{ fontSize: 13, color: '#9ca3af', marginTop: 4 }}>Disfruta del día libre</p>
@@ -347,16 +227,19 @@ export default function ConductorDashboard({ conductor, company, servicios, logs
         {/* PASADOS */}
         {serviciosPasados.length > 0 && (
           <>
-            <p style={s.sectionTitle}>✅ Servicios realizados</p>
+            <p style={s.sectionTitle}>✅ Realizados</p>
             {serviciosPasados.map(s => <ServicioCard key={s.id} servicio={s} />)}
           </>
         )}
 
         {servicios.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9ca3af' }}>
-            <p style={{ fontSize: 13 }}>No tienes servicios asignados aún</p>
+          <div style={{ textAlign: 'center' as const, padding: '40px 20px', color: '#9ca3af' }}>
+            <p style={{ fontSize: 40, margin: '0 0 12px' }}>🚌</p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>No tienes servicios asignados</p>
+            <p style={{ fontSize: 13, color: '#9ca3af', marginTop: 4 }}>Tu empresa te asignará servicios próximamente</p>
           </div>
         )}
+
       </div>
     </div>
   )
