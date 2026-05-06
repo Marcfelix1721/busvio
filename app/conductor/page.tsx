@@ -21,8 +21,10 @@ export default async function ConductorPage() {
   if (!user) redirect('/conductor/login')
   if (user.user_metadata?.role !== 'conductor') redirect('/conductor/login')
 
-  const staffId = user.user_metadata?.staff_id
-  const companyId = user.user_metadata?.company_id
+  const staffId = user.user_metadata?.staff_id as string
+  const companyId = user.user_metadata?.company_id as string
+
+  if (!staffId || !companyId) redirect('/conductor/login')
 
   // Datos del conductor
   const { data: staffData } = await supabase
@@ -39,7 +41,7 @@ export default async function ConductorPage() {
     .single()
 
   // Servicios asignados al conductor
-  const { data: assignmentsData } = await supabase
+  const { data: assignmentsData, error: assignError } = await supabase
     .from('service_assignments')
     .select(`
       id,
@@ -64,6 +66,8 @@ export default async function ConductorPage() {
     `)
     .eq('staff_id', staffId)
     .order('created_at', { ascending: false })
+
+  console.log('ASSIGNMENTS:', JSON.stringify(assignmentsData), 'ERROR:', assignError?.message)
 
   // Filtrar solo servicios aceptados
   const servicios = (assignmentsData ?? [])
