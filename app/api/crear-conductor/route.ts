@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 })
     }
 
-    // Verificar que el staff pertenece a la empresa
     const { data: staffData, error: staffError } = await supabase
       .from('staff')
       .select('id, nombre')
@@ -23,10 +22,9 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (staffError || !staffData) {
-      return NextResponse.json({ error: 'Conductor no encontrado' }, { status: 404 })
+      return NextResponse.json({ error: 'Conductor no encontrado: ' + staffError?.message }, { status: 404 })
     }
 
-    // Crear usuario en Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -40,10 +38,14 @@ export async function POST(req: NextRequest) {
     })
 
     if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 })
+      // Devolver el error exacto de Supabase
+      return NextResponse.json({ 
+        error: authError.message,
+        code: authError.status,
+        details: JSON.stringify(authError)
+      }, { status: 400 })
     }
 
-    // Vincular user_id y email al staff
     await supabase
       .from('staff')
       .update({ user_id: authData.user.id, email })
@@ -52,7 +54,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, user_id: authData.user.id })
 
   } catch (error: any) {
-    console.error('Error crear-conductor:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ 
+      error: error.message,
+      details: JSON.stringify(error)
+    }, { status: 500 })
   }
 }
