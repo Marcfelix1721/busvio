@@ -35,6 +35,11 @@ export default async function DashboardPage() {
   const { data: userData } = await supabase.from("users").select("company_id").eq("id", session.user.id).single()
   const companyId = userData?.company_id
 
+  // Si es conductor, redirigir a su portal
+  if (session.user.user_metadata?.role === "conductor") {
+    redirect("/conductor")
+  }
+
   const { data: companyData } = await supabase.from("companies").select("name").eq("id", companyId).single()
 
   const { data: rawData } = await supabase
