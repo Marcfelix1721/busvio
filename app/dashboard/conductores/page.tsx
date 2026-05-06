@@ -36,16 +36,12 @@ export default async function ConductoresPage() {
     .eq('rol', 'conductor')
     .order('nombre')
 
-  // Servicios aceptados de hoy
-  const today = new Date().toISOString().split('T')[0]
   const { data: serviciosHoy } = await supabase
     .from('quote_requests')
-    .select('id, origin, destination, departure_time, vehicle_id')
+    .select('id, origin, destination, departure_time, trip_date, vehicle_id')
     .eq('company_id', companyId)
     .eq('status', 'aceptado')
-    .eq('trip_date', today)
 
-  // Asignaciones de hoy
   const servicioIds = (serviciosHoy ?? []).map(s => s.id)
   let assignments: any[] = []
   let logs: any[] = []
@@ -53,7 +49,7 @@ export default async function ConductoresPage() {
   if (servicioIds.length > 0) {
     const { data: assignData } = await supabase
       .from('service_assignments')
-      .select('staff_id, quote_request_id, rol_en_servicio')
+      .select('staff_id, quote_request_id, rol_en_servicio, estado_conductor, iniciado_at, finalizado_at, visto_at')
       .in('quote_request_id', servicioIds)
     assignments = assignData ?? []
 

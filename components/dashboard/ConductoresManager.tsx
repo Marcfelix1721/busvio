@@ -17,12 +17,17 @@ type Servicio = {
   origin: string
   destination: string
   departure_time: string
+  trip_date: string
 }
 
 type Assignment = {
   staff_id: string
   quote_request_id: string
   rol_en_servicio: string
+  estado_conductor?: string | null
+  visto_at?: string | null
+  iniciado_at?: string | null
+  finalizado_at?: string | null
 }
 
 type Log = {
@@ -45,13 +50,6 @@ function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 }
 
-function calcDuracion(inicio: string, fin: string) {
-  const mins = Math.round((new Date(fin).getTime() - new Date(inicio).getTime()) / 60000)
-  const h = Math.floor(mins / 60)
-  const m = mins % 60
-  return h > 0 ? `${h}h ${m}m` : `${m}m`
-}
-
 export default function ConductoresManager({ staff, serviciosHoy, assignments, logs, companyId }: Props) {
   const [showForm, setShowForm] = useState<string | null>(null)
   const [email, setEmail] = useState('')
@@ -66,6 +64,10 @@ export default function ConductoresManager({ staff, serviciosHoy, assignments, l
     const assignment = assignments.find(a => a.staff_id === staffId)
     if (!assignment) return null
     return serviciosHoy.find(s => s.id === assignment.quote_request_id) ?? null
+  }
+
+  function getServiciosAll(staffId: string) {
+    return assignments.filter(a => a.staff_id === staffId)
   }
 
   function getLog(staffId: string) {
@@ -167,8 +169,6 @@ export default function ConductoresManager({ staff, serviciosHoy, assignments, l
         </div>
       ) : staffState.map(conductor => {
         const estado = getEstado(conductor.id)
-        const servicio = getServicioHoy(conductor.id)
-        const log = getLog(conductor.id)
         const isFormOpen = showForm === conductor.id
 
         return (
@@ -206,27 +206,48 @@ export default function ConductoresManager({ staff, serviciosHoy, assignments, l
               )}
             </div>
 
-            {/* Servicio de hoy */}
-            {servicio && (
-              <div style={{ marginTop: 12, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: '10px 14px' }}>
-                <p style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 4px' }}>Servicio de hoy</p>
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: 0 }}>
-                  {servicio.origin.split(',')[0]} → {servicio.destination.split(',')[0]}
-                </p>
-                <p style={{ fontSize: 12, color: '#6b7280', margin: '2px 0 0' }}>Salida: {servicio.departure_time}</p>
-                {log?.inicio && (
-                  <div style={{ display: 'flex', gap: 16, marginTop: 6 }}>
-                    <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>▶ {fmtTime(log.inicio)}</span>
-                    {log.fin && (
-                      <>
-                        <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>■ {fmtTime(log.fin)}</span>
-                        <span style={{ fontSize: 12, color: '#6b7280' }}>({calcDuracion(log.inicio, log.fin)})</span>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Todos los servicios asignados */}
+            {(() => {
+              const todosServicios = getServiciosAll(conductor.id)
+              if (todosServicios.length === 0) return null
+              return (
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {todosServicios.map(assignment => {
+                    const s = [...serviciosHoy].find(sv => sv.id === assignment.quote_request_id)
+                    const estadoLabel = assignment.estado_conductor || 'asignado'
+                    const estadoCfg: Record<string, { label: string; color: string; bg: string }> = {
+                      asignado:   { label: 'Asignado',   color: '#1e40af', bg: '#eff6ff' },
+                      visto:      { label: 'Visto',      color: '#6b7280', bg: '#f9fafb' },
+                      iniciado:   { label: 'En curso',   color: '#b45309', bg: '#fffbeb' },
+                      finalizado: { label: 'Finalizado', color: '#166534', bg: '#f0fdf4' },
+                      incidencia: { label: 'Incidencia', color: '#991b1b', bg: '#fef2f2' },
+                    }
+                    const cfg = estadoCfg[estadoLabel] || estadoCfg.asignado
+                    return (
+                      <div key={assignment.quote_request_id} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: '10px 14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: 0 }}>
+                            {s ? `${s.origin.split(',')[0]} → ${s.destination.split(',')[0]}` : assignment.quote_request_id.slice(0, 8)}
+                          </p>
+                          <span style={{ fontSize: 11, fontWeight: 700, background: cfg.bg, color: cfg.color, borderRadius: 20, padding: '2px 8px' }}>
+                            {cfg.label}
+                          </span>
+                        </div>
+                        {s && <p style={{ fontSize: 12, color: '#6b7280', margin: '2px 0 0' }}>Salida: {s.departure_time}</p>}
+                        {assignment.iniciado_at && (
+                          <div style={{ display: 'flex', gap: 16, marginTop: 6 }}>
+                            <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>▶ {fmtTime(assignment.iniciado_at)}</span>
+                            {assignment.finalizado_at && (
+                              <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>■ {fmtTime(assignment.finalizado_at)}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
 
             {/* Formulario dar acceso */}
             {isFormOpen && (
