@@ -300,7 +300,7 @@ export default function ConductorDashboard({ conductor, company, servicios, logs
         {/* SALUDO */}
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: 0 }}>
-            Hola, {conductor?.nombre?.split(' ')[0]} 👋
+            Hola{conductor?.nombre ? `, ${conductor.nombre.split(' ')[0]}` : ''} 👋
           </h1>
           <p style={{ fontSize: 13, color: '#9ca3af', marginTop: 4, textTransform: 'capitalize' }}>{today}</p>
         </div>

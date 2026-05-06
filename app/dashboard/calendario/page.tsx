@@ -81,6 +81,9 @@ export default async function CalendarioPage() {
             <p className="text-[10px] font-medium text-white/20 uppercase tracking-widest">Config</p>
           </div>
           <SideLink href="/dashboard/ajustes" icon={<Settings className="size-3.5" />} label="Ajustes" />
+          <Link href="/dashboard/conductores" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, fontSize: 13, fontWeight: 500, textDecoration: 'none', color: 'rgba(255,255,255,0.45)' }}>
+            <BusFront style={{ width: 14, height: 14 }} /> Conductores
+          </Link>
         </nav>
         <div className="px-3 py-4 border-t border-white/5 space-y-2">
           <p className="text-[11px] text-white/30 truncate px-2">{user.email}</p>

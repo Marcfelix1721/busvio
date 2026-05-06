@@ -122,6 +122,16 @@ export default async function ConductoresPage() {
             </p>
           </div>
 
+          <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 12, padding: '14px 18px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#0369a1', margin: 0 }}>🔗 Link de acceso para conductores</p>
+              <p style={{ fontSize: 12, color: '#0284c7', margin: '2px 0 0' }}>busvio.vercel.app/conductor/login</p>
+            </div>
+            <a href="https://busvio.vercel.app/conductor/login" target="_blank" style={{ background: '#0369a1', color: '#fff', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
+              Abrir →
+            </a>
+          </div>
+
           <ConductoresManager
             staff={staffData ?? []}
             serviciosHoy={serviciosHoy ?? []}
