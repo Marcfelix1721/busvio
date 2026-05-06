@@ -15,6 +15,8 @@ import { MapaRuta } from "@/components/dashboard/MapaRuta"
 import { ServiceAssignments } from "@/components/dashboard/ServiceAssignments"
 import { QuoteRequest } from "@/lib/types"
 
+export const revalidate = 0
+
 async function createClient() {
   const cookieStore = await cookies()
   return createServerClient(
@@ -115,7 +117,6 @@ export default async function QuoteRequestDetailPage({
 
   return (
     <div className="min-h-screen bg-[#f5f5f4]" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-      {/* TOPBAR */}
       <div className="bg-[#111827] px-6 py-3.5 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm transition-colors">
@@ -131,7 +132,6 @@ export default async function QuoteRequestDetailPage({
       </div>
 
       <div className="max-w-[1300px] mx-auto px-6 py-6">
-        {/* HEADER */}
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -159,9 +159,7 @@ export default async function QuoteRequestDetailPage({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5 items-start">
-          {/* COLUMNA IZQUIERDA */}
           <div className="space-y-4">
-            {/* DATOS DEL SOLICITANTE */}
             <Section title="Datos del solicitante">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <InfoTile icon={<Mail className="size-3.5 text-[#6b7280]" />} label="Email" value={quote.requester_email} />
@@ -170,7 +168,6 @@ export default async function QuoteRequestDetailPage({
               </div>
             </Section>
 
-            {/* DETALLES DEL VIAJE */}
             <Section title="Detalles del viaje">
               <MapaRuta origin={quote.origin} destination={quote.destination} />
               <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-4 mb-4">
@@ -214,7 +211,6 @@ export default async function QuoteRequestDetailPage({
               </div>
             </Section>
 
-            {/* PERSONAL ASIGNADO */}
             <Section title="Personal asignado" icon={<Users className="size-3.5 text-[#6b7280]" />}>
               <ServiceAssignments
                 quoteId={quote.id}
@@ -224,7 +220,6 @@ export default async function QuoteRequestDetailPage({
               />
             </Section>
 
-            {/* COMENTARIOS */}
             {quote.comments && (
               <Section title="Comentarios del cliente" icon={<MessageSquare className="size-3.5 text-[#6b7280]" />}>
                 <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-4">
@@ -233,7 +228,6 @@ export default async function QuoteRequestDetailPage({
               </Section>
             )}
 
-            {/* RELACIÓN COMERCIAL */}
             <ClienteEstado
               companyId={quote.company_id}
               email={quote.requester_email}
@@ -242,7 +236,6 @@ export default async function QuoteRequestDetailPage({
               estadoInicial={estadoRelacion}
             />
 
-            {/* HISTORIAL */}
             <Section
               title="Historial del cliente"
               icon={<History className="size-3.5 text-[#6b7280]" />}
@@ -281,7 +274,6 @@ export default async function QuoteRequestDetailPage({
             </Section>
           </div>
 
-          {/* COLUMNA DERECHA */}
           <div className="lg:sticky lg:top-20 space-y-4">
             <QuoteActions
               quote={quote}

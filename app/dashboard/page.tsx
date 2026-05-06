@@ -12,6 +12,8 @@ import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { QuoteRequest } from "@/lib/types"
 import { DashboardClient } from "@/components/dashboard/DashboardClient"
 
+export const revalidate = 0
+
 async function createClient() {
   const cookieStore = await cookies()
   return createServerClient(
@@ -97,7 +99,6 @@ export default async function DashboardPage() {
 
       {/* SIDEBAR */}
       <aside style={{ width: 228, background: "#111827", display: "flex", flexDirection: "column", flexShrink: 0 }}>
-        {/* Logo */}
         <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 32, height: 32, background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -110,7 +111,6 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Nav */}
         <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
           <p style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "0 8px", marginBottom: 6 }}>Principal</p>
           <SideLink href="/dashboard" icon={<Inbox style={{ width: 14, height: 14 }} />} label="Solicitudes" active />
@@ -122,7 +122,6 @@ export default async function DashboardPage() {
           <SideLink href="/dashboard/ajustes" icon={<Settings style={{ width: 14, height: 14 }} />} label="Ajustes" />
         </nav>
 
-        {/* Footer */}
         <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -199,7 +198,6 @@ export default async function DashboardPage() {
             ))}
           </div>
 
-          {/* TABLA — componente cliente para buscador reactivo */}
           <DashboardClient requests={requests} relacionMap={relacionMap} />
 
         </div>
