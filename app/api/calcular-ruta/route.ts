@@ -6,20 +6,26 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-async function calcularKmGeoapify(origin: string, destination: string, stops: string[]): Promise<number> {
+async function geocodificar(place: string): Promise<{ lat: number; lon: number } | null> {
   const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_KEY!
-  const waypoints = [origin, ...stops, destination]
+  const res = await fetch(
+    `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(place)}&apiKey=${apiKey}`
+  )
+  const data = await res.json()
+  if (data.features?.length > 0) {
+    const { lat, lon } = data.features[0].properties
+    return { lat, lon }
+  }
+  return null
+}
+
+async function calcularKmEntrePuntos(puntos: string[]): Promise<number> {
+  const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_KEY!
   const coords: { lat: number; lon: number }[] = []
 
-  for (const place of waypoints) {
-    const res = await fetch(
-      `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(place)}&apiKey=${apiKey}`
-    )
-    const data = await res.json()
-    if (data.features?.length > 0) {
-      const { lat, lon } = data.features[0].properties
-      coords.push({ lat, lon })
-    }
+  for (const place of puntos) {
+    const coord = await geocodificar(place)
+    if (coord) coords.push(coord)
   }
 
   if (coords.length < 2) return 0
@@ -31,10 +37,8 @@ async function calcularKmGeoapify(origin: string, destination: string, stops: st
   const routeData = await routeRes.json()
 
   if (routeData.features?.length > 0) {
-    const distanceM = routeData.features[0].properties.distance
-    return Math.round(distanceM / 1000)
+    return Math.round(routeData.features[0].properties.distance / 1000)
   }
-
   return 0
 }
 
@@ -59,9 +63,7 @@ function calcularHoras(horaSalida: string, horaRegreso: string | null, dias: num
 
 function calcularCosteVariable(
   variable: { tipo: string; valor: number; intervalo_km: number | null },
-  km: number,
-  dias: number,
-  horas: number
+  km: number, dias: number, horas: number
 ): number {
   switch (variable.tipo) {
     case 'per_km': return variable.valor * km
@@ -79,26 +81,39 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const {
-      origin,
-      destination,
-      stops = [],
-      trip_date,
-      return_date,
-      departure_time,
-      return_time,
-      company_id,
-      quote_request_id,
-      vehicle_id,
+      origin, destination, stops = [],
+      trip_date, return_date, departure_time, return_time,
+      company_id, quote_request_id, vehicle_id,
     } = body
 
-    // 1. Calcular km reales
-    const km = await calcularKmGeoapify(origin, destination, stops)
+    // 1. Obtener dirección del garaje
+    const { data: pricingSettings } = await supabase
+      .from('pricing_settings')
+      .select('garage_address')
+      .eq('company_id', company_id)
+      .single()
 
-    // 2. Calcular días y horas
+    const garageAddress = pricingSettings?.garage_address || null
+
+    // 2. Calcular km del servicio (origen → paradas → destino)
+    const kmServicio = await calcularKmEntrePuntos([origin, ...stops, destination])
+
+    // 3. Calcular km en vacío (garaje → origen y destino → garaje)
+    let kmVacioIda = 0
+    let kmVacioVuelta = 0
+
+    if (garageAddress) {
+      kmVacioIda = await calcularKmEntrePuntos([garageAddress, origin])
+      kmVacioVuelta = await calcularKmEntrePuntos([destination, garageAddress])
+    }
+
+    const kmTotal = kmServicio + kmVacioIda + kmVacioVuelta
+
+    // 4. Calcular días y horas
     const dias = calcularDias(trip_date, return_date)
     const horas = calcularHoras(departure_time, return_time, dias)
 
-    // 3. Obtener datos del vehículo si hay uno asignado
+    // 5. Vehículo
     let vehiculo: any = null
     if (vehicle_id) {
       const { data: v } = await supabase
@@ -109,65 +124,48 @@ export async function POST(req: NextRequest) {
       vehiculo = v
     }
 
-    // 4. Calcular costes del vehículo
-    const costesVehiculo: {
-      concepto: string
-      formula: string
-      coste: number
-    }[] = []
-
+    // 6. Costes del vehículo (usando kmTotal)
+    const costesVehiculo: { concepto: string; formula: string; coste: number }[] = []
     let totalVehiculo = 0
 
     if (vehiculo) {
-      // Combustible: km × (consumo/100) × precio_combustible
       if (vehiculo.consumo && vehiculo.precio_combustible) {
-        const coste = km * (vehiculo.consumo / 100) * vehiculo.precio_combustible
-        const costeR = Math.round(coste * 100) / 100
+        const coste = Math.round(kmTotal * (vehiculo.consumo / 100) * vehiculo.precio_combustible * 100) / 100
         costesVehiculo.push({
           concepto: 'Combustible',
-          formula: `${km} km × ${vehiculo.consumo}L/100km × ${vehiculo.precio_combustible}€/L`,
-          coste: costeR,
+          formula: `${kmTotal} km × ${vehiculo.consumo}L/100km × ${vehiculo.precio_combustible}€/L`,
+          coste,
         })
-        totalVehiculo += costeR
+        totalVehiculo += coste
       }
-
-      // Amortización: km × €/km
       if (vehiculo.amortizacion_km) {
-        const coste = km * vehiculo.amortizacion_km
-        const costeR = Math.round(coste * 100) / 100
+        const coste = Math.round(kmTotal * vehiculo.amortizacion_km * 100) / 100
         costesVehiculo.push({
           concepto: 'Amortización',
-          formula: `${km} km × ${vehiculo.amortizacion_km}€/km`,
-          coste: costeR,
+          formula: `${kmTotal} km × ${vehiculo.amortizacion_km}€/km`,
+          coste,
         })
-        totalVehiculo += costeR
+        totalVehiculo += coste
       }
-
-      // Mantenimiento: km × €/km
       if (vehiculo.mantenimiento_km) {
-        const coste = km * vehiculo.mantenimiento_km
-        const costeR = Math.round(coste * 100) / 100
+        const coste = Math.round(kmTotal * vehiculo.mantenimiento_km * 100) / 100
         costesVehiculo.push({
           concepto: 'Mantenimiento',
-          formula: `${km} km × ${vehiculo.mantenimiento_km}€/km`,
-          coste: costeR,
+          formula: `${kmTotal} km × ${vehiculo.mantenimiento_km}€/km`,
+          coste,
         })
-        totalVehiculo += costeR
+        totalVehiculo += coste
       }
-
-      // Seguro: días × €/día
       if (vehiculo.seguro_dia) {
-        const coste = dias * vehiculo.seguro_dia
-        const costeR = Math.round(coste * 100) / 100
+        const coste = Math.round(dias * vehiculo.seguro_dia * 100) / 100
         costesVehiculo.push({
           concepto: 'Seguro',
           formula: `${dias} día${dias !== 1 ? 's' : ''} × ${vehiculo.seguro_dia}€/día`,
-          coste: costeR,
+          coste,
         })
-        totalVehiculo += costeR
+        totalVehiculo += coste
       }
 
-      // Guardar snapshot del vehículo en BD
       if (quote_request_id) {
         await supabase.from('vehicle_cost_snapshots').upsert({
           quote_request_id,
@@ -183,7 +181,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Obtener variables de coste de la empresa
+    // 7. Variables de coste de la empresa (usando kmTotal)
     const { data: variables } = await supabase
       .from('cost_variables')
       .select('*')
@@ -191,35 +189,23 @@ export async function POST(req: NextRequest) {
       .eq('activa', true)
       .order('orden')
 
-    // 6. Obtener overrides del presupuesto
     let overrides: Record<string, { activa: boolean; valor_custom: number | null }> = {}
     if (quote_request_id) {
       const { data: overrideData } = await supabase
         .from('quote_cost_overrides')
         .select('*')
         .eq('quote_request_id', quote_request_id)
-
       if (overrideData) {
         overrideData.forEach((o: any) => {
-          overrides[o.cost_variable_id] = {
-            activa: o.activa,
-            valor_custom: o.valor_custom,
-          }
+          overrides[o.cost_variable_id] = { activa: o.activa, valor_custom: o.valor_custom }
         })
       }
     }
 
-    // 7. Calcular variables de empresa
     const desgloseVariables: {
-      id: string
-      nombre: string
-      tipo: string
-      valor: number
-      intervalo_km: number | null
-      obligatoria: boolean
-      activa: boolean
-      formula: string
-      coste: number
+      id: string; nombre: string; tipo: string; valor: number
+      intervalo_km: number | null; obligatoria: boolean; activa: boolean
+      formula: string; coste: number
     }[] = []
 
     let totalVariables = 0
@@ -230,21 +216,19 @@ export async function POST(req: NextRequest) {
         desgloseVariables.push({ ...variable, formula: '—', coste: 0, activa: false })
         continue
       }
-
       const valorFinal = override?.valor_custom ?? variable.valor
       const coste = calcularCosteVariable(
         { tipo: variable.tipo, valor: valorFinal, intervalo_km: variable.intervalo_km },
-        km, dias, horas
+        kmTotal, dias, horas
       )
       const costeR = Math.round(coste * 100) / 100
 
-      // Generar fórmula legible
       let formula = ''
       switch (variable.tipo) {
-        case 'per_km': formula = `${km} km × ${valorFinal}€/km`; break
+        case 'per_km': formula = `${kmTotal} km × ${valorFinal}€/km`; break
         case 'per_day': formula = `${dias} día${dias !== 1 ? 's' : ''} × ${valorFinal}€/día`; break
         case 'per_hour': formula = `${horas} horas × ${valorFinal}€/h`; break
-        case 'per_x_km': formula = `${km} km / ${variable.intervalo_km?.toLocaleString()} km × ${valorFinal}€`; break
+        case 'per_x_km': formula = `${kmTotal} km / ${variable.intervalo_km?.toLocaleString()} km × ${valorFinal}€`; break
         case 'fixed': formula = `Fijo`; break
       }
 
@@ -270,13 +254,13 @@ export async function POST(req: NextRequest) {
     const precioFinal = Math.max(baseImponible + totalIva, precioMinimo)
 
     return NextResponse.json({
-      km,
-      dias,
-      horas,
-      vehiculo: vehiculo ? {
-        marca_modelo: vehiculo.marca_modelo,
-        matricula: vehiculo.matricula,
-      } : null,
+      km: kmTotal,
+      kmServicio,
+      kmVacioIda,
+      kmVacioVuelta,
+      garageAddress,
+      dias, horas,
+      vehiculo: vehiculo ? { marca_modelo: vehiculo.marca_modelo, matricula: vehiculo.matricula } : null,
       costesVehiculo,
       totalVehiculo: Math.round(totalVehiculo * 100) / 100,
       desgloseVariables,
@@ -284,9 +268,7 @@ export async function POST(req: NextRequest) {
       subtotal,
       margen,
       margenImporte: Math.round(subtotal * margen / 100 * 100) / 100,
-      iva,
-      baseImponible,
-      totalIva,
+      iva, baseImponible, totalIva,
       precio_final: Math.round(precioFinal * 100) / 100,
     })
 

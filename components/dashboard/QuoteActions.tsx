@@ -28,6 +28,10 @@ type DesgloseVariable = {
 
 type CalcResult = {
   km: number
+  kmServicio: number
+  kmVacioIda: number
+  kmVacioVuelta: number
+  garageAddress: string | null
   dias: number
   horas: number
   vehiculo: { marca_modelo: string; matricula: string } | null
@@ -218,9 +222,9 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
         <div style={s.card}>
 
           {/* INFO SERVICIO */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' as const }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' as const }}>
             {[
-              { icon: '📍', label: `${calcResult.km} km` },
+              { icon: '📍', label: `${calcResult.km} km totales` },
               { icon: '📅', label: `${calcResult.dias} día${calcResult.dias !== 1 ? 's' : ''}` },
               { icon: '⏱', label: `${calcResult.horas} horas` },
             ].map(item => (
@@ -230,6 +234,31 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
               </div>
             ))}
           </div>
+
+          {/* DESGLOSE KM EN VACÍO */}
+          {(calcResult.kmVacioIda > 0 || calcResult.kmVacioVuelta > 0) && (
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 12px', marginBottom: 14 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#92400e', textTransform: 'uppercase' as const, letterSpacing: '0.05em', margin: '0 0 6px' }}>🏭 Desglose km</p>
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#78350f' }}>
+                  <span>Garaje → Origen (vacío)</span>
+                  <span style={{ fontWeight: 700 }}>{calcResult.kmVacioIda} km</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#78350f' }}>
+                  <span>Origen → Destino (servicio)</span>
+                  <span style={{ fontWeight: 700 }}>{calcResult.kmServicio} km</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#78350f' }}>
+                  <span>Destino → Garaje (vacío)</span>
+                  <span style={{ fontWeight: 700 }}>{calcResult.kmVacioVuelta} km</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#92400e', borderTop: '1px solid #fde68a', paddingTop: 4, marginTop: 2 }}>
+                  <span style={{ fontWeight: 700 }}>Total</span>
+                  <span style={{ fontWeight: 800 }}>{calcResult.km} km</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* COSTES DEL VEHÍCULO */}
           {calcResult.vehiculo && calcResult.costesVehiculo.length > 0 && (
@@ -308,7 +337,6 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
               <span style={s.sectionTitle}>💰 Resumen</span>
               <div style={{ height: 1, flex: 1, background: '#e5e7eb' }} />
             </div>
-
             <div style={s.row}>
               <span style={s.rowLabel}>Subtotal costes</span>
               <span style={s.rowValue}>{f(calcResult.subtotal)}</span>
@@ -325,7 +353,6 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
               <span style={s.rowLabel}>IVA ({calcResult.iva}%)</span>
               <span style={{ ...s.rowValue, color: '#6b7280' }}>+{f(calcResult.totalIva)}</span>
             </div>
-
             <div style={{ background: '#111827', borderRadius: 10, padding: '14px 16px', marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>TOTAL</span>
               <span style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{f(calcResult.precio_final)}</span>
