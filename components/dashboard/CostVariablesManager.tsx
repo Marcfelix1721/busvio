@@ -347,21 +347,27 @@ export default function CostVariablesManager({ companyId }: Props) {
                 <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>{formatEjemplo(v)}</p>
               </div>
 
-              {/* Toggle */}
-              <button
-                onClick={() => toggleActiva(v)}
-                style={{
-                  width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer',
-                  background: v.activa ? '#1e3a5f' : '#d1d5db',
-                  position: 'relative' as const, flexShrink: 0, transition: 'background 0.2s', padding: 0,
-                }}
-              >
-                <div style={{
-                  width: 14, height: 14, borderRadius: '50%', background: '#fff',
-                  position: 'absolute' as const, top: 3,
-                  left: v.activa ? 18 : 4, transition: 'left 0.2s',
-                }} />
-              </button>
+              {/* Toggle — bloqueado si es obligatoria */}
+              {v.obligatoria ? (
+                <div title="Variable obligatoria — siempre activa" style={{ width: 36, height: 20, borderRadius: 10, background: '#1e3a5f', position: 'relative' as const, flexShrink: 0, opacity: 0.4, cursor: 'not-allowed' }}>
+                  <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#fff', position: 'absolute' as const, top: 3, left: 18 }} />
+                </div>
+              ) : (
+                <button
+                  onClick={() => toggleActiva(v)}
+                  style={{
+                    width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer',
+                    background: v.activa ? '#1e3a5f' : '#d1d5db',
+                    position: 'relative' as const, flexShrink: 0, transition: 'background 0.2s', padding: 0,
+                  }}
+                >
+                  <div style={{
+                    width: 14, height: 14, borderRadius: '50%', background: '#fff',
+                    position: 'absolute' as const, top: 3,
+                    left: v.activa ? 18 : 4, transition: 'left 0.2s',
+                  }} />
+                </button>
+              )}
 
               {/* Acciones */}
               <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>

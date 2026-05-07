@@ -3,7 +3,7 @@
 import { useState, useRef } from "react"
 import { createClient } from "@/lib/supabase"
 import {
-  Building2, Palette, MapPin, Bus, Wrench, UserRound,
+  Building2, MapPin, UserRound,
   Sparkles, TrendingUp, Save, Upload, Check, ChevronRight
 } from "lucide-react"
 
@@ -17,8 +17,6 @@ type PricingSettings = { garage_address?: string; parking_address?: string }
 const NAV = [
   { id: "empresa", label: "Empresa", icon: Building2 },
   { id: "operaciones", label: "Base de operaciones", icon: MapPin },
-  { id: "vehiculos", label: "Vehículos", icon: Bus },
-  { id: "costes", label: "Costes del vehículo", icon: Wrench },
   { id: "conductor", label: "Conductor", icon: UserRound },
   { id: "extras", label: "Extras y recargos", icon: Sparkles },
   { id: "comercial", label: "Margen e IVA", icon: TrendingUp },
@@ -127,15 +125,6 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
   })
 
   const [values, setValues] = useState<Settings>({
-    precio_combustible: settings?.precio_combustible ?? 1.65,
-    consumo_minibus: settings?.consumo_minibus ?? 12,
-    consumo_autobus: settings?.consumo_autobus ?? 25,
-    consumo_autocar: settings?.consumo_autocar ?? 30,
-    amortizacion_km: settings?.amortizacion_km ?? 0.15,
-    mantenimiento_km: settings?.mantenimiento_km ?? 0.08,
-    seguro_dia: settings?.seguro_dia ?? 35,
-    peajes_nacional: settings?.peajes_nacional ?? 4,
-    peajes_internacional: settings?.peajes_internacional ?? 6,
     coste_hora_conductor: settings?.coste_hora_conductor ?? 18,
     dieta_nacional: settings?.dieta_nacional ?? 20,
     dieta_internacional: settings?.dieta_internacional ?? 30,
@@ -282,9 +271,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
             <TextField id="address" label="Dirección fiscal" value={companyValues.address} onChange={handleCompanyChange} placeholder="Calle Mayor 1, 08001 Barcelona" span />
             <TextField id="website" label="Sitio web" value={companyValues.website} onChange={handleCompanyChange} placeholder="www.empresa.com" span />
           </FieldGroup>
-
           <FieldDivider />
-
           <FieldGroup title="Identidad visual">
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               <label style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 500, color: "#6b7280" }}>Color corporativo</label>
@@ -297,12 +284,11 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
                   <div style={{ width: "100%", height: "100%", background: companyValues.color_primario }} />
                 </div>
                 <span style={{ fontFamily: "monospace", fontSize: "0.8rem", color: "#6b7280" }}>{companyValues.color_primario}</span>
-                <div style={{ height: "32px", padding: "0 14px", borderRadius: "8px", background: companyValues.color_primario, display: "flex", alignItems: "center", fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 600, color: "#fff", letterSpacing: "0.02em" }}>
+                <div style={{ height: "32px", padding: "0 14px", borderRadius: "8px", background: companyValues.color_primario, display: "flex", alignItems: "center", fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 600, color: "#fff" }}>
                   Vista previa
                 </div>
               </div>
             </div>
-
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               <label style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 500, color: "#6b7280" }}>Logo de la empresa</label>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -332,7 +318,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
           <div style={{ padding: "1.5rem" }}>
             <div style={{ borderRadius: "10px", background: "#f0fdf9", border: "1px solid #99f6e4", padding: "14px 16px", marginBottom: "1.25rem" }}>
               <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#134e4a", lineHeight: 1.6 }}>
-                Estas direcciones se usan para calcular los <strong style={{ fontWeight: 600 }}>kilómetros en vacío</strong> — desde el garaje hasta el punto de recogida — y el coste de parking durante el servicio.
+                Estas direcciones se usan para calcular los <strong>kilómetros en vacío</strong> — desde el garaje hasta el punto de recogida — y el coste de parking durante el servicio.
               </p>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
@@ -361,30 +347,6 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
               ))}
             </div>
           </div>
-        </SectionWrapper>
-
-        {/* VEHÍCULOS */}
-        <SectionWrapper id="vehiculos" title="Vehículos — Consumo" icon={Bus} color="#1e40af">
-          <FieldGroup title="Litros cada 100 km por tipo de vehículo">
-            {f("consumo_minibus", "Minibus", "L/100km")}
-            {f("consumo_autobus", "Autobús", "L/100km")}
-            {f("consumo_autocar", "Autocar Gran Turismo", "L/100km")}
-            {f("precio_combustible", "Precio del combustible", "€/litro")}
-          </FieldGroup>
-        </SectionWrapper>
-
-        {/* COSTES */}
-        <SectionWrapper id="costes" title="Costes del vehículo" icon={Wrench} color="#b45309">
-          <FieldGroup title="Desgaste y operación">
-            {f("amortizacion_km", "Amortización", "€/km")}
-            {f("mantenimiento_km", "Mantenimiento", "€/km")}
-            {f("seguro_dia", "Seguro", "€/día")}
-          </FieldGroup>
-          <FieldDivider />
-          <FieldGroup title="Peajes estimados">
-            {f("peajes_nacional", "Nacional", "€/100km")}
-            {f("peajes_internacional", "Internacional", "€/100km")}
-          </FieldGroup>
         </SectionWrapper>
 
         {/* CONDUCTOR */}
@@ -423,7 +385,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
           </FieldGroup>
         </SectionWrapper>
 
-        {/* COMERCIAL */}
+        {/* MARGEN E IVA */}
         <SectionWrapper id="comercial" title="Margen comercial e IVA" icon={TrendingUp} color="#0369a1">
           <FieldGroup title="Rentabilidad">
             {f("margen_beneficio", "Margen de beneficio", "%")}
