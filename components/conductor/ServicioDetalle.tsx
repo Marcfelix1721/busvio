@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, MapPin, Clock, Users, Bus, Phone, AlertTriangle, CheckCircle, PlayCircle, Navigation, Eye } from 'lucide-react'
+import { ArrowLeft, Bus, Phone, AlertTriangle, CheckCircle, PlayCircle, Navigation, Eye } from 'lucide-react'
 import Link from 'next/link'
 
 const supabase = createBrowserClient(
@@ -75,11 +74,11 @@ export default function ServicioDetalle({ servicio, assignment, vehiculo, incide
   const estadoCfg = ESTADO_CONFIG[estado] || ESTADO_CONFIG.asignado
   const progresoIdx = PROGRESO_IDX[estado] ?? 0
 
-  const stops = (() => { try { return JSON.parse(servicio.stops || '[]') } catch { return [] } })()
+  const stops: string[] = (() => { try { return JSON.parse(servicio.stops || '[]') } catch { return [] } })()
 
   const mapsUrl = () => {
-    const waypoints = stops.length > 0 ? `&waypoints=${stops.map(encodeURIComponent).join('|')}` : ''
-    return `https://www.google.com/maps/dir/${encodeURIComponent(servicio.origin)}/${encodeURIComponent(servicio.destination)}${waypoints}`
+    const waypoints = stops.length > 0 ? '&waypoints=' + stops.map(encodeURIComponent).join('|') : ''
+    return 'https://www.google.com/maps/dir/' + encodeURIComponent(servicio.origin) + '/' + encodeURIComponent(servicio.destination) + waypoints
   }
 
   async function handleVisto() {
@@ -131,19 +130,18 @@ export default function ServicioDetalle({ servicio, assignment, vehiculo, incide
     select: { width: '100%', height: 42, border: '1px solid #e5e7eb', borderRadius: 8, padding: '0 12px', fontSize: 13, background: '#fafafa', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' as const },
   }
 
+  const mapsLinkStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, height: 46, background: '#111827', color: '#fff', borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: 'none' }
+  const telLinkStyle: React.CSSProperties = { fontSize: 15, fontWeight: 700, color: accentColor, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }
+
   return (
     <div style={st.page}>
+
       {/* HEADER */}
       <div style={st.header}>
         <Link href="/conductor" style={{ color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', fontSize: 13 }}>
           <ArrowLeft style={{ width: 14, height: 14 }} /> Mis servicios
         </Link>
-        <span style={{
-          fontSize: 12, fontWeight: 700,
-          background: estadoCfg.bg, color: estadoCfg.color,
-          borderRadius: 20, padding: '4px 12px',
-          border: `1px solid ${estadoCfg.border}`
-        }}>
+        <span style={{ fontSize: 12, fontWeight: 700, background: estadoCfg.bg, color: estadoCfg.color, borderRadius: 20, padding: '4px 12px', border: '1px solid ' + estadoCfg.border }}>
           {estadoCfg.emoji} {estadoCfg.label}
         </span>
       </div>
@@ -161,27 +159,15 @@ export default function ServicioDetalle({ servicio, assignment, vehiculo, incide
                 return (
                   <div key={paso.key} style={{ display: 'flex', alignItems: 'center', flex: i < PROGRESO_PASOS.length - 1 ? 1 : 'none' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                      <div style={{
-                        width: 36, height: 36, borderRadius: '50%',
-                        background: activo ? accentColor : '#f3f4f6',
-                        border: `2px solid ${activo ? accentColor : '#e5e7eb'}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 16,
-                        boxShadow: esCurrent ? `0 0 0 4px ${accentColor}22` : 'none',
-                        transition: 'all 0.2s'
-                      }}>
-                        {activo ? <span style={{ fontSize: 16 }}>{paso.emoji}</span> : <span style={{ fontSize: 14, opacity: 0.3 }}>{paso.emoji}</span>}
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: activo ? accentColor : '#f3f4f6', border: '2px solid ' + (activo ? accentColor : '#e5e7eb'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, boxShadow: esCurrent ? '0 0 0 4px ' + accentColor + '22' : 'none' }}>
+                        <span style={{ fontSize: activo ? 16 : 14, opacity: activo ? 1 : 0.3 }}>{paso.emoji}</span>
                       </div>
                       <span style={{ fontSize: 10, color: activo ? accentColor : '#9ca3af', fontWeight: activo ? 700 : 500, whiteSpace: 'nowrap' as const }}>
                         {paso.label}
                       </span>
                     </div>
                     {i < PROGRESO_PASOS.length - 1 && (
-                      <div style={{
-                        flex: 1, height: 3, margin: '0 4px', marginBottom: 18,
-                        background: progresoIdx > i ? accentColor : '#e5e7eb',
-                        borderRadius: 2
-                      }} />
+                      <div style={{ flex: 1, height: 3, margin: '0 4px', marginBottom: 18, background: progresoIdx > i ? accentColor : '#e5e7eb', borderRadius: 2 }} />
                     )}
                   </div>
                 )
@@ -197,8 +183,8 @@ export default function ServicioDetalle({ servicio, assignment, vehiculo, incide
           </div>
         )}
 
-        {/* RUTA PRINCIPAL */}
-        <div style={{ ...st.card, borderLeft: `4px solid ${accentColor}` }}>
+        {/* RUTA */}
+        <div style={{ ...st.card, borderLeft: '4px solid ' + accentColor }}>
           <p style={st.sectionTitle}>Ruta del servicio</p>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 3 }}>
@@ -208,28 +194,22 @@ export default function ServicioDetalle({ servicio, assignment, vehiculo, incide
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ marginBottom: stops.length > 0 ? 12 : 0 }}>
-                <p style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Origen</p>
+                <p style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, margin: '0 0 2px', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Origen</p>
                 <p style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>{servicio.origin}</p>
               </div>
               {stops.map((stop: string, i: number) => (
                 <div key={i} style={{ margin: '12px 0' }}>
-                  <p style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Parada {i + 1}</p>
+                  <p style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, margin: '0 0 2px', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Parada {i + 1}</p>
                   <p style={{ fontSize: 14, fontWeight: 600, color: '#374151', margin: 0 }}>{stop}</p>
                 </div>
               ))}
               <div style={{ marginTop: stops.length > 0 ? 12 : 32 }}>
-                <p style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Destino</p>
+                <p style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, margin: '0 0 2px', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Destino</p>
                 <p style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>{servicio.destination}</p>
               </div>
             </div>
           </div>
-
-          
-            href={mapsUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, height: 46, background: '#111827', color: '#fff', borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}
-          >
+          <a href={mapsUrl()} target="_blank" rel="noopener noreferrer" style={mapsLinkStyle}>
             <Navigation style={{ width: 16, height: 16 }} />
             Abrir ruta en Google Maps
           </a>
@@ -278,9 +258,7 @@ export default function ServicioDetalle({ servicio, assignment, vehiculo, incide
               </div>
               <div>
                 <p style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: 0 }}>{vehiculo.marca_modelo}</p>
-                <p style={{ fontSize: 13, color: '#6b7280', margin: '2px 0 0' }}>
-                  {vehiculo.matricula} · {vehiculo.plazas} plazas · {vehiculo.tipo}
-                </p>
+                <p style={{ fontSize: 13, color: '#6b7280', margin: '2px 0 0' }}>{vehiculo.matricula} · {vehiculo.plazas} plazas · {vehiculo.tipo}</p>
               </div>
             </div>
           </div>
@@ -296,10 +274,7 @@ export default function ServicioDetalle({ servicio, assignment, vehiculo, incide
           {servicio.requester_phone && (
             <div style={{ ...st.infoRow, borderBottom: 'none' }}>
               <span style={st.infoLabel}>📞 Teléfono</span>
-              
-                href={`tel:${servicio.requester_phone}`}
-                style={{ fontSize: 15, fontWeight: 700, color: accentColor, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
-              >
+              <a href={'tel:' + servicio.requester_phone} style={telLinkStyle}>
                 <Phone style={{ width: 15, height: 15 }} />
                 {servicio.requester_phone}
               </a>
@@ -353,50 +328,32 @@ export default function ServicioDetalle({ servicio, assignment, vehiculo, incide
 
         {/* BOTONES DE ACCIÓN */}
         {estado === 'finalizado' ? (
-          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 16, padding: '28px 20px', textAlign: 'center', marginBottom: 12 }}>
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 16, padding: '28px 20px', textAlign: 'center' as const, marginBottom: 12 }}>
             <p style={{ fontSize: 40, margin: '0 0 8px' }}>✅</p>
             <p style={{ fontSize: 18, fontWeight: 800, color: '#166534', margin: 0 }}>Servicio completado</p>
-            <p style={{ fontSize: 13, color: '#16a34a', margin: '6px 0 0' }}>
-              Finalizado a las {finalizadoAt ? fmtTime(finalizadoAt) : '—'}
-            </p>
+            <p style={{ fontSize: 13, color: '#16a34a', margin: '6px 0 0' }}>Finalizado a las {finalizadoAt ? fmtTime(finalizadoAt) : '—'}</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
             {estado === 'asignado' && (
-              <button
-                style={{ height: 56, background: '#eff6ff', color: '#1e40af', border: '2px solid #bfdbfe', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
-                onClick={handleVisto}
-                disabled={loading}
-              >
+              <button onClick={handleVisto} disabled={loading} style={{ height: 56, background: '#eff6ff', color: '#1e40af', border: '2px solid #bfdbfe', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                 <span style={{ fontSize: 20 }}>👁️</span>
                 {loading ? 'Registrando...' : 'Confirmar que he visto el servicio'}
               </button>
             )}
             {(estado === 'visto' || estado === 'asignado') && (
-              <button
-                style={{ height: 56, background: '#f0fdf4', color: '#166534', border: '2px solid #bbf7d0', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
-                onClick={handleIniciar}
-                disabled={loading}
-              >
+              <button onClick={handleIniciar} disabled={loading} style={{ height: 56, background: '#f0fdf4', color: '#166534', border: '2px solid #bbf7d0', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                 <span style={{ fontSize: 20 }}>🟢</span>
                 {loading ? 'Registrando...' : 'Iniciar servicio'}
               </button>
             )}
             {estado === 'iniciado' && (
-              <button
-                style={{ height: 60, background: '#166534', color: '#fff', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 800, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 4px 12px rgba(22,101,52,0.3)' }}
-                onClick={handleFinalizar}
-                disabled={loading}
-              >
+              <button onClick={handleFinalizar} disabled={loading} style={{ height: 60, background: '#166534', color: '#fff', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 800, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 4px 12px rgba(22,101,52,0.3)' }}>
                 <span style={{ fontSize: 22 }}>✅</span>
                 {loading ? 'Registrando...' : 'Finalizar servicio'}
               </button>
             )}
-
-            <button
-              style={{ height: 48, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-              onClick={() => setShowIncidencia(!showIncidencia)}
-            >
+            <button onClick={() => setShowIncidencia(!showIncidencia)} style={{ height: 48, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               <span style={{ fontSize: 16 }}>🚨</span>
               Reportar incidencia
             </button>
@@ -410,7 +367,9 @@ export default function ServicioDetalle({ servicio, assignment, vehiculo, incide
             <div style={{ marginBottom: 12 }}>
               <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6, display: 'block' }}>Tipo de incidencia</label>
               <select style={st.select} value={tipoIncidencia} onChange={e => setTipoIncidencia(e.target.value)}>
-                {TIPOS_INCIDENCIA.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                {TIPOS_INCIDENCIA.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
               </select>
             </div>
             <div style={{ marginBottom: 12 }}>
@@ -418,10 +377,10 @@ export default function ServicioDetalle({ servicio, assignment, vehiculo, incide
               <textarea style={st.textarea} placeholder="Describe la incidencia..." value={comentarioIncidencia} onChange={e => setComentarioIncidencia(e.target.value)} />
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button style={{ flex: 1, height: 44, background: '#991b1b', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }} onClick={handleIncidencia} disabled={enviandoIncidencia}>
+              <button onClick={handleIncidencia} disabled={enviandoIncidencia} style={{ flex: 1, height: 44, background: '#991b1b', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                 {enviandoIncidencia ? 'Enviando...' : '🚨 Enviar incidencia'}
               </button>
-              <button style={{ flex: 1, height: 44, background: '#f9fafb', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }} onClick={() => setShowIncidencia(false)}>
+              <button onClick={() => setShowIncidencia(false)} style={{ flex: 1, height: 44, background: '#f9fafb', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                 Cancelar
               </button>
             </div>
@@ -440,7 +399,9 @@ export default function ServicioDetalle({ servicio, assignment, vehiculo, incide
                   </span>
                   <span style={{ fontSize: 11, color: '#9ca3af' }}>{fmtTime(inc.created_at)}</span>
                 </div>
-                {inc.comentario && <p style={{ fontSize: 13, color: '#374151', margin: 0, lineHeight: 1.5 }}>{inc.comentario}</p>}
+                {inc.comentario && (
+                  <p style={{ fontSize: 13, color: '#374151', margin: 0, lineHeight: 1.5 }}>{inc.comentario}</p>
+                )}
               </div>
             ))}
           </div>
