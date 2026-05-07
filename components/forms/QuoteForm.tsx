@@ -313,13 +313,8 @@ export function QuoteForm({ slug }: QuoteFormProps) {
     </div>
   )
 
-  const inputStyle: React.CSSProperties = { height: 44, border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '0 14px', fontSize: 14, background: '#fafafa', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box', width: '100%', outline: 'none' }
   const grid2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }
   const sectionTitle: React.CSSProperties = { fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid #f3f4f6' }
-
-  // Precio estimado básico según vehículo y pasajeros
-  const precioBase: Record<string, number> = { minibus: 180, autobus: 320, autocar: 420 }
-  const precioEstimado = precioBase[vehicleType] + passengers * 2
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f4', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
@@ -347,7 +342,6 @@ export function QuoteForm({ slug }: QuoteFormProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <p style={sectionTitle}>👤 Datos de contacto</p>
 
-              {/* Tipo cliente */}
               <Field label="Tipo de cliente">
                 <div style={{ display: 'flex', gap: 8 }}>
                   {(['particular', 'empresa'] as const).map(t => (
@@ -399,7 +393,6 @@ export function QuoteForm({ slug }: QuoteFormProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <p style={sectionTitle}>🗺️ Detalles del viaje</p>
 
-              {/* Tipo de viaje */}
               <Field label="Tipo de viaje">
                 <div style={{ display: 'flex', gap: 8 }}>
                   {([['ida', '➡️ Solo ida'], ['idavuelta', '🔄 Ida y vuelta']] as const).map(([val, lbl]) => (
@@ -420,7 +413,6 @@ export function QuoteForm({ slug }: QuoteFormProps) {
                 </Field>
               </div>
 
-              {/* Paradas */}
               <Field label="Paradas intermedias">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {stops.length === 0 && <p style={{ fontSize: 13, color: '#9ca3af', fontStyle: 'italic' }}>Sin paradas intermedias</p>}
@@ -433,7 +425,6 @@ export function QuoteForm({ slug }: QuoteFormProps) {
                 </div>
               </Field>
 
-              {/* Fechas */}
               <div style={{ display: 'grid', gridTemplateColumns: tripType === 'idavuelta' ? '1fr 1fr' : '1fr', gap: 16 }}>
                 <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
                   <p style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 12 }}>🟢 Salida</p>
@@ -519,15 +510,6 @@ export function QuoteForm({ slug }: QuoteFormProps) {
                   style={{ border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 14, background: '#fafafa', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' as const, width: '100%', outline: 'none', resize: 'vertical' as const }}
                 />
               </Field>
-
-              {/* Precio estimado */}
-              <div style={{ background: color + '08', border: `1px solid ${color}33`, borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: color, textTransform: 'uppercase' as const, letterSpacing: '0.06em', margin: 0 }}>Precio estimado orientativo</p>
-                  <p style={{ fontSize: 12, color: '#6b7280', margin: '2px 0 0' }}>El precio final lo confirma la empresa</p>
-                </div>
-                <p style={{ fontSize: 24, fontWeight: 800, color: color, margin: 0 }}>{precioEstimado}€</p>
-              </div>
             </div>
           )}
 
@@ -556,12 +538,6 @@ export function QuoteForm({ slug }: QuoteFormProps) {
                   <span style={{ fontSize: 13, color: '#111827', fontWeight: 600, textAlign: 'right' as const }}>{(row as any).value}</span>
                 </div>
               ))}
-
-              <div style={{ background: color + '08', border: `1px solid ${color}33`, borderRadius: 12, padding: '16px', marginTop: 8 }}>
-                <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 4px' }}>Precio estimado orientativo</p>
-                <p style={{ fontSize: 28, fontWeight: 800, color: color, margin: 0 }}>{precioEstimado}€</p>
-                <p style={{ fontSize: 11, color: '#9ca3af', margin: '4px 0 0' }}>El precio final lo confirma la empresa en menos de 24h</p>
-              </div>
             </div>
           )}
 
