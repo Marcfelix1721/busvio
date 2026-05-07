@@ -9,11 +9,22 @@ const supabase = createBrowserClient(
 )
 
 const TIPOS = [
-  { value: 'per_km', label: '€ por km', descripcion: 'Se multiplica por los km del servicio' },
-  { value: 'per_day', label: '€ por día', descripcion: 'Se multiplica por los días del servicio' },
-  { value: 'per_hour', label: '€ por hora', descripcion: 'Se multiplica por las horas estimadas' },
-  { value: 'per_x_km', label: '€ cada X km', descripcion: 'Se reparte entre los km (ej. ruedas cada 10.000 km)' },
-  { value: 'fixed', label: '€ fijo', descripcion: 'Siempre suma el mismo importe' },
+  { value: 'per_km', label: 'Por km recorrido', ejemplo: 'ej: 2.20€ × km', icon: '📍' },
+  { value: 'per_day', label: 'Por día', ejemplo: 'ej: 18€ × días', icon: '📅' },
+  { value: 'per_hour', label: 'Por hora', ejemplo: 'ej: 12€ × horas', icon: '⏱' },
+  { value: 'per_x_km', label: 'Cada X km', ejemplo: 'ej: 800€ cada 10.000 km', icon: '🔧' },
+  { value: 'fixed', label: 'Importe fijo', ejemplo: 'ej: 50€ siempre', icon: '📌' },
+]
+
+const SUGERENCIAS = [
+  { nombre: 'Conductor', tipo: 'per_hour', valor: '12', icon: '👤' },
+  { nombre: 'Dieta conductor', tipo: 'per_day', valor: '20', icon: '🍽️' },
+  { nombre: 'Peaje', tipo: 'fixed', valor: '0', icon: '🛣️' },
+  { nombre: 'Seguro', tipo: 'per_day', valor: '18', icon: '🛡️' },
+  { nombre: 'Ruedas', tipo: 'per_x_km', valor: '800', icon: '🔧' },
+  { nombre: 'Parking', tipo: 'fixed', valor: '0', icon: '🅿️' },
+  { nombre: 'Limpieza', tipo: 'fixed', valor: '30', icon: '🧹' },
+  { nombre: 'Coste por km', tipo: 'per_km', valor: '2.20', icon: '📍' },
 ]
 
 type CostVariable = {
@@ -27,16 +38,23 @@ type CostVariable = {
   orden: number
 }
 
-type Props = {
-  companyId: string
+type Props = { companyId: string }
+
+const emptyForm = { nombre: '', tipo: 'per_km', valor: '', intervalo_km: '', obligatoria: true }
+
+function formatEjemplo(v: CostVariable) {
+  switch (v.tipo) {
+    case 'per_km': return `${v.valor}€ × km recorrido`
+    case 'per_day': return `${v.valor}€ × días`
+    case 'per_hour': return `${v.valor}€ × horas`
+    case 'per_x_km': return `${v.valor}€ cada ${v.intervalo_km?.toLocaleString()} km`
+    case 'fixed': return `${v.valor}€ fijo por servicio`
+    default: return ''
+  }
 }
 
-const emptyForm = {
-  nombre: '',
-  tipo: 'per_km',
-  valor: '',
-  intervalo_km: '',
-  obligatoria: true,
+function tipoIcon(tipo: string) {
+  return TIPOS.find(t => t.value === tipo)?.icon || '💰'
 }
 
 export default function CostVariablesManager({ companyId }: Props) {
@@ -47,34 +65,30 @@ export default function CostVariablesManager({ companyId }: Props) {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchVariables()
-  }, [])
+  useEffect(() => { fetchVariables() }, [])
 
   async function fetchVariables() {
     setLoading(true)
     const { data } = await supabase
-      .from('cost_variables')
-      .select('*')
-      .eq('company_id', companyId)
-      .order('orden')
+      .from('cost_variables').select('*')
+      .eq('company_id', companyId).order('orden')
     setVariables(data || [])
     setLoading(false)
   }
 
-  function openNew() {
-    setForm(emptyForm)
+  function openNew(prefill?: Partial<typeof emptyForm>) {
+    setForm({ ...emptyForm, ...prefill })
     setEditingId(null)
     setShowForm(true)
     setError('')
+    setTimeout(() => document.getElementById('cv-nombre')?.focus(), 100)
   }
 
   function openEdit(v: CostVariable) {
     setForm({
-      nombre: v.nombre,
-      tipo: v.tipo,
-      valor: String(v.valor),
+      nombre: v.nombre, tipo: v.tipo, valor: String(v.valor),
       intervalo_km: v.intervalo_km ? String(v.intervalo_km) : '',
       obligatoria: v.obligatoria,
     })
@@ -89,30 +103,20 @@ export default function CostVariablesManager({ companyId }: Props) {
     if (form.tipo === 'per_x_km' && (!form.intervalo_km || isNaN(Number(form.intervalo_km)))) {
       return setError('Indica cada cuántos km se aplica este coste')
     }
-
     setSaving(true)
     setError('')
-
     const payload = {
-      nombre: form.nombre.trim(),
-      tipo: form.tipo,
+      nombre: form.nombre.trim(), tipo: form.tipo,
       valor: Number(form.valor),
       intervalo_km: form.tipo === 'per_x_km' ? Number(form.intervalo_km) : null,
       obligatoria: form.obligatoria,
     }
-
     if (editingId) {
       await supabase.from('cost_variables').update(payload).eq('id', editingId)
     } else {
       const maxOrden = variables.length > 0 ? Math.max(...variables.map(v => v.orden)) + 1 : 1
-      await supabase.from('cost_variables').insert({
-        ...payload,
-        company_id: companyId,
-        activa: true,
-        orden: maxOrden,
-      })
+      await supabase.from('cost_variables').insert({ ...payload, company_id: companyId, activa: true, orden: maxOrden })
     }
-
     await fetchVariables()
     setShowForm(false)
     setSaving(false)
@@ -124,185 +128,280 @@ export default function CostVariablesManager({ companyId }: Props) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar esta variable de coste?')) return
+    setDeletingId(id)
     await supabase.from('cost_variables').delete().eq('id', id)
     setVariables(prev => prev.filter(v => v.id !== id))
+    setDeletingId(null)
   }
 
-  function tipoLabel(tipo: string) {
-    return TIPOS.find(t => t.value === tipo)?.label || tipo
-  }
-
-  function formatCosteEjemplo(v: CostVariable) {
-    switch (v.tipo) {
-      case 'per_km': return `${v.valor}€ × km`
-      case 'per_day': return `${v.valor}€ × días`
-      case 'per_hour': return `${v.valor}€ × horas`
-      case 'per_x_km': return `${v.valor}€ cada ${v.intervalo_km?.toLocaleString()} km`
-      case 'fixed': return `${v.valor}€ fijo`
-      default: return ''
-    }
-  }
-
-  const s = {
-    wrap: { fontFamily: "'DM Sans', system-ui, sans-serif" },
-    header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-    title: { fontSize: 18, fontWeight: 600, color: '#111827', margin: 0 },
-    subtitle: { fontSize: 13, color: '#6b7280', marginTop: 4 },
-    btnPrimary: { background: '#1e3a5f', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 500, cursor: 'pointer' },
-    btnSecondary: { background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 500, cursor: 'pointer' },
-    btnDanger: { background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' },
-    card: { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '16px 20px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 16 },
-    badge: (color: string, bg: string) => ({ background: bg, color, borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 600 }),
-    formWrap: { background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 24, marginBottom: 20 },
-    label: { fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4, display: 'block' },
-    input: { width: '100%', height: 36, border: '1px solid #e5e7eb', borderRadius: 8, padding: '0 12px', fontSize: 13, background: '#fff', boxSizing: 'border-box' as const },
-    select: { width: '100%', height: 36, border: '1px solid #e5e7eb', borderRadius: 8, padding: '0 12px', fontSize: 13, background: '#fff', boxSizing: 'border-box' as const },
-    grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 },
-    errorMsg: { color: '#dc2626', fontSize: 12, marginTop: 8 },
-  }
+  const tipoActual = TIPOS.find(t => t.value === form.tipo)
 
   return (
-    <div style={s.wrap}>
-      <div style={s.header}>
+    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+
+      {/* HEADER */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <p style={s.title}>Variables de coste</p>
-          <p style={s.subtitle}>Define los conceptos que forman el precio de cada servicio</p>
+          <p style={{ fontSize: 17, fontWeight: 700, color: '#111827', margin: 0 }}>Variables de coste</p>
+          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+            Define los conceptos que forman el precio de cada servicio
+          </p>
         </div>
-        <button style={s.btnPrimary} onClick={openNew}>+ Nueva variable</button>
+        {!showForm && (
+          <button
+            onClick={() => openNew()}
+            style={{ height: 38, padding: '0 16px', background: '#111827', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            + Nueva variable
+          </button>
+        )}
       </div>
 
-      {/* Formulario */}
+      {/* FORMULARIO */}
       {showForm && (
-        <div style={s.formWrap}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 16 }}>
-            {editingId ? 'Editar variable' : 'Nueva variable de coste'}
+        <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 14, padding: 24, marginBottom: 24 }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 20px' }}>
+            {editingId ? '✏️ Editar variable' : '➕ Nueva variable de coste'}
           </p>
 
-          <div style={s.grid2}>
-            <div>
-              <label style={s.label}>Nombre</label>
-              <input
-                style={s.input}
-                placeholder="Ej: Coste por km, Dieta conductor..."
-                value={form.nombre}
-                onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label style={s.label}>Tipo de cálculo</label>
-              <select
-                style={s.select}
-                value={form.tipo}
-                onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
-              >
-                {TIPOS.map(t => (
-                  <option key={t.value} value={t.value}>{t.label} — {t.descripcion}</option>
-                ))}
-              </select>
-            </div>
+          {/* Nombre */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
+              Nombre del concepto
+            </label>
+            <input
+              id="cv-nombre"
+              value={form.nombre}
+              onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
+              placeholder="Ej: Conductor, Peaje autopista, Dieta..."
+              style={{ height: 42, width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '0 14px', fontSize: 14, background: '#fff', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' as const, outline: 'none' }}
+            />
           </div>
 
-          <div style={s.grid2}>
+          {/* Tipo — botones visuales */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', display: 'block', marginBottom: 8 }}>
+              ¿Cómo se calcula?
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8 }}>
+              {TIPOS.map(t => (
+                <button
+                  key={t.value}
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, tipo: t.value }))}
+                  style={{
+                    padding: '8px 14px', borderRadius: 10, border: `2px solid ${form.tipo === t.value ? '#1e3a5f' : '#e5e7eb'}`,
+                    background: form.tipo === t.value ? '#1e3a5f' : '#fff',
+                    color: form.tipo === t.value ? '#fff' : '#374151',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    fontFamily: "'DM Sans', system-ui, sans-serif",
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <span>{t.icon}</span> {t.label}
+                </button>
+              ))}
+            </div>
+            {tipoActual && (
+              <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 8 }}>
+                {tipoActual.ejemplo}
+              </p>
+            )}
+          </div>
+
+          {/* Valor + intervalo */}
+          <div style={{ display: 'grid', gridTemplateColumns: form.tipo === 'per_x_km' ? '1fr 1fr' : '1fr 2fr', gap: 12, marginBottom: 16 }}>
             <div>
-              <label style={s.label}>
-                {form.tipo === 'per_x_km' ? 'Coste total (€)' : 'Valor (€)'}
+              <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
+                {form.tipo === 'per_x_km' ? 'Coste (€)' : 'Valor (€)'}
               </label>
               <input
-                style={s.input}
-                type="number"
-                step="0.01"
-                placeholder="0.00"
+                type="number" step="0.01" placeholder="0.00"
                 value={form.valor}
                 onChange={e => setForm(f => ({ ...f, valor: e.target.value }))}
+                style={{ height: 42, width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '0 14px', fontSize: 14, background: '#fff', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' as const, outline: 'none' }}
               />
             </div>
             {form.tipo === 'per_x_km' && (
               <div>
-                <label style={s.label}>Cada cuántos km</label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
+                  Cada cuántos km
+                </label>
                 <input
-                  style={s.input}
-                  type="number"
-                  placeholder="Ej: 10000"
+                  type="number" placeholder="Ej: 10000"
                   value={form.intervalo_km}
                   onChange={e => setForm(f => ({ ...f, intervalo_km: e.target.value }))}
+                  style={{ height: 42, width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '0 14px', fontSize: 14, background: '#fff', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' as const, outline: 'none' }}
                 />
               </div>
             )}
           </div>
 
+          {/* Obligatoria */}
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={form.obligatoria}
-                onChange={e => setForm(f => ({ ...f, obligatoria: e.target.checked }))}
-                style={{ width: 16, height: 16 }}
-              />
-              <span style={{ fontSize: 13, color: '#374151' }}>
-                <strong>Obligatoria</strong> — se aplica siempre en todos los servicios.
-                Si no, será opcional y se podrá activar/desactivar por presupuesto.
-              </span>
+            <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', display: 'block', marginBottom: 8 }}>
+              ¿Siempre se aplica?
             </label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[
+                { value: true, label: '✅ Siempre', sub: 'Se incluye en todos los servicios' },
+                { value: false, label: '☑️ Opcional', sub: 'Se puede activar o desactivar por presupuesto' },
+              ].map(opt => (
+                <button
+                  key={String(opt.value)}
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, obligatoria: opt.value }))}
+                  style={{
+                    flex: 1, padding: '10px 14px', borderRadius: 10,
+                    border: `2px solid ${form.obligatoria === opt.value ? '#1e3a5f' : '#e5e7eb'}`,
+                    background: form.obligatoria === opt.value ? '#f0f4ff' : '#fff',
+                    cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif",
+                    textAlign: 'left' as const, transition: 'all 0.15s',
+                  }}
+                >
+                  <p style={{ fontSize: 13, fontWeight: 700, color: form.obligatoria === opt.value ? '#1e3a5f' : '#374151', margin: 0 }}>{opt.label}</p>
+                  <p style={{ fontSize: 11, color: '#9ca3af', margin: '2px 0 0' }}>{opt.sub}</p>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {error && <p style={s.errorMsg}>{error}</p>}
+          {error && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 12 }}>{error}</p>}
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button style={s.btnPrimary} onClick={handleSave} disabled={saving}>
-              {saving ? 'Guardando...' : 'Guardar'}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={handleSave} disabled={saving}
+              style={{ height: 40, padding: '0 20px', background: '#111827', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }}
+            >
+              {saving ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear variable'}
             </button>
-            <button style={s.btnSecondary} onClick={() => setShowForm(false)}>Cancelar</button>
+            <button
+              onClick={() => { setShowForm(false); setError('') }}
+              style={{ height: 40, padding: '0 16px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }}
+            >
+              Cancelar
+            </button>
           </div>
         </div>
       )}
 
-      {/* Lista de variables */}
+      {/* SUGERENCIAS rápidas */}
+      {!showForm && variables.length === 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <p style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>
+            Conceptos habituales — añade con un clic
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8 }}>
+            {SUGERENCIAS.map(s => (
+              <button
+                key={s.nombre}
+                onClick={() => openNew({ nombre: s.nombre, tipo: s.tipo, valor: s.valor })}
+                style={{ padding: '7px 14px', borderRadius: 20, border: '1.5px dashed #d1d5db', background: '#fff', color: '#374151', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                {s.icon} {s.nombre}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* LISTA */}
       {loading ? (
-        <p style={{ color: '#6b7280', fontSize: 13 }}>Cargando...</p>
-      ) : variables.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#9ca3af', fontSize: 13 }}>
-          No hay variables de coste. Crea la primera.
+        <p style={{ fontSize: 13, color: '#9ca3af' }}>Cargando...</p>
+      ) : variables.length === 0 && showForm ? null : variables.length === 0 ? (
+        <div style={{ textAlign: 'center' as const, padding: '40px 20px', color: '#9ca3af' }}>
+          <p style={{ fontSize: 32, margin: '0 0 8px' }}>💰</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: '#374151', margin: 0 }}>Sin variables de coste</p>
+          <p style={{ fontSize: 13, color: '#9ca3af', margin: '4px 0 0' }}>Añade los conceptos que forman el precio de tus servicios</p>
         </div>
       ) : (
-        variables.map(v => (
-          <div key={v.id} style={{ ...s.card, opacity: v.activa ? 1 : 0.5 }}>
-            {/* Toggle activa */}
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+          {variables.map(v => (
             <div
-              onClick={() => toggleActiva(v)}
+              key={v.id}
               style={{
-                width: 36, height: 20, borderRadius: 10, cursor: 'pointer',
-                background: v.activa ? '#1e3a5f' : '#d1d5db',
-                position: 'relative', flexShrink: 0, transition: 'background 0.2s'
+                background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12,
+                padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14,
+                opacity: v.activa ? 1 : 0.5, transition: 'opacity 0.2s',
+                borderLeft: `4px solid ${v.obligatoria ? '#1e3a5f' : '#e5e7eb'}`,
               }}
             >
-              <div style={{
-                width: 14, height: 14, borderRadius: '50%', background: '#fff',
-                position: 'absolute', top: 3,
-                left: v.activa ? 18 : 4, transition: 'left 0.2s'
-              }} />
-            </div>
-
-            {/* Info */}
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>{v.nombre}</span>
-                <span style={s.badge(v.obligatoria ? '#1e3a5f' : '#6b7280', v.obligatoria ? '#eff6ff' : '#f3f4f6')}>
-                  {v.obligatoria ? 'Obligatoria' : 'Opcional'}
-                </span>
+              {/* Icono tipo */}
+              <div style={{ width: 36, height: 36, borderRadius: 9, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
+                {tipoIcon(v.tipo)}
               </div>
-              <span style={{ fontSize: 12, color: '#6b7280' }}>
-                {tipoLabel(v.tipo)} · {formatCosteEjemplo(v)}
-              </span>
-            </div>
 
-            {/* Acciones */}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button style={s.btnSecondary} onClick={() => openEdit(v)}>Editar</button>
-              <button style={s.btnDanger} onClick={() => handleDelete(v.id)}>Eliminar</button>
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2, flexWrap: 'wrap' as const }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{v.nombre}</span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '2px 7px',
+                    background: v.obligatoria ? '#eff6ff' : '#f3f4f6',
+                    color: v.obligatoria ? '#1e3a5f' : '#6b7280',
+                  }}>
+                    {v.obligatoria ? 'SIEMPRE' : 'OPCIONAL'}
+                  </span>
+                </div>
+                <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>{formatEjemplo(v)}</p>
+              </div>
+
+              {/* Toggle */}
+              <button
+                onClick={() => toggleActiva(v)}
+                style={{
+                  width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer',
+                  background: v.activa ? '#1e3a5f' : '#d1d5db',
+                  position: 'relative' as const, flexShrink: 0, transition: 'background 0.2s', padding: 0,
+                }}
+              >
+                <div style={{
+                  width: 14, height: 14, borderRadius: '50%', background: '#fff',
+                  position: 'absolute' as const, top: 3,
+                  left: v.activa ? 18 : 4, transition: 'left 0.2s',
+                }} />
+              </button>
+
+              {/* Acciones */}
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button
+                  onClick={() => openEdit(v)}
+                  style={{ height: 32, padding: '0 12px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }}
+                >
+                  Editar
+                </button>
+                <button
+                  onClick={() => handleDelete(v.id)}
+                  disabled={deletingId === v.id}
+                  style={{ height: 32, padding: '0 12px', background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }}
+                >
+                  {deletingId === v.id ? '...' : 'Eliminar'}
+                </button>
+              </div>
             </div>
+          ))}
+        </div>
+      )}
+
+      {/* Sugerencias cuando ya hay variables */}
+      {!showForm && variables.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 8 }}>
+            Añadir rápido
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+            {SUGERENCIAS.map(s => (
+              <button
+                key={s.nombre}
+                onClick={() => openNew({ nombre: s.nombre, tipo: s.tipo, valor: s.valor })}
+                style={{ padding: '5px 12px', borderRadius: 20, border: '1.5px dashed #d1d5db', background: '#fff', color: '#6b7280', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', gap: 5 }}
+              >
+                {s.icon} {s.nombre}
+              </button>
+            ))}
           </div>
-        ))
+        </div>
       )}
     </div>
   )
