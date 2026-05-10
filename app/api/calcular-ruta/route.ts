@@ -61,21 +61,70 @@ function calcularHoras(horaSalida: string, horaRegreso: string | null, dias: num
   return Math.max(1, Math.round(minutosTotales / 60))
 }
 
+// Detecta si el servicio toca una franja horaria
+// Lógica: si la hora de salida o llegada cae dentro de la franja, aplica
+// También aplica si el servicio "atraviesa" la franja (ej. servicio 9h-23h atraviesa nocturnidad 22h-6h)
+function servicioTocaFranja(
+  horaSalida: string | null,
+  horaLlegada: string | null,
+  franjaInicio: number,
+  franjaFin: number
+): boolean {
+  if (!horaSalida) return false
+
+  const [hS] = horaSalida.split(':').map(Number)
+  const hL = horaLlegada ? Number(horaLlegada.split(':')[0]) : hS + 8
+
+  // Franja normal (ej. 13–16): inicio < fin
+  if (franjaInicio < franjaFin) {
+    // El servicio toca la franja si hay solapamiento
+    // Servicio va de hS a hL (puede cruzar medianoche si hL < hS)
+    if (hS <= hL) {
+      // Servicio dentro del mismo día
+      return hS < franjaFin && hL > franjaInicio
+    } else {
+      // Servicio cruza medianoche: cubre hS–24 y 0–hL
+      return hS < franjaFin || hL > franjaInicio
+    }
+  }
+
+  // Franja nocturna que cruza medianoche (ej. 22–6): inicio > fin
+  if (franjaInicio > franjaFin) {
+    if (hS <= hL) {
+      // Servicio dentro del mismo día: toca si llega después del inicio o sale antes del fin
+      return hL > franjaInicio || hS < franjaFin
+    } else {
+      // Servicio también cruza medianoche: siempre toca
+      return true
+    }
+  }
+
+  return false
+}
+
 function calcularCosteVariable(
-  variable: { tipo: string; valor: number; intervalo_km: number | null },
-  km: number, dias: number, horas: number
-): number {
+  variable: { tipo: string; valor: number; intervalo_km: number | null; franja_hora_inicio: number | null; franja_hora_fin: number | null },
+  km: number, dias: number, horas: number,
+  horaSalida: string | null, horaLlegada: string | null
+): { coste: number; aplica: boolean } {
   switch (variable.tipo) {
-    case 'per_km': return variable.valor * km
-    case 'per_day': return variable.valor * dias
-    case 'per_hour': return variable.valor * horas
+    case 'per_km': return { coste: variable.valor * km, aplica: true }
+    case 'per_day': return { coste: variable.valor * dias, aplica: true }
+    case 'per_hour': return { coste: variable.valor * horas, aplica: true }
     case 'per_x_km':
-      if (!variable.intervalo_km || variable.intervalo_km === 0) return 0
-      return (variable.valor / variable.intervalo_km) * km
-    case 'fixed': return variable.valor
-    default: return 0
+      if (!variable.intervalo_km || variable.intervalo_km === 0) return { coste: 0, aplica: true }
+      return { coste: (variable.valor / variable.intervalo_km) * km, aplica: true }
+    case 'fixed': return { coste: variable.valor, aplica: true }
+    case 'per_franja': {
+      if (variable.franja_hora_inicio === null || variable.franja_hora_fin === null) return { coste: 0, aplica: false }
+      const aplica = servicioTocaFranja(horaSalida, horaLlegada, variable.franja_hora_inicio, variable.franja_hora_fin)
+      return { coste: aplica ? variable.valor : 0, aplica }
+    }
+    default: return { coste: 0, aplica: false }
   }
 }
+
+function pad(n: number) { return String(n).padStart(2, '0') }
 
 export async function POST(req: NextRequest) {
   try {
@@ -86,7 +135,7 @@ export async function POST(req: NextRequest) {
       company_id, quote_request_id, vehicle_id,
     } = body
 
-    // 1. Obtener dirección del garaje
+    // 1. Dirección del garaje
     const { data: pricingSettings } = await supabase
       .from('pricing_settings')
       .select('garage_address')
@@ -95,13 +144,12 @@ export async function POST(req: NextRequest) {
 
     const garageAddress = pricingSettings?.garage_address || null
 
-    // 2. Calcular km del servicio (origen → paradas → destino)
+    // 2. Km del servicio
     const kmServicio = await calcularKmEntrePuntos([origin, ...stops, destination])
 
-    // 3. Calcular km en vacío (garaje → origen y destino → garaje)
+    // 3. Km en vacío
     let kmVacioIda = 0
     let kmVacioVuelta = 0
-
     if (garageAddress) {
       kmVacioIda = await calcularKmEntrePuntos([garageAddress, origin])
       kmVacioVuelta = await calcularKmEntrePuntos([destination, garageAddress])
@@ -109,7 +157,7 @@ export async function POST(req: NextRequest) {
 
     const kmTotal = kmServicio + kmVacioIda + kmVacioVuelta
 
-    // 4. Calcular días y horas
+    // 4. Días y horas
     const dias = calcularDias(trip_date, return_date)
     const horas = calcularHoras(departure_time, return_time, dias)
 
@@ -124,64 +172,44 @@ export async function POST(req: NextRequest) {
       vehiculo = v
     }
 
-    // 6. Costes del vehículo (usando kmTotal)
+    // 6. Costes del vehículo
     const costesVehiculo: { concepto: string; formula: string; coste: number }[] = []
     let totalVehiculo = 0
 
     if (vehiculo) {
       if (vehiculo.consumo && vehiculo.precio_combustible) {
         const coste = Math.round(kmTotal * (vehiculo.consumo / 100) * vehiculo.precio_combustible * 100) / 100
-        costesVehiculo.push({
-          concepto: 'Combustible',
-          formula: `${kmTotal} km × ${vehiculo.consumo}L/100km × ${vehiculo.precio_combustible}€/L`,
-          coste,
-        })
+        costesVehiculo.push({ concepto: 'Combustible', formula: `${kmTotal} km × ${vehiculo.consumo}L/100km × ${vehiculo.precio_combustible}€/L`, coste })
         totalVehiculo += coste
       }
       if (vehiculo.amortizacion_km) {
         const coste = Math.round(kmTotal * vehiculo.amortizacion_km * 100) / 100
-        costesVehiculo.push({
-          concepto: 'Amortización',
-          formula: `${kmTotal} km × ${vehiculo.amortizacion_km}€/km`,
-          coste,
-        })
+        costesVehiculo.push({ concepto: 'Amortización', formula: `${kmTotal} km × ${vehiculo.amortizacion_km}€/km`, coste })
         totalVehiculo += coste
       }
       if (vehiculo.mantenimiento_km) {
         const coste = Math.round(kmTotal * vehiculo.mantenimiento_km * 100) / 100
-        costesVehiculo.push({
-          concepto: 'Mantenimiento',
-          formula: `${kmTotal} km × ${vehiculo.mantenimiento_km}€/km`,
-          coste,
-        })
+        costesVehiculo.push({ concepto: 'Mantenimiento', formula: `${kmTotal} km × ${vehiculo.mantenimiento_km}€/km`, coste })
         totalVehiculo += coste
       }
       if (vehiculo.seguro_dia) {
         const coste = Math.round(dias * vehiculo.seguro_dia * 100) / 100
-        costesVehiculo.push({
-          concepto: 'Seguro',
-          formula: `${dias} día${dias !== 1 ? 's' : ''} × ${vehiculo.seguro_dia}€/día`,
-          coste,
-        })
+        costesVehiculo.push({ concepto: 'Seguro', formula: `${dias} día${dias !== 1 ? 's' : ''} × ${vehiculo.seguro_dia}€/día`, coste })
         totalVehiculo += coste
       }
 
       if (quote_request_id) {
         await supabase.from('vehicle_cost_snapshots').upsert({
-          quote_request_id,
-          vehicle_id: vehiculo.id,
-          matricula: vehiculo.matricula,
-          marca_modelo: vehiculo.marca_modelo,
-          consumo: vehiculo.consumo,
-          precio_combustible: vehiculo.precio_combustible,
-          amortizacion_km: vehiculo.amortizacion_km,
-          mantenimiento_km: vehiculo.mantenimiento_km,
+          quote_request_id, vehicle_id: vehiculo.id,
+          matricula: vehiculo.matricula, marca_modelo: vehiculo.marca_modelo,
+          consumo: vehiculo.consumo, precio_combustible: vehiculo.precio_combustible,
+          amortizacion_km: vehiculo.amortizacion_km, mantenimiento_km: vehiculo.mantenimiento_km,
           seguro_dia: vehiculo.seguro_dia,
         }, { onConflict: 'quote_request_id' })
       }
     }
 
-    // 7. Variables de coste de la empresa (usando kmTotal)
+    // 7. Variables de coste
     const { data: variables } = await supabase
       .from('cost_variables')
       .select('*')
@@ -204,23 +232,36 @@ export async function POST(req: NextRequest) {
 
     const desgloseVariables: {
       id: string; nombre: string; tipo: string; valor: number
-      intervalo_km: number | null; obligatoria: boolean; activa: boolean
-      formula: string; coste: number
+      intervalo_km: number | null; franja_hora_inicio: number | null; franja_hora_fin: number | null
+      obligatoria: boolean; activa: boolean; formula: string; coste: number
+      franjaDetectada?: boolean
     }[] = []
 
     let totalVariables = 0
 
     for (const variable of variables || []) {
       const override = overrides[variable.id]
+
+      // Si el gestor la desactivó manualmente → fuera
       if (!variable.obligatoria && override && !override.activa) {
         desgloseVariables.push({ ...variable, formula: '—', coste: 0, activa: false })
         continue
       }
+
       const valorFinal = override?.valor_custom ?? variable.valor
-      const coste = calcularCosteVariable(
-        { tipo: variable.tipo, valor: valorFinal, intervalo_km: variable.intervalo_km },
-        kmTotal, dias, horas
+
+      const { coste, aplica } = calcularCosteVariable(
+        { tipo: variable.tipo, valor: valorFinal, intervalo_km: variable.intervalo_km, franja_hora_inicio: variable.franja_hora_inicio, franja_hora_fin: variable.franja_hora_fin },
+        kmTotal, dias, horas,
+        departure_time || null, return_time || null
       )
+
+      // Franja que no aplica (el servicio no toca esa franja) y el gestor no la ha forzado
+      if (variable.tipo === 'per_franja' && !aplica && !override) {
+        desgloseVariables.push({ ...variable, valor: valorFinal, formula: `Servicio fuera de la franja ${pad(variable.franja_hora_inicio)}:00–${pad(variable.franja_hora_fin)}:00`, coste: 0, activa: false, franjaDetectada: false })
+        continue
+      }
+
       const costeR = Math.round(coste * 100) / 100
 
       let formula = ''
@@ -230,9 +271,12 @@ export async function POST(req: NextRequest) {
         case 'per_hour': formula = `${horas} horas × ${valorFinal}€/h`; break
         case 'per_x_km': formula = `${kmTotal} km / ${variable.intervalo_km?.toLocaleString()} km × ${valorFinal}€`; break
         case 'fixed': formula = `Fijo`; break
+        case 'per_franja':
+          formula = `Servicio cubre las ${pad(variable.franja_hora_inicio)}:00–${pad(variable.franja_hora_fin)}:00 → +${valorFinal}€`
+          break
       }
 
-      desgloseVariables.push({ ...variable, valor: valorFinal, formula, coste: costeR, activa: true })
+      desgloseVariables.push({ ...variable, valor: valorFinal, formula, coste: costeR, activa: true, franjaDetectada: aplica })
       totalVariables += costeR
     }
 
@@ -254,11 +298,7 @@ export async function POST(req: NextRequest) {
     const precioFinal = Math.max(baseImponible + totalIva, precioMinimo)
 
     return NextResponse.json({
-      km: kmTotal,
-      kmServicio,
-      kmVacioIda,
-      kmVacioVuelta,
-      garageAddress,
+      km: kmTotal, kmServicio, kmVacioIda, kmVacioVuelta, garageAddress,
       dias, horas,
       vehiculo: vehiculo ? { marca_modelo: vehiculo.marca_modelo, matricula: vehiculo.matricula } : null,
       costesVehiculo,
