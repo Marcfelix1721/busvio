@@ -66,7 +66,7 @@ function SectionBlock({ icon: Icon, color, title, desc, children }: {
   icon: any; color: string; title: string; desc: string; children: React.ReactNode
 }) {
   return (
-    <div style={{ marginBottom: 28 }}>
+    <div style={{ marginBottom: 20 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
         <div style={{ width: 36, height: 36, borderRadius: 9, background: color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <Icon style={{ width: 17, height: 17, color: "#fff" }} />
@@ -192,11 +192,9 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
             <TextField id="website" label="Sitio web" value={companyValues.website} onChange={handleCompanyChange} placeholder="www.empresa.com" span />
           </Grid>
         </Pad>
-
         <Pad top>
           <Label>Identidad visual</Label>
           <Grid>
-            {/* Color corporativo */}
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
               <label style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>Color corporativo</label>
               <div style={{ display: "flex", alignItems: "center", gap: 10, height: 38 }}>
@@ -209,20 +207,18 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
                 <span style={{ fontFamily: "monospace", fontSize: 12, color: "#374151", background: "#f3f4f6", padding: "4px 10px", borderRadius: 6 }}>
                   {companyValues.color_primario}
                 </span>
-                <div style={{ height: 30, padding: "0 14px", borderRadius: 7, background: companyValues.color_primario, display: "flex", alignItems: "center", fontSize: 12, fontWeight: 600, color: "#fff", fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: "0.01em" }}>
+                <div style={{ height: 30, padding: "0 14px", borderRadius: 7, background: companyValues.color_primario, display: "flex", alignItems: "center", fontSize: 12, fontWeight: 600, color: "#fff", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                   {company?.name?.split(" ")[0] ?? "Preview"}
                 </div>
               </div>
             </div>
-
-            {/* Logo */}
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
               <label style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>Logo de la empresa</label>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 52, height: 52, flexShrink: 0, borderRadius: 10, border: "1.5px solid #e5e7eb", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                   {logoUrl
                     ? <img src={logoUrl} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }} />
-                    : <span style={{ fontSize: 10, color: "#d1d5db", textAlign: "center" as const, lineHeight: 1.4, padding: 4, fontFamily: "'DM Sans', system-ui, sans-serif" }}>Sin logo</span>
+                    : <span style={{ fontSize: 10, color: "#d1d5db", textAlign: "center" as const, fontFamily: "'DM Sans', system-ui, sans-serif" }}>Sin logo</span>
                   }
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
@@ -245,7 +241,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
         <Pad>
           <div style={{ background: "#f0fdf9", border: "1px solid #bbf7d0", borderRadius: 10, padding: "11px 14px", marginBottom: 18 }}>
             <p style={{ fontSize: 12, color: "#166534", margin: 0, lineHeight: 1.6, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-              Estas direcciones se usan para calcular los <strong>km en vacío</strong> que recorre el bus desde el garaje hasta el punto de inicio del servicio.
+              Estas direcciones se usan para calcular los <strong>km en vacío</strong> que recorre el bus desde el garaje hasta el inicio del servicio.
             </p>
           </div>
           <Grid>
@@ -274,17 +270,27 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
       </SectionBlock>
 
       {/* GUARDAR */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "16px 24px" }}>
-        <div>
-          {message
-            ? <p style={{ fontSize: 13, color: "#dc2626", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>{message}</p>
-            : <p style={{ fontSize: 13, color: "#9ca3af", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>Los cambios se aplican inmediatamente a nuevos presupuestos</p>
-          }
+      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, overflow: "hidden", marginBottom: 28 }}>
+        <div style={{ padding: "14px 24px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: saved ? "#10b981" : "#e5e7eb", flexShrink: 0, transition: "background 0.3s" }} />
+          <p style={{ fontSize: 12, color: "#9ca3af", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+            {message
+              ? <span style={{ color: "#dc2626" }}>{message}</span>
+              : saved
+              ? <span style={{ color: "#10b981", fontWeight: 600 }}>Cambios guardados correctamente</span>
+              : "Datos de empresa, operaciones y margen"
+            }
+          </p>
         </div>
-        <button onClick={handleSave} disabled={saving}
-          style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 22px", borderRadius: 10, border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "'DM Sans', system-ui, sans-serif", background: saved ? "#10b981" : "#111827", color: "#fff", transition: "all 0.2s", flexShrink: 0 }}>
-          {saved ? <><Check style={{ width: 15, height: 15 }} /> Guardado</> : saving ? "Guardando..." : <><Save style={{ width: 15, height: 15 }} /> Guardar cambios</>}
-        </button>
+        <div style={{ padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <p style={{ fontSize: 12, color: "#9ca3af", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+            Las variables de coste se guardan automáticamente al crearlas o editarlas
+          </p>
+          <button onClick={handleSave} disabled={saving}
+            style={{ display: "flex", alignItems: "center", gap: 8, height: 38, padding: "0 20px", borderRadius: 9, border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "'DM Sans', system-ui, sans-serif", background: saved ? "#10b981" : "#111827", color: "#fff", transition: "all 0.2s", flexShrink: 0 }}>
+            {saved ? <><Check style={{ width: 14, height: 14 }} /> Guardado</> : saving ? "Guardando..." : <><Save style={{ width: 14, height: 14 }} /> Guardar ajustes</>}
+          </button>
+        </div>
       </div>
 
     </div>
