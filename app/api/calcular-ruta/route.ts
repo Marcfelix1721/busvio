@@ -22,20 +22,16 @@ async function geocodificar(place: string): Promise<{ lat: number; lon: number }
 async function calcularKmEntrePuntos(puntos: string[]): Promise<number> {
   const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_KEY!
   const coords: { lat: number; lon: number }[] = []
-
   for (const place of puntos) {
     const coord = await geocodificar(place)
     if (coord) coords.push(coord)
   }
-
   if (coords.length < 2) return 0
-
   const waypointsStr = coords.map(c => `${c.lat},${c.lon}`).join('|')
   const routeRes = await fetch(
     `https://api.geoapify.com/v1/routing?waypoints=${waypointsStr}&mode=drive&apiKey=${apiKey}`
   )
   const routeData = await routeRes.json()
-
   if (routeData.features?.length > 0) {
     return Math.round(routeData.features[0].properties.distance / 1000)
   }
@@ -61,9 +57,15 @@ function calcularHoras(horaSalida: string, horaRegreso: string | null, dias: num
   return Math.max(1, Math.round(minutosTotales / 60))
 }
 
-// Detecta si el servicio toca una franja horaria
-// Lógica: si la hora de salida o llegada cae dentro de la franja, aplica
-// También aplica si el servicio "atraviesa" la franja (ej. servicio 9h-23h atraviesa nocturnidad 22h-6h)
+function esDiaEspecial(tripDate: string, tipo: string): boolean {
+  const fecha = new Date(tripDate)
+  const diaSemana = fecha.getDay() // 0=dom, 1=lun, ..., 6=sab
+  if (tipo === 'sabado') return diaSemana === 6
+  if (tipo === 'domingo') return diaSemana === 0
+  // festivo_nacional y festivo_local se gestionan manualmente por el gestor
+  return false
+}
+
 function servicioTocaFranja(
   horaSalida: string | null,
   horaLlegada: string | null,
@@ -71,42 +73,60 @@ function servicioTocaFranja(
   franjaFin: number
 ): boolean {
   if (!horaSalida) return false
-
   const [hS] = horaSalida.split(':').map(Number)
   const hL = horaLlegada ? Number(horaLlegada.split(':')[0]) : hS + 8
 
-  // Franja normal (ej. 13–16): inicio < fin
   if (franjaInicio < franjaFin) {
-    // El servicio toca la franja si hay solapamiento
-    // Servicio va de hS a hL (puede cruzar medianoche si hL < hS)
-    if (hS <= hL) {
-      // Servicio dentro del mismo día
-      return hS < franjaFin && hL > franjaInicio
-    } else {
-      // Servicio cruza medianoche: cubre hS–24 y 0–hL
-      return hS < franjaFin || hL > franjaInicio
-    }
+    if (hS <= hL) return hS < franjaFin && hL > franjaInicio
+    else return hS < franjaFin || hL > franjaInicio
   }
-
-  // Franja nocturna que cruza medianoche (ej. 22–6): inicio > fin
   if (franjaInicio > franjaFin) {
-    if (hS <= hL) {
-      // Servicio dentro del mismo día: toca si llega después del inicio o sale antes del fin
-      return hL > franjaInicio || hS < franjaFin
-    } else {
-      // Servicio también cruza medianoche: siempre toca
-      return true
-    }
+    if (hS <= hL) return hL > franjaInicio || hS < franjaFin
+    else return true
   }
-
   return false
 }
 
 function calcularCosteVariable(
-  variable: { tipo: string; valor: number; intervalo_km: number | null; franja_hora_inicio: number | null; franja_hora_fin: number | null },
+  variable: {
+    tipo: string; valor: number; intervalo_km: number | null
+    franja_hora_inicio: number | null; franja_hora_fin: number | null
+    condicion_tipo: string | null; condicion_valor: any
+  },
   km: number, dias: number, horas: number,
-  horaSalida: string | null, horaLlegada: string | null
+  horaSalida: string | null, horaLlegada: string | null,
+  tripDate: string | null, subtotalPrevio: number
 ): { coste: number; aplica: boolean } {
+
+  // Primero evaluar si la condición de activación se cumple
+  if (variable.condicion_tipo && variable.condicion_tipo !== 'siempre') {
+    switch (variable.condicion_tipo) {
+      case 'franja':
+        if (variable.condicion_valor?.inicio !== undefined && variable.condicion_valor?.fin !== undefined) {
+          const toca = servicioTocaFranja(horaSalida, horaLlegada, variable.condicion_valor.inicio, variable.condicion_valor.fin)
+          if (!toca) return { coste: 0, aplica: false }
+        }
+        break
+      case 'umbral_horas':
+        if (variable.condicion_valor?.min !== undefined && horas < variable.condicion_valor.min) {
+          return { coste: 0, aplica: false }
+        }
+        break
+      case 'umbral_km':
+        if (variable.condicion_valor?.min !== undefined && km < variable.condicion_valor.min) {
+          return { coste: 0, aplica: false }
+        }
+        break
+      case 'dia_especial':
+        if (tripDate && variable.condicion_valor?.dia) {
+          const esEspecial = esDiaEspecial(tripDate, variable.condicion_valor.dia)
+          if (!esEspecial) return { coste: 0, aplica: false }
+        }
+        break
+    }
+  }
+
+  // Calcular el coste según el tipo
   switch (variable.tipo) {
     case 'per_km': return { coste: variable.valor * km, aplica: true }
     case 'per_day': return { coste: variable.valor * dias, aplica: true }
@@ -115,16 +135,30 @@ function calcularCosteVariable(
       if (!variable.intervalo_km || variable.intervalo_km === 0) return { coste: 0, aplica: true }
       return { coste: (variable.valor / variable.intervalo_km) * km, aplica: true }
     case 'fixed': return { coste: variable.valor, aplica: true }
+    case 'percent': return { coste: subtotalPrevio * (variable.valor / 100), aplica: true }
     case 'per_franja': {
       if (variable.franja_hora_inicio === null || variable.franja_hora_fin === null) return { coste: 0, aplica: false }
-      const aplica = servicioTocaFranja(horaSalida, horaLlegada, variable.franja_hora_inicio, variable.franja_hora_fin)
-      return { coste: aplica ? variable.valor : 0, aplica }
+      const toca = servicioTocaFranja(horaSalida, horaLlegada, variable.franja_hora_inicio, variable.franja_hora_fin)
+      return { coste: toca ? variable.valor : 0, aplica: toca }
     }
     default: return { coste: 0, aplica: false }
   }
 }
 
-function pad(n: number) { return String(n).padStart(2, '0') }
+function pad(n: number | null) { return n !== null ? String(n).padStart(2, '0') : '00' }
+
+function construirFormula(variable: any, valorFinal: number, kmTotal: number, dias: number, horas: number): string {
+  switch (variable.tipo) {
+    case 'per_km': return `${kmTotal} km × ${valorFinal}€/km`
+    case 'per_day': return `${dias} día${dias !== 1 ? 's' : ''} × ${valorFinal}€/día`
+    case 'per_hour': return `${horas} horas × ${valorFinal}€/h`
+    case 'per_x_km': return `${kmTotal} km / ${variable.intervalo_km?.toLocaleString()} km × ${valorFinal}€`
+    case 'fixed': return `Fijo`
+    case 'percent': return `${valorFinal}% sobre subtotal`
+    case 'per_franja': return `Cubre ${pad(variable.franja_hora_inicio)}:00–${pad(variable.franja_hora_fin)}:00 → +${valorFinal}€`
+    default: return ''
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -135,26 +169,20 @@ export async function POST(req: NextRequest) {
       company_id, quote_request_id, vehicle_id,
     } = body
 
-    // 1. Dirección del garaje
+    // 1. Garaje
     const { data: pricingSettings } = await supabase
-      .from('pricing_settings')
-      .select('garage_address')
-      .eq('company_id', company_id)
-      .single()
-
+      .from('pricing_settings').select('garage_address').eq('company_id', company_id).single()
     const garageAddress = pricingSettings?.garage_address || null
 
-    // 2. Km del servicio
+    // 2. Km servicio
     const kmServicio = await calcularKmEntrePuntos([origin, ...stops, destination])
 
-    // 3. Km en vacío
-    let kmVacioIda = 0
-    let kmVacioVuelta = 0
+    // 3. Km vacío
+    let kmVacioIda = 0, kmVacioVuelta = 0
     if (garageAddress) {
       kmVacioIda = await calcularKmEntrePuntos([garageAddress, origin])
       kmVacioVuelta = await calcularKmEntrePuntos([destination, garageAddress])
     }
-
     const kmTotal = kmServicio + kmVacioIda + kmVacioVuelta
 
     // 4. Días y horas
@@ -164,15 +192,13 @@ export async function POST(req: NextRequest) {
     // 5. Vehículo
     let vehiculo: any = null
     if (vehicle_id) {
-      const { data: v } = await supabase
-        .from('vehicles')
+      const { data: v } = await supabase.from('vehicles')
         .select('id, matricula, marca_modelo, consumo, precio_combustible, amortizacion_km, mantenimiento_km, seguro_dia')
-        .eq('id', vehicle_id)
-        .single()
+        .eq('id', vehicle_id).single()
       vehiculo = v
     }
 
-    // 6. Costes del vehículo
+    // 6. Costes vehículo
     const costesVehiculo: { concepto: string; formula: string; coste: number }[] = []
     let totalVehiculo = 0
 
@@ -197,7 +223,6 @@ export async function POST(req: NextRequest) {
         costesVehiculo.push({ concepto: 'Seguro', formula: `${dias} día${dias !== 1 ? 's' : ''} × ${vehiculo.seguro_dia}€/día`, coste })
         totalVehiculo += coste
       }
-
       if (quote_request_id) {
         await supabase.from('vehicle_cost_snapshots').upsert({
           quote_request_id, vehicle_id: vehiculo.id,
@@ -209,20 +234,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 7. Variables de coste
+    // 7. Variables de coste + grupos de exclusión
     const { data: variables } = await supabase
-      .from('cost_variables')
-      .select('*')
-      .eq('company_id', company_id)
-      .eq('activa', true)
-      .order('orden')
+      .from('cost_variables').select('*')
+      .eq('company_id', company_id).eq('activa', true).order('orden')
+
+    const { data: grupos } = await supabase
+      .from('exclusion_groups').select('*').eq('company_id', company_id)
+
+    const gruposMap: Record<string, { nombre: string; modo: 'max' | 'sum' }> = {}
+    for (const g of grupos || []) gruposMap[g.id] = { nombre: g.nombre, modo: g.modo }
 
     let overrides: Record<string, { activa: boolean; valor_custom: number | null }> = {}
     if (quote_request_id) {
       const { data: overrideData } = await supabase
-        .from('quote_cost_overrides')
-        .select('*')
-        .eq('quote_request_id', quote_request_id)
+        .from('quote_cost_overrides').select('*').eq('quote_request_id', quote_request_id)
       if (overrideData) {
         overrideData.forEach((o: any) => {
           overrides[o.cost_variable_id] = { activa: o.activa, valor_custom: o.valor_custom }
@@ -230,64 +256,127 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const desgloseVariables: {
+    // Paso A — calcular coste candidato para cada variable
+    type VariableCalculada = {
       id: string; nombre: string; tipo: string; valor: number
       intervalo_km: number | null; franja_hora_inicio: number | null; franja_hora_fin: number | null
+      condicion_tipo: string | null; condicion_valor: any
+      grupo_exclusion_id: string | null; prioridad: number
       obligatoria: boolean; activa: boolean; formula: string; coste: number
-      franjaDetectada?: boolean
-    }[] = []
+      excluida?: boolean; motivo_exclusion?: string
+    }
 
-    let totalVariables = 0
+    const candidatas: VariableCalculada[] = []
 
     for (const variable of variables || []) {
       const override = overrides[variable.id]
 
-      // Si el gestor la desactivó manualmente → fuera
+      // Gestor la desactivó manualmente
       if (!variable.obligatoria && override && !override.activa) {
-        desgloseVariables.push({ ...variable, formula: '—', coste: 0, activa: false })
+        candidatas.push({ ...variable, formula: '—', coste: 0, activa: false, excluida: false })
         continue
       }
 
       const valorFinal = override?.valor_custom ?? variable.valor
+      const subtotalPrevio = totalVehiculo // para el tipo percent
 
       const { coste, aplica } = calcularCosteVariable(
-        { tipo: variable.tipo, valor: valorFinal, intervalo_km: variable.intervalo_km, franja_hora_inicio: variable.franja_hora_inicio, franja_hora_fin: variable.franja_hora_fin },
+        {
+          tipo: variable.tipo, valor: valorFinal,
+          intervalo_km: variable.intervalo_km,
+          franja_hora_inicio: variable.franja_hora_inicio,
+          franja_hora_fin: variable.franja_hora_fin,
+          condicion_tipo: variable.condicion_tipo,
+          condicion_valor: variable.condicion_valor,
+        },
         kmTotal, dias, horas,
-        departure_time || null, return_time || null
+        departure_time || null, return_time || null,
+        trip_date || null, subtotalPrevio
       )
 
-      // Franja que no aplica (el servicio no toca esa franja) y el gestor no la ha forzado
-      if (variable.tipo === 'per_franja' && !aplica && !override) {
-        desgloseVariables.push({ ...variable, valor: valorFinal, formula: `Servicio fuera de la franja ${pad(variable.franja_hora_inicio)}:00–${pad(variable.franja_hora_fin)}:00`, coste: 0, activa: false, franjaDetectada: false })
+      if (!aplica) {
+        const motivo = variable.condicion_tipo === 'franja' || variable.tipo === 'per_franja'
+          ? `Fuera de franja ${pad(variable.franja_hora_inicio)}:00–${pad(variable.franja_hora_fin)}:00`
+          : `Condición no cumplida`
+        candidatas.push({ ...variable, valor: valorFinal, formula: motivo, coste: 0, activa: false, excluida: false })
         continue
       }
 
       const costeR = Math.round(coste * 100) / 100
+      const formula = construirFormula(variable, valorFinal, kmTotal, dias, horas)
 
-      let formula = ''
-      switch (variable.tipo) {
-        case 'per_km': formula = `${kmTotal} km × ${valorFinal}€/km`; break
-        case 'per_day': formula = `${dias} día${dias !== 1 ? 's' : ''} × ${valorFinal}€/día`; break
-        case 'per_hour': formula = `${horas} horas × ${valorFinal}€/h`; break
-        case 'per_x_km': formula = `${kmTotal} km / ${variable.intervalo_km?.toLocaleString()} km × ${valorFinal}€`; break
-        case 'fixed': formula = `Fijo`; break
-        case 'per_franja':
-          formula = `Servicio cubre las ${pad(variable.franja_hora_inicio)}:00–${pad(variable.franja_hora_fin)}:00 → +${valorFinal}€`
-          break
-      }
-
-      desgloseVariables.push({ ...variable, valor: valorFinal, formula, coste: costeR, activa: true, franjaDetectada: aplica })
-      totalVariables += costeR
+      candidatas.push({
+        ...variable, valor: valorFinal, formula, coste: costeR,
+        activa: true, excluida: false,
+      })
     }
+
+    // Paso B — aplicar grupos de exclusión
+    // Agrupar candidatas activas por grupo
+    const porGrupo: Record<string, VariableCalculada[]> = {}
+    for (const v of candidatas) {
+      if (!v.activa || !v.grupo_exclusion_id) continue
+      if (!porGrupo[v.grupo_exclusion_id]) porGrupo[v.grupo_exclusion_id] = []
+      porGrupo[v.grupo_exclusion_id].push(v)
+    }
+
+    // Para cada grupo aplicar la lógica
+    for (const grupoId of Object.keys(porGrupo)) {
+      const grupo = gruposMap[grupoId]
+      if (!grupo) continue
+      const vars = porGrupo[grupoId]
+
+      if (grupo.modo === 'max' && vars.length > 1) {
+        // Ordenar por prioridad desc, luego por coste desc
+        vars.sort((a, b) => {
+          if (b.prioridad !== a.prioridad) return b.prioridad - a.prioridad
+          return b.coste - a.coste
+        })
+        // La primera gana, el resto se excluyen
+        const ganadora = vars[0]
+        for (let i = 1; i < vars.length; i++) {
+          const idx = candidatas.findIndex(c => c.id === vars[i].id)
+          if (idx !== -1) {
+            candidatas[idx].activa = false
+            candidatas[idx].excluida = true
+            candidatas[idx].coste = 0
+            candidatas[idx].motivo_exclusion = `Excluida por grupo "${grupo.nombre}" — aplica "${ganadora.nombre}"`
+            candidatas[idx].formula = `Excluida — grupo "${grupo.nombre}" solo aplica el mayor`
+          }
+        }
+      }
+      // modo 'sum' → no hacer nada, se suman todas
+    }
+
+    // Paso C — construir desglose final y sumar
+    const desgloseVariables = candidatas.map(v => ({
+      id: v.id,
+      nombre: v.nombre,
+      tipo: v.tipo,
+      valor: v.valor,
+      intervalo_km: v.intervalo_km,
+      franja_hora_inicio: v.franja_hora_inicio,
+      franja_hora_fin: v.franja_hora_fin,
+      condicion_tipo: v.condicion_tipo,
+      grupo_exclusion_id: v.grupo_exclusion_id,
+      obligatoria: v.obligatoria,
+      activa: v.activa,
+      excluida: v.excluida ?? false,
+      motivo_exclusion: v.motivo_exclusion,
+      formula: v.formula,
+      coste: v.coste,
+    }))
+
+    const totalVariables = Math.round(
+      desgloseVariables.filter(v => v.activa).reduce((s, v) => s + v.coste, 0) * 100
+    ) / 100
 
     // 8. Totales
     const subtotal = Math.round((totalVehiculo + totalVariables) * 100) / 100
 
     const { data: settings } = await supabase
-      .from('company_settings')
-      .select('margen_beneficio, iva, precio_minimo_servicio')
-      .eq('company_id', company_id)
-      .single()
+      .from('company_settings').select('margen_beneficio, iva, precio_minimo_servicio')
+      .eq('company_id', company_id).single()
 
     const margen = settings?.margen_beneficio ?? 20
     const iva = settings?.iva ?? 10
@@ -304,7 +393,7 @@ export async function POST(req: NextRequest) {
       costesVehiculo,
       totalVehiculo: Math.round(totalVehiculo * 100) / 100,
       desgloseVariables,
-      totalVariables: Math.round(totalVariables * 100) / 100,
+      totalVariables,
       subtotal,
       margen,
       margenImporte: Math.round(subtotal * margen / 100 * 100) / 100,
