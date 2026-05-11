@@ -3,8 +3,13 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { SettingsForm } from "@/components/dashboard/SettingsForm"
 import CostVariablesManager from "@/components/dashboard/CostVariablesManager"
+import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import Link from "next/link"
-import { ArrowLeft, Bus, Users, Settings } from "lucide-react"
+import type { ReactNode } from "react"
+import {
+  BusFront, Settings, Users, Bus,
+  BarChart3, Inbox, Calendar, ChevronRight, ArrowUpRight
+} from "lucide-react"
 
 async function createClient() {
   const cookieStore = await cookies()
@@ -35,70 +40,147 @@ export default async function AjustesPage() {
   const totalStaff = staffData?.length ?? 0
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f5f5f4", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div style={{ display: "flex", height: "100vh", background: "#f5f5f4", fontFamily: "'DM Sans', system-ui, sans-serif", overflow: "hidden" }}>
 
-      {/* TOPBAR */}
-      <div style={{ background: "#111827", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 28, height: 28, background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Bus style={{ width: 14, height: 14, color: "#fff" }} />
-          </div>
-          <span style={{ color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "'DM Sans', system-ui, sans-serif" }}>Busvio</span>
-        </div>
-        <Link href="/dashboard" style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", textDecoration: "none", display: "flex", alignItems: "center", gap: 6, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-          <ArrowLeft style={{ width: 14, height: 14 }} /> Volver al panel
-        </Link>
-      </div>
-
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px 64px" }}>
-
-        {/* HEADER */}
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            <div style={{ width: 36, height: 36, background: "#111827", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Settings style={{ width: 17, height: 17, color: "#fff" }} />
+      {/* SIDEBAR — idéntico al dashboard */}
+      <aside style={{ width: 228, background: "#111827", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+        <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 32, height: 32, background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <BusFront style={{ width: 16, height: 16, color: "#fff" }} />
             </div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: "#111827", margin: 0, letterSpacing: "-0.02em", fontFamily: "'DM Sans', system-ui, sans-serif" }}>Ajustes</h1>
+            <div>
+              <p style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0, letterSpacing: "-0.01em" }}>Busvio</p>
+              <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, margin: 0 }}>Panel de gestión</p>
+            </div>
           </div>
-          <p style={{ fontSize: 13, color: "#9ca3af", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-            Configura tu empresa, tarifas y motor de costes
-          </p>
         </div>
 
-        {/* ACCESOS RÁPIDOS */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 28 }}>
-          {[
-            { href: "/dashboard/vehiculos", icon: Bus, color: "#111827", label: "Flota de vehículos", sub: totalVehiculos === 0 ? "Sin vehículos" : `${totalVehiculos} vehículo${totalVehiculos !== 1 ? "s" : ""}` },
-            { href: "/dashboard/staff", icon: Users, color: "#0f766e", label: "Personal", sub: totalStaff === 0 ? "Sin personal" : `${totalStaff} persona${totalStaff !== 1 ? "s" : ""}` },
-          ].map(({ href, icon: Icon, color, label, sub }) => (
-            <Link key={href} href={href} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "16px 20px", textDecoration: "none", transition: "border-color 0.15s" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icon style={{ width: 19, height: 19, color: "#fff" }} />
-                </div>
-                <div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "#111827", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>{label}</p>
-                  <p style={{ fontSize: 12, color: "#9ca3af", margin: "2px 0 0", fontFamily: "'DM Sans', system-ui, sans-serif" }}>{sub}</p>
-                </div>
+        <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
+          <p style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "0 8px", marginBottom: 6 }}>Principal</p>
+          <SideLink href="/dashboard" icon={<Inbox style={{ width: 14, height: 14 }} />} label="Solicitudes" />
+          <SideLink href="/dashboard/clientes" icon={<Users style={{ width: 14, height: 14 }} />} label="Clientes" />
+          <SideLink href="/dashboard/analytics" icon={<BarChart3 style={{ width: 14, height: 14 }} />} label="Analytics" />
+          <SideLink href="/dashboard/calendario" icon={<Calendar style={{ width: 14, height: 14 }} />} label="Calendario" />
+          <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "12px 0" }} />
+          <p style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "0 8px", marginBottom: 6 }}>Config</p>
+          <SideLink href="/dashboard/ajustes" icon={<Settings style={{ width: 14, height: 14 }} />} label="Ajustes" active />
+          <SideLink href="/dashboard/conductores" icon={<BusFront style={{ width: 14, height: 14 }} />} label="Conductores" />
+        </nav>
+
+        <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>
+                {user.email?.[0]?.toUpperCase()}
+              </span>
+            </div>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {user.email}
+            </p>
+          </div>
+          <LogoutButton />
+        </div>
+      </aside>
+
+      {/* MAIN */}
+      <main style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "36px 36px 64px" }}>
+
+          {/* HEADER */}
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: "#111827", margin: 0, letterSpacing: "-0.02em" }}>
+                  Ajustes
+                </h1>
+                <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>
+                  {company?.name ?? "Tu empresa"} · Configuración general
+                </p>
               </div>
-              <ArrowLeft style={{ width: 15, height: 15, color: "#d1d5db", transform: "rotate(180deg)" }} />
-            </Link>
-          ))}
+            </div>
+          </div>
+
+          {/* ACCESOS RÁPIDOS */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 28 }}>
+            <QuickLink
+              href="/dashboard/vehiculos"
+              icon={<Bus style={{ width: 18, height: 18, color: "#fff" }} />}
+              color="#111827"
+              label="Flota de vehículos"
+              sub={totalVehiculos === 0 ? "Sin vehículos registrados" : `${totalVehiculos} vehículo${totalVehiculos !== 1 ? "s" : ""} registrado${totalVehiculos !== 1 ? "s" : ""}`}
+            />
+            <QuickLink
+              href="/dashboard/staff"
+              icon={<Users style={{ width: 18, height: 18, color: "#fff" }} />}
+              color="#0f766e"
+              label="Personal"
+              sub={totalStaff === 0 ? "Sin personal registrado" : `${totalStaff} persona${totalStaff !== 1 ? "s" : ""} registrada${totalStaff !== 1 ? "s" : ""}`}
+            />
+          </div>
+
+          {/* VARIABLES DE COSTE */}
+          <Section label="Motor de costes" desc="Variables, condiciones y grupos de exclusión por empresa">
+            <CostVariablesManager companyId={userData.company_id} />
+          </Section>
+
+          {/* AJUSTES */}
+          <SettingsForm
+            settings={settings}
+            companyId={userData.company_id}
+            company={company}
+            pricingSettings={pricingSettings}
+          />
+
         </div>
+      </main>
+    </div>
+  )
+}
 
-        {/* VARIABLES DE COSTE */}
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: "24px", marginBottom: 28 }}>
-          <CostVariablesManager companyId={userData.company_id} />
+function SideLink({ href, icon, label, active }: { href: string; icon: ReactNode; label: string; active?: boolean }) {
+  return (
+    <Link href={href} style={{
+      display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8,
+      fontSize: 13, fontWeight: 500, textDecoration: "none", transition: "all 0.15s",
+      background: active ? "rgba(255,255,255,0.1)" : "transparent",
+      color: active ? "#fff" : "rgba(255,255,255,0.45)",
+    }}>
+      {icon} {label}
+    </Link>
+  )
+}
+
+function QuickLink({ href, icon, color, label, sub }: { href: string; icon: ReactNode; color: string; label: string; sub: string }) {
+  return (
+    <Link href={href} style={{
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14,
+      padding: "16px 20px", textDecoration: "none",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          {icon}
         </div>
+        <div>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "#111827", margin: 0 }}>{label}</p>
+          <p style={{ fontSize: 12, color: "#9ca3af", margin: "2px 0 0" }}>{sub}</p>
+        </div>
+      </div>
+      <ArrowUpRight style={{ width: 15, height: 15, color: "#d1d5db" }} />
+    </Link>
+  )
+}
 
-        {/* AJUSTES EMPRESA + OPERACIONES + MARGEN */}
-        <SettingsForm
-          settings={settings}
-          companyId={userData.company_id}
-          company={company}
-          pricingSettings={pricingSettings}
-        />
-
+function Section({ label, desc, children }: { label: string; desc: string; children: ReactNode }) {
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 14 }}>
+        <p style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: 0 }}>{label}</p>
+        <p style={{ fontSize: 12, color: "#9ca3af", margin: "2px 0 0" }}>{desc}</p>
+      </div>
+      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: 24 }}>
+        {children}
       </div>
     </div>
   )
