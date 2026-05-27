@@ -12,20 +12,49 @@ const STEPS = ["Contacto", "Viaje", "Vehículo", "Resumen"]
 
 function StepBar({ current, color }: { current: number; color: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 32 }}>
+    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 48 }}>
       {STEPS.map((label, i) => {
         const done = i < current
         const active = i === current
         return (
           <div key={i} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
-            <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: done ? color : active ? color : '#e5e7eb', border: `2px solid ${done || active ? color : '#e5e7eb'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: done || active ? '#fff' : '#9ca3af', boxShadow: active ? `0 0 0 4px ${color}22` : 'none', transition: 'all 0.2s', flexShrink: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                background: done || active ? color : '#fff',
+                border: `1px solid ${done || active ? color : '#d1d5db'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 600,
+                color: done || active ? '#fff' : '#9ca3af',
+                boxShadow: active ? `0 0 0 4px ${color}15` : 'none',
+                transition: 'all 0.2s',
+                flexShrink: 0
+              }}>
                 {done ? '✓' : i + 1}
               </div>
-              <span style={{ fontSize: 11, fontWeight: active ? 700 : 500, color: active ? color : done ? '#374151' : '#9ca3af', whiteSpace: 'nowrap' as const }}>{label}</span>
+              <span style={{
+                fontSize: 11,
+                fontWeight: active ? 600 : 500,
+                color: active ? color : done ? '#6b7280' : '#9ca3af',
+                whiteSpace: 'nowrap' as const
+              }}>
+                {label}
+              </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div style={{ flex: 1, height: 2, margin: '0 8px', marginBottom: 18, background: done ? color : '#e5e7eb', borderRadius: 2, transition: 'background 0.3s' }} />
+              <div style={{
+                flex: 1,
+                height: 1,
+                margin: '0 12px',
+                marginBottom: 22,
+                background: done ? color : '#e5e7eb',
+                transition: 'background 0.3s'
+              }} />
             )}
           </div>
         )
@@ -36,12 +65,17 @@ function StepBar({ current, color }: { current: number; color: string }) {
 
 function Field({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
-      <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>
-        {label}{required && <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>}
+    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+      <label style={{
+        fontSize: 13,
+        fontWeight: 600,
+        color: '#374151',
+        letterSpacing: '-0.01em'
+      }}>
+        {label}{required && <span style={{ color: '#ef4444', marginLeft: 4 }}>*</span>}
       </label>
       {children}
-      {hint && <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>{hint}</p>}
+      {hint && <p style={{ fontSize: 12, color: '#9ca3af', margin: 0, marginTop: 4 }}>{hint}</p>}
     </div>
   )
 }
@@ -52,7 +86,21 @@ function Inp({ style, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
     <input {...props}
       onFocus={e => { setFocused(true); props.onFocus?.(e) }}
       onBlur={e => { setFocused(false); props.onBlur?.(e) }}
-      style={{ height: 44, border: `1.5px solid ${focused ? '#1e3a5f' : '#e5e7eb'}`, borderRadius: 10, padding: '0 14px', fontSize: 14, background: '#fafafa', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' as const, width: '100%', outline: 'none', boxShadow: focused ? '0 0 0 3px rgba(30,58,95,0.08)' : 'none', transition: 'all 0.15s', ...style }}
+      style={{
+        height: 48,
+        border: `1px solid ${focused ? '#d1d5db' : '#e5e7eb'}`,
+        borderRadius: 12,
+        padding: '0 16px',
+        fontSize: 15,
+        background: '#fff',
+        fontFamily: "'DM Sans', system-ui, sans-serif",
+        boxSizing: 'border-box' as const,
+        width: '100%',
+        outline: 'none',
+        boxShadow: focused ? '0 0 0 3px rgba(0,0,0,0.04)' : 'none',
+        transition: 'all 0.2s',
+        ...style
+      }}
     />
   )
 }
@@ -63,7 +111,21 @@ function Sel({ children, style, ...props }: React.SelectHTMLAttributes<HTMLSelec
     <select {...props}
       onFocus={e => { setFocused(true); props.onFocus?.(e) }}
       onBlur={e => { setFocused(false); props.onBlur?.(e) }}
-      style={{ height: 44, border: `1.5px solid ${focused ? '#1e3a5f' : '#e5e7eb'}`, borderRadius: 10, padding: '0 14px', fontSize: 14, background: '#fafafa', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' as const, width: '100%', outline: 'none', boxShadow: focused ? '0 0 0 3px rgba(30,58,95,0.08)' : 'none', transition: 'all 0.15s', ...style }}>
+      style={{
+        height: 48,
+        border: `1px solid ${focused ? '#d1d5db' : '#e5e7eb'}`,
+        borderRadius: 12,
+        padding: '0 16px',
+        fontSize: 15,
+        background: '#fff',
+        fontFamily: "'DM Sans', system-ui, sans-serif",
+        boxSizing: 'border-box' as const,
+        width: '100%',
+        outline: 'none',
+        boxShadow: focused ? '0 0 0 3px rgba(0,0,0,0.04)' : 'none',
+        transition: 'all 0.2s',
+        ...style
+      }}>
       {children}
     </select>
   )
@@ -71,10 +133,62 @@ function Sel({ children, style, ...props }: React.SelectHTMLAttributes<HTMLSelec
 
 function PaxCounter({ value, onChange, color }: { value: number; onChange: (v: number) => void; color: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e5e7eb', borderRadius: 10, overflow: 'hidden', width: 160, background: '#fafafa' }}>
-      <button type="button" onClick={() => onChange(Math.max(1, value - 1))} style={{ width: 44, height: 44, background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#374151', fontWeight: 700, flexShrink: 0 }}>−</button>
-      <span style={{ flex: 1, textAlign: 'center' as const, fontSize: 16, fontWeight: 700, color: '#111827' }}>{value}</span>
-      <button type="button" onClick={() => onChange(value + 1)} style={{ width: 44, height: 44, background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color, fontWeight: 700, flexShrink: 0 }}>+</button>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      border: '1px solid #e5e7eb',
+      borderRadius: 12,
+      overflow: 'hidden',
+      width: 180,
+      background: '#fff'
+    }}>
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(1, value - 1))}
+        style={{
+          width: 48,
+          height: 48,
+          background: 'none',
+          border: 'none',
+          fontSize: 20,
+          cursor: 'pointer',
+          color: '#6b7280',
+          fontWeight: 600,
+          flexShrink: 0,
+          transition: 'all 0.2s'
+        }}
+        onMouseEnter={e => (e.currentTarget.style.color = color)}
+        onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+      >
+        −
+      </button>
+      <span style={{
+        flex: 1,
+        textAlign: 'center' as const,
+        fontSize: 18,
+        fontWeight: 700,
+        color: '#111827'
+      }}>
+        {value}
+      </span>
+      <button
+        type="button"
+        onClick={() => onChange(value + 1)}
+        style={{
+          width: 48,
+          height: 48,
+          background: 'none',
+          border: 'none',
+          fontSize: 20,
+          cursor: 'pointer',
+          color,
+          fontWeight: 600,
+          flexShrink: 0,
+          transition: 'all 0.2s'
+        }}
+      >
+        +
+      </button>
     </div>
   )
 }
@@ -94,19 +208,68 @@ function AddressField({ id, name, value, onChange, placeholder, required, icon }
   return (
     <div ref={wrapperRef} style={{ position: 'relative' as const }}>
       <div style={{ position: 'relative' as const }}>
-        {icon && <span style={{ position: 'absolute' as const, left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 16, pointerEvents: 'none' }}>{icon}</span>}
+        {icon && <span style={{
+          position: 'absolute' as const,
+          left: 16,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          fontSize: 16,
+          pointerEvents: 'none'
+        }}>{icon}</span>}
         <input id={id} name={name} value={value} required={required} placeholder={placeholder} autoComplete="off"
           onFocus={() => { setIsOpen(true); setFocused(true) }}
           onBlur={() => setFocused(false)}
           onChange={e => { onChange(e.target.value); setIsOpen(true) }}
-          style={{ height: 44, border: `1.5px solid ${focused ? '#1e3a5f' : '#e5e7eb'}`, borderRadius: 10, padding: icon ? '0 14px 0 36px' : '0 14px', fontSize: 14, background: '#fafafa', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' as const, width: '100%', outline: 'none', boxShadow: focused ? '0 0 0 3px rgba(30,58,95,0.08)' : 'none', transition: 'all 0.15s' }}
+          style={{
+            height: 48,
+            border: `1px solid ${focused ? '#d1d5db' : '#e5e7eb'}`,
+            borderRadius: 12,
+            padding: icon ? '0 16px 0 44px' : '0 16px',
+            fontSize: 15,
+            background: '#fff',
+            fontFamily: "'DM Sans', system-ui, sans-serif",
+            boxSizing: 'border-box' as const,
+            width: '100%',
+            outline: 'none',
+            boxShadow: focused ? '0 0 0 3px rgba(0,0,0,0.04)' : 'none',
+            transition: 'all 0.2s'
+          }}
         />
       </div>
       {isOpen && (isLoading || suggestions.length > 0) && (
-        <div style={{ position: 'absolute' as const, zIndex: 30, top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-          {isLoading ? <p style={{ padding: '10px 14px', fontSize: 13, color: '#9ca3af' }}>Buscando...</p>
+        <div style={{
+          position: 'absolute' as const,
+          zIndex: 30,
+          top: '100%',
+          left: 0,
+          right: 0,
+          marginTop: 8,
+          background: '#fff',
+          border: '1px solid #e5e7eb',
+          borderRadius: 12,
+          boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+          overflow: 'hidden'
+        }}>
+          {isLoading ? <p style={{
+            padding: '12px 16px',
+            fontSize: 14,
+            color: '#9ca3af'
+          }}>Buscando...</p>
             : suggestions.slice(0, 5).map(s => (
-              <button key={s} type="button" style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '10px 14px', fontSize: 13, color: '#374151', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", borderBottom: '1px solid #f3f4f6' }}
+              <button key={s} type="button" style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left' as const,
+                padding: '12px 16px',
+                fontSize: 14,
+                color: '#374151',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: "'DM Sans', system-ui, sans-serif",
+                borderBottom: '1px solid #f3f4f6',
+                transition: 'background 0.15s'
+              }}
                 onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                 onClick={() => { onChange(s); setIsOpen(false) }}>
@@ -132,26 +295,105 @@ function StopField({ index, value, onChange, onRemove }: { index: number; value:
   }, [])
 
   return (
-    <div ref={wrapperRef} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-      <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{index + 1}</div>
+    <div ref={wrapperRef} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      <div style={{
+        width: 32,
+        height: 32,
+        borderRadius: '50%',
+        background: '#6b7280',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 13,
+        fontWeight: 700,
+        color: '#fff',
+        flexShrink: 0
+      }}>{index + 1}</div>
       <div style={{ flex: 1, position: 'relative' as const }}>
         <input value={value} placeholder={`Parada ${index + 1}`} autoComplete="off"
           onFocus={() => { setIsOpen(true); setFocused(true) }}
           onBlur={() => setFocused(false)}
           onChange={e => { onChange(e.target.value); setIsOpen(true) }}
-          style={{ height: 40, border: `1.5px solid ${focused ? '#1e3a5f' : '#e5e7eb'}`, borderRadius: 10, padding: '0 14px', fontSize: 13, background: '#fafafa', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' as const, width: '100%', outline: 'none' }}
+          style={{
+            height: 44,
+            border: `1px solid ${focused ? '#d1d5db' : '#e5e7eb'}`,
+            borderRadius: 12,
+            padding: '0 16px',
+            fontSize: 14,
+            background: '#fff',
+            fontFamily: "'DM Sans', system-ui, sans-serif",
+            boxSizing: 'border-box' as const,
+            width: '100%',
+            outline: 'none',
+            boxShadow: focused ? '0 0 0 3px rgba(0,0,0,0.04)' : 'none',
+            transition: 'all 0.2s'
+          }}
         />
         {isOpen && (isLoading || suggestions.length > 0) && (
-          <div style={{ position: 'absolute' as const, zIndex: 30, top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-            {isLoading ? <p style={{ padding: '10px 14px', fontSize: 13, color: '#9ca3af' }}>Buscando...</p>
+          <div style={{
+            position: 'absolute' as const,
+            zIndex: 30,
+            top: '100%',
+            left: 0,
+            right: 0,
+            marginTop: 8,
+            background: '#fff',
+            border: '1px solid #e5e7eb',
+            borderRadius: 12,
+            boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+            overflow: 'hidden'
+          }}>
+            {isLoading ? <p style={{
+              padding: '12px 16px',
+              fontSize: 14,
+              color: '#9ca3af'
+            }}>Buscando...</p>
               : suggestions.slice(0, 5).map(s => (
-                <button key={s} type="button" style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '10px 14px', fontSize: 13, color: '#374151', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }}
+                <button key={s} type="button" style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left' as const,
+                  padding: '12px 16px',
+                  fontSize: 14,
+                  color: '#374151',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  borderBottom: '1px solid #f3f4f6',
+                  transition: 'background 0.15s'
+                }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                   onClick={() => { onChange(s); setIsOpen(false) }}>📍 {s}</button>
               ))}
           </div>
         )}
       </div>
-      <button type="button" onClick={onRemove} style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid #fecaca', background: '#fef2f2', color: '#ef4444', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
+      <button type="button" onClick={onRemove} style={{
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        border: '1px solid #fecaca',
+        background: '#fef2f2',
+        color: '#ef4444',
+        fontSize: 20,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        transition: 'all 0.2s'
+      }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = '#fee2e2'
+          e.currentTarget.style.borderColor = '#fca5a5'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = '#fef2f2'
+          e.currentTarget.style.borderColor = '#fecaca'
+        }}
+      >×</button>
     </div>
   )
 }
@@ -261,30 +503,84 @@ function RouteMap({ origin, destination, stops, arrival, color }: { origin: stri
   if (!origin || !destination) return null
 
   return (
-    <div style={{ marginTop: 8, borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb', position: 'relative' as const }}>
+    <div style={{
+      marginTop: 12,
+      borderRadius: 16,
+      overflow: 'hidden',
+      border: '1px solid #e5e7eb',
+      position: 'relative' as const,
+      boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
+    }}>
       {loading && (
-        <div style={{ position: 'absolute' as const, inset: 0, background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, borderRadius: 12 }}>
-          <p style={{ fontSize: 13, color: '#9ca3af', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Calculando ruta...</p>
+        <div style={{
+          position: 'absolute' as const,
+          inset: 0,
+          background: '#f9fafb',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10,
+          borderRadius: 16
+        }}>
+          <p style={{
+            fontSize: 14,
+            color: '#9ca3af',
+            fontFamily: "'DM Sans', system-ui, sans-serif",
+            fontWeight: 500
+          }}>Calculando ruta...</p>
         </div>
       )}
       {error && (
-        <div style={{ background: '#fef2f2', padding: '12px 16px', borderRadius: 12 }}>
-          <p style={{ fontSize: 12, color: '#dc2626', margin: 0 }}>No se pudo cargar el mapa</p>
+        <div style={{
+          background: '#fef2f2',
+          padding: '16px 20px',
+          borderRadius: 16
+        }}>
+          <p style={{
+            fontSize: 14,
+            color: '#dc2626',
+            margin: 0,
+            fontWeight: 500
+          }}>No se pudo cargar el mapa</p>
         </div>
       )}
-      <div ref={mapRef} style={{ height: 260, width: '100%' }} />
+      <div ref={mapRef} style={{ height: 320, width: '100%' }} />
 
       {/* Leyenda */}
-      <div style={{ display: 'flex', gap: 12, padding: '10px 14px', background: '#f9fafb', flexWrap: 'wrap' as const }}>
+      <div style={{
+        display: 'flex',
+        gap: 16,
+        padding: '14px 20px',
+        background: '#f9fafb',
+        flexWrap: 'wrap' as const,
+        borderTop: '1px solid #e5e7eb'
+      }}>
         {[
           { color: '#16a34a', label: 'Origen' },
           { color: '#6b7280', label: stops.filter(Boolean).length > 0 ? `${stops.filter(Boolean).length} parada${stops.filter(Boolean).length > 1 ? 's' : ''}` : null },
           { color, label: 'Destino' },
           arrival && arrival !== destination ? { color: '#7c3aed', label: 'Llegada final' } : null,
         ].filter(Boolean).filter(i => (i as any).label).map((item: any, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
-            <span style={{ fontSize: 11, color: '#6b7280', fontFamily: "'DM Sans', system-ui, sans-serif" }}>{item.label}</span>
+          <div key={i} style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}>
+            <div style={{
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              background: item.color,
+              flexShrink: 0,
+              border: '2px solid #fff',
+              boxShadow: '0 0 0 1px rgba(0,0,0,0.1)'
+            }} />
+            <span style={{
+              fontSize: 13,
+              color: '#6b7280',
+              fontFamily: "'DM Sans', system-ui, sans-serif",
+              fontWeight: 500
+            }}>{item.label}</span>
           </div>
         ))}
       </div>
@@ -411,38 +707,102 @@ export function QuoteForm({ slug }: QuoteFormProps) {
     </div>
   )
 
-  const grid2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }
-  const sectionTitle: React.CSSProperties = { fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid #f3f4f6' }
+  const grid2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }
+  const sectionTitle: React.CSSProperties = {
+    fontSize: 20,
+    fontWeight: 700,
+    color: '#111827',
+    marginBottom: 32,
+    letterSpacing: '-0.02em'
+  }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f4', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div style={{
+      minHeight: '100vh',
+      background: '#fff',
+      fontFamily: "'DM Sans', system-ui, sans-serif"
+    }}>
 
       {/* HEADER */}
-      <div style={{ background: color, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{
+        background: '#fff',
+        borderBottom: '1px solid #f3f4f6',
+        padding: '24px 32px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 20
+      }}>
         {company.logo_url && (
-          <img src={company.logo_url} alt={company.name} style={{ height: 40, width: 'auto', objectFit: 'contain', borderRadius: 6 }} />
+          <img
+            src={company.logo_url}
+            alt={company.name}
+            style={{
+              height: 48,
+              width: 'auto',
+              objectFit: 'contain',
+              borderRadius: 8
+            }}
+          />
         )}
         <div>
-          <p style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: 0 }}>{company.name}</p>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', margin: '2px 0 0' }}>Solicitud de presupuesto · Respuesta en menos de 24h</p>
+          <h1 style={{
+            fontSize: 24,
+            fontWeight: 700,
+            color: '#111827',
+            margin: 0,
+            letterSpacing: '-0.02em'
+          }}>
+            {company.name}
+          </h1>
+          <p style={{
+            fontSize: 14,
+            color: '#6b7280',
+            margin: '4px 0 0',
+            fontWeight: 500
+          }}>
+            Solicitud de presupuesto · Respuesta en menos de 24h
+          </p>
         </div>
       </div>
 
-      <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 16px 80px' }}>
+      <div style={{
+        maxWidth: 720,
+        margin: '0 auto',
+        padding: '48px 24px 100px'
+      }}>
         <StepBar current={step} color={color} />
 
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '28px' }}>
+        <div style={{
+          background: '#fff',
+          border: '1px solid #f3f4f6',
+          borderRadius: 20,
+          padding: '40px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+        }}>
 
           {/* PASO 0 — CONTACTO */}
           {step === 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 20 }}>
-              <p style={sectionTitle}>Datos de contacto</p>
+            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 28 }}>
+              <h2 style={sectionTitle}>Datos de contacto</h2>
 
               <Field label="Tipo de cliente">
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 12 }}>
                   {(['particular', 'empresa'] as const).map(t => (
                     <button key={t} type="button" onClick={() => setClientType(t)}
-                      style={{ flex: 1, height: 44, borderRadius: 10, border: `2px solid ${clientType === t ? color : '#e5e7eb'}`, background: clientType === t ? color : '#fff', color: clientType === t ? '#fff' : '#374151', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", transition: 'all 0.15s' }}>
+                      style={{
+                        flex: 1,
+                        height: 52,
+                        borderRadius: 14,
+                        border: `1px solid ${clientType === t ? color : '#e5e7eb'}`,
+                        background: clientType === t ? color : '#fff',
+                        color: clientType === t ? '#fff' : '#374151',
+                        fontWeight: 600,
+                        fontSize: 15,
+                        cursor: 'pointer',
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                        transition: 'all 0.2s',
+                        boxShadow: clientType === t ? `0 4px 12px ${color}25` : 'none'
+                      }}>
                       {t === 'particular' ? '👤 Particular' : '🏢 Empresa'}
                     </button>
                   ))}
@@ -463,8 +823,22 @@ export function QuoteForm({ slug }: QuoteFormProps) {
               </Field>
 
               {clientType === 'empresa' && (
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', margin: 0 }}>Datos de empresa</p>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column' as const,
+                  gap: 20,
+                  background: '#f9fafb',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 16,
+                  padding: 24
+                }}>
+                  <h3 style={{
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: '#111827',
+                    margin: 0,
+                    letterSpacing: '-0.01em'
+                  }}>Datos de empresa</h3>
                   <div style={grid2}>
                     <Field label="Razón social" required>
                       <Inp placeholder="Nombre empresa" value={companyName} onChange={e => setCompanyName(e.target.value)} />
@@ -486,14 +860,27 @@ export function QuoteForm({ slug }: QuoteFormProps) {
 
           {/* PASO 1 — VIAJE */}
           {step === 1 && (
-            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 20 }}>
-              <p style={sectionTitle}>Detalles del viaje</p>
+            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 28 }}>
+              <h2 style={sectionTitle}>Detalles del viaje</h2>
 
               <Field label="Tipo de viaje">
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 12 }}>
                   {([['ida', '➡️ Solo ida'], ['idavuelta', '🔄 Ida y vuelta']] as const).map(([val, lbl]) => (
                     <button key={val} type="button" onClick={() => setTripType(val)}
-                      style={{ flex: 1, height: 44, borderRadius: 10, border: `2px solid ${tripType === val ? color : '#e5e7eb'}`, background: tripType === val ? color : '#fff', color: tripType === val ? '#fff' : '#374151', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", transition: 'all 0.15s' }}>
+                      style={{
+                        flex: 1,
+                        height: 52,
+                        borderRadius: 14,
+                        border: `1px solid ${tripType === val ? color : '#e5e7eb'}`,
+                        background: tripType === val ? color : '#fff',
+                        color: tripType === val ? '#fff' : '#374151',
+                        fontWeight: 600,
+                        fontSize: 15,
+                        cursor: 'pointer',
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                        transition: 'all 0.2s',
+                        boxShadow: tripType === val ? `0 4px 12px ${color}25` : 'none'
+                      }}>
                       {lbl}
                     </button>
                   ))}
@@ -501,8 +888,22 @@ export function QuoteForm({ slug }: QuoteFormProps) {
               </Field>
 
               {/* RUTA */}
-              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', margin: 0 }}>Ruta del servicio</p>
+              <div style={{
+                background: '#f9fafb',
+                border: '1px solid #e5e7eb',
+                borderRadius: 16,
+                padding: 24,
+                display: 'flex',
+                flexDirection: 'column' as const,
+                gap: 20
+              }}>
+                <h3 style={{
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: '#111827',
+                  margin: 0,
+                  letterSpacing: '-0.01em'
+                }}>Ruta del servicio</h3>
 
                 <Field label="Origen" required>
                   <AddressField id="origin" name="origin" value={origin} onChange={setOrigin} placeholder="Dirección o ciudad de salida" required icon="🟢" />
@@ -518,7 +919,27 @@ export function QuoteForm({ slug }: QuoteFormProps) {
                   </div>
                 )}
 
-                <button type="button" onClick={addStop} style={{ height: 36, borderRadius: 8, border: `1.5px dashed ${color}55`, background: 'none', color: color, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                <button type="button" onClick={addStop} style={{
+                  height: 44,
+                  borderRadius: 12,
+                  border: `1px dashed ${color}80`,
+                  background: 'none',
+                  color: color,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  transition: 'all 0.2s'
+                }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = `${color}08`
+                    e.currentTarget.style.borderStyle = 'solid'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'none'
+                    e.currentTarget.style.borderStyle = 'dashed'
+                  }}
+                >
                   + Añadir parada intermedia
                 </button>
 
@@ -555,17 +976,39 @@ export function QuoteForm({ slug }: QuoteFormProps) {
               )}
 
               {/* FECHAS */}
-              <div style={{ display: 'grid', gridTemplateColumns: tripType === 'idavuelta' ? '1fr 1fr' : '1fr', gap: 16 }}>
-                <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 12 }}>Salida</p>
+              <div style={{ display: 'grid', gridTemplateColumns: tripType === 'idavuelta' ? '1fr 1fr' : '1fr', gap: 20 }}>
+                <div style={{
+                  background: '#f9fafb',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 16,
+                  padding: 24
+                }}>
+                  <h3 style={{
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: '#111827',
+                    marginBottom: 20,
+                    letterSpacing: '-0.01em'
+                  }}>Salida</h3>
                   <div style={grid2}>
                     <Field label="Fecha" required><Inp type="date" value={tripDate} onChange={e => setTripDate(e.target.value)} required /></Field>
                     <Field label="Hora" required><Inp type="time" value={departureTime} onChange={e => setDepartureTime(e.target.value)} required /></Field>
                   </div>
                 </div>
                 {tripType === 'idavuelta' && (
-                  <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 12 }}>Regreso</p>
+                  <div style={{
+                    background: '#f9fafb',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 16,
+                    padding: 24
+                  }}>
+                    <h3 style={{
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: '#111827',
+                      marginBottom: 20,
+                      letterSpacing: '-0.01em'
+                    }}>Regreso</h3>
                     <div style={grid2}>
                       <Field label="Fecha" required><Inp type="date" value={returnDate} onChange={e => setReturnDate(e.target.value)} required /></Field>
                       <Field label="Hora" required><Inp type="time" value={returnTime} onChange={e => setReturnTime(e.target.value)} required /></Field>
@@ -582,24 +1025,94 @@ export function QuoteForm({ slug }: QuoteFormProps) {
 
           {/* PASO 2 — VEHÍCULO */}
           {step === 2 && (
-            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 20 }}>
-              <p style={sectionTitle}>Vehículo y servicio</p>
+            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 28 }}>
+              <h2 style={sectionTitle}>Vehículo y servicio</h2>
 
               <Field label="Tipo de vehículo">
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
                   {([
                     ['minibus', 'Minibús', 'Hasta 20 pasajeros', '🚐'],
                     ['autobus', 'Autobús', 'Hasta 55 pasajeros', '🚌'],
                     ['autocar', 'Autocar Gran Turismo', 'Hasta 70 pasajeros', '🚍'],
                   ] as const).map(([val, label, sub, icon]) => (
                     <button key={val} type="button" onClick={() => setVehicleType(val)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 12, border: `2px solid ${vehicleType === val ? color : '#e5e7eb'}`, background: vehicleType === val ? color + '08' : '#fff', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", transition: 'all 0.15s', textAlign: 'left' as const }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 8, background: vehicleType === val ? color : '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{icon}</div>
-                      <div>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: vehicleType === val ? color : '#111827', margin: 0 }}>{label}</p>
-                        <p style={{ fontSize: 12, color: '#6b7280', margin: '2px 0 0' }}>{sub}</p>
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 18,
+                        padding: '18px 20px',
+                        borderRadius: 16,
+                        border: `1px solid ${vehicleType === val ? color : '#e5e7eb'}`,
+                        background: vehicleType === val ? `${color}08` : '#fff',
+                        cursor: 'pointer',
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                        transition: 'all 0.2s',
+                        textAlign: 'left' as const,
+                        boxShadow: vehicleType === val ? `0 4px 12px ${color}15` : '0 1px 3px rgba(0,0,0,0.04)'
+                      }}
+                      onMouseEnter={e => {
+                        if (vehicleType !== val) {
+                          e.currentTarget.style.borderColor = '#d1d5db'
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (vehicleType !== val) {
+                          e.currentTarget.style.borderColor = '#e5e7eb'
+                          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'
+                        }
+                      }}
+                    >
+                      <div style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: 12,
+                        background: vehicleType === val ? color : '#f9fafb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 28,
+                        flexShrink: 0,
+                        transition: 'all 0.2s'
+                      }}>
+                        {icon}
                       </div>
-                      {vehicleType === val && <div style={{ marginLeft: 'auto', width: 20, height: 20, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>✓</div>}
+                      <div style={{ flex: 1 }}>
+                        <p style={{
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: vehicleType === val ? color : '#111827',
+                          margin: 0,
+                          letterSpacing: '-0.01em'
+                        }}>
+                          {label}
+                        </p>
+                        <p style={{
+                          fontSize: 13,
+                          color: '#6b7280',
+                          margin: '4px 0 0',
+                          fontWeight: 500
+                        }}>
+                          {sub}
+                        </p>
+                      </div>
+                      {vehicleType === val && (
+                        <div style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          background: color,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          flexShrink: 0
+                        }}>
+                          ✓
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -624,16 +1137,42 @@ export function QuoteForm({ slug }: QuoteFormProps) {
               )}
 
               <Field label="Comentarios adicionales">
-                <textarea placeholder="Equipaje especial, necesidades concretas, instrucciones..." value={comments} onChange={e => setComments(e.target.value)} rows={4}
-                  style={{ border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 14, background: '#fafafa', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' as const, width: '100%', outline: 'none', resize: 'vertical' as const }} />
+                <textarea
+                  placeholder="Equipaje especial, necesidades concretas, instrucciones..."
+                  value={comments}
+                  onChange={e => setComments(e.target.value)}
+                  rows={4}
+                  style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 12,
+                    padding: '16px',
+                    fontSize: 15,
+                    background: '#fff',
+                    fontFamily: "'DM Sans', system-ui, sans-serif",
+                    boxSizing: 'border-box' as const,
+                    width: '100%',
+                    outline: 'none',
+                    resize: 'vertical' as const,
+                    lineHeight: 1.6,
+                    transition: 'all 0.2s'
+                  }}
+                  onFocus={e => {
+                    e.target.style.borderColor = '#d1d5db'
+                    e.target.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.04)'
+                  }}
+                  onBlur={e => {
+                    e.target.style.borderColor = '#e5e7eb'
+                    e.target.style.boxShadow = 'none'
+                  }}
+                />
               </Field>
             </div>
           )}
 
           {/* PASO 3 — RESUMEN */}
           {step === 3 && (
-            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
-              <p style={sectionTitle}>Resumen de tu solicitud</p>
+            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+              <h2 style={sectionTitle}>Resumen de tu solicitud</h2>
 
               {[
                 { label: 'Nombre', value: requesterName },
@@ -651,14 +1190,44 @@ export function QuoteForm({ slug }: QuoteFormProps) {
                 { label: 'Tipo de servicio', value: serviceType },
                 comments ? { label: 'Comentarios', value: comments } : null,
               ].filter(Boolean).map((row: any, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid #f3f4f6', gap: 16 }}>
-                  <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500, flexShrink: 0 }}>{row.label}</span>
-                  <span style={{ fontSize: 13, color: '#111827', fontWeight: 600, textAlign: 'right' as const }}>{row.value}</span>
+                <div key={i} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  padding: '16px 0',
+                  borderBottom: '1px solid #f3f4f6',
+                  gap: 20
+                }}>
+                  <span style={{
+                    fontSize: 14,
+                    color: '#6b7280',
+                    fontWeight: 500,
+                    flexShrink: 0
+                  }}>{row.label}</span>
+                  <span style={{
+                    fontSize: 14,
+                    color: '#111827',
+                    fontWeight: 600,
+                    textAlign: 'right' as const
+                  }}>{row.value}</span>
                 </div>
               ))}
 
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 16px', marginTop: 12 }}>
-                <p style={{ fontSize: 13, color: '#166534', margin: 0, lineHeight: 1.6, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+              <div style={{
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: 14,
+                padding: '16px 20px',
+                marginTop: 20
+              }}>
+                <p style={{
+                  fontSize: 14,
+                  color: '#166534',
+                  margin: 0,
+                  lineHeight: 1.6,
+                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  fontWeight: 500
+                }}>
                   Recibirás una respuesta en menos de 24 horas con el presupuesto detallado.
                 </p>
               </div>
@@ -667,21 +1236,92 @@ export function QuoteForm({ slug }: QuoteFormProps) {
         </div>
 
         {/* NAVEGACIÓN */}
-        <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+        <div style={{ display: 'flex', gap: 16, marginTop: 32 }}>
           {step > 0 && (
             <button type="button" onClick={() => setStep(s => s - 1)}
-              style={{ flex: 1, height: 50, borderRadius: 12, border: '1.5px solid #e5e7eb', background: '#fff', color: '#374151', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+              style={{
+                flex: 1,
+                height: 56,
+                borderRadius: 16,
+                border: '1px solid #e5e7eb',
+                background: '#fff',
+                color: '#374151',
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: "'DM Sans', system-ui, sans-serif",
+                transition: 'all 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = '#f9fafb'
+                e.currentTarget.style.borderColor = '#d1d5db'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = '#fff'
+                e.currentTarget.style.borderColor = '#e5e7eb'
+              }}
+            >
               ← Atrás
             </button>
           )}
           {step < 3 ? (
             <button type="button" onClick={() => { if (validateStep()) setStep(s => s + 1) }}
-              style={{ flex: 2, height: 50, borderRadius: 12, border: 'none', background: color, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", boxShadow: `0 4px 12px ${color}44` }}>
+              style={{
+                flex: 2,
+                height: 56,
+                borderRadius: 16,
+                border: 'none',
+                background: color,
+                color: '#fff',
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontFamily: "'DM Sans', system-ui, sans-serif",
+                boxShadow: `0 8px 16px ${color}30`,
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-1px)'
+                e.currentTarget.style.boxShadow = `0 12px 24px ${color}40`
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = `0 8px 16px ${color}30`
+              }}
+            >
               Siguiente →
             </button>
           ) : (
             <button type="button" onClick={handleSubmit} disabled={isSubmitting}
-              style={{ flex: 2, height: 50, borderRadius: 12, border: 'none', background: color, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", boxShadow: `0 4px 12px ${color}44`, opacity: isSubmitting ? 0.7 : 1 }}>
+              style={{
+                flex: 2,
+                height: 56,
+                borderRadius: 16,
+                border: 'none',
+                background: color,
+                color: '#fff',
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                fontFamily: "'DM Sans', system-ui, sans-serif",
+                boxShadow: `0 8px 16px ${color}30`,
+                opacity: isSubmitting ? 0.6 : 1,
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => {
+                if (!isSubmitting) {
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                  e.currentTarget.style.boxShadow = `0 12px 24px ${color}40`
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isSubmitting) {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = `0 8px 16px ${color}30`
+                }
+              }}
+            >
               {isSubmitting ? 'Enviando...' : '✅ Enviar solicitud'}
             </button>
           )}
