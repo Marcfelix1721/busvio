@@ -2,11 +2,12 @@
 
 import { useState, useRef } from "react"
 import { createClient } from "@/lib/supabase"
-import { Building2, MapPin, TrendingUp, Save, Upload, Check } from "lucide-react"
+import { Building2, MapPin, TrendingUp, Save, Upload, Check, Bell } from "lucide-react"
 
 type Company = {
   id: string; name: string; slug: string; email: string; phone: string
   cif?: string; address?: string; website?: string; logo_url?: string; color_primario?: string
+  notification_emails?: string[]
 }
 type PricingSettings = { garage_address?: string; parking_address?: string; precio_combustible_global?: number }
 type Settings = Record<string, number>
@@ -120,6 +121,9 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
     color_primario: company?.color_primario ?? "#1e3a5f",
   })
 
+  const [notificationEmails, setNotificationEmails] = useState<string[]>(company?.notification_emails ?? [])
+  const [newEmail, setNewEmail] = useState("")
+
   const [locationValues, setLocationValues] = useState({
     garage_address: pricingSettings?.garage_address ?? "",
     parking_address: pricingSettings?.parking_address ?? "",
@@ -159,6 +163,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
       name: companyValues.name, email: companyValues.email, phone: companyValues.phone,
       cif: companyValues.cif, address: companyValues.address, website: companyValues.website,
       color_primario: companyValues.color_primario,
+      notification_emails: notificationEmails,
     }).eq("id", companyId)
     if (e1) { setMessage("Error: " + e1.message); setSaving(false); return }
 
@@ -265,6 +270,140 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
             onChange={(id, val) => handleLocationChange(id, String(val))}
             unit="€/L"
           />
+        </Pad>
+      </SectionBlock>
+
+      {/* NOTIFICACIONES */}
+      <SectionBlock icon={Bell} color="#7c3aed" title="Emails de notificación" desc="Gestiona quién recibe avisos de nuevas solicitudes">
+        <Pad>
+          <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 10, padding: "11px 14px", marginBottom: 18 }}>
+            <p style={{ fontSize: 12, color: "#6b21a8", margin: 0, lineHeight: 1.6, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+              Estos emails recibirán un aviso cada vez que llegue una nueva solicitud de presupuesto. Puedes añadir varios emails.
+            </p>
+          </div>
+
+          {/* Lista de emails */}
+          {notificationEmails.length > 0 && (
+            <div style={{ marginBottom: 16, display: "flex", flexDirection: "column" as const, gap: 8 }}>
+              {notificationEmails.map((email, idx) => (
+                <div key={idx} style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "10px 14px",
+                  background: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 9
+                }}>
+                  <span style={{ fontSize: 13, color: "#374151", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                    {email}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setNotificationEmails(prev => prev.filter((_, i) => i !== idx))}
+                    style={{
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#dc2626",
+                      background: "#fef2f2",
+                      border: "1px solid #fecaca",
+                      borderRadius: 6,
+                      cursor: "pointer",
+                      fontFamily: "'DM Sans', system-ui, sans-serif"
+                    }}
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Input para añadir nuevo email */}
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, gap: 5 }}>
+              <label style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                Añadir nuevo email
+              </label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={e => setNewEmail(e.target.value)}
+                placeholder="ejemplo@empresa.com"
+                style={{
+                  height: 38,
+                  width: "100%",
+                  borderRadius: 9,
+                  border: "1.5px solid #e5e7eb",
+                  background: "#fafafa",
+                  padding: "0 12px",
+                  fontSize: 13,
+                  color: "#111827",
+                  outline: "none",
+                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  boxSizing: "border-box" as const,
+                  transition: "all 0.15s"
+                }}
+                onFocus={e => {
+                  e.target.style.borderColor = "#7c3aed"
+                  e.target.style.background = "#fff"
+                  e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.07)"
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = "#e5e7eb"
+                  e.target.style.background = "#fafafa"
+                  e.target.style.boxShadow = "none"
+                }}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    if (newEmail.trim() && newEmail.includes("@")) {
+                      setNotificationEmails(prev => [...prev, newEmail.trim()])
+                      setNewEmail("")
+                    }
+                  }
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (newEmail.trim() && newEmail.includes("@")) {
+                  setNotificationEmails(prev => [...prev, newEmail.trim()])
+                  setNewEmail("")
+                }
+              }}
+              style={{
+                height: 38,
+                padding: "0 18px",
+                borderRadius: 9,
+                border: "none",
+                background: "#7c3aed",
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "'DM Sans', system-ui, sans-serif",
+                flexShrink: 0,
+                transition: "all 0.15s"
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "#6d28d9"
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "#7c3aed"
+              }}
+            >
+              Añadir
+            </button>
+          </div>
+
+          {notificationEmails.length === 0 && (
+            <p style={{ fontSize: 12, color: "#9ca3af", margin: "12px 0 0", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+              Si no añades ningún email, se usará el email de contacto de la empresa ({companyValues.email}) como fallback.
+            </p>
+          )}
         </Pad>
       </SectionBlock>
 

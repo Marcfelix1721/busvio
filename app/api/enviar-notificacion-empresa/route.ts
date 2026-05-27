@@ -25,20 +25,30 @@ export async function POST(req: NextRequest) {
     const supabase = createClient()
     const { data: company, error: companyError } = await supabase
       .from("companies")
-      .select("name, email, color_primario")
+      .select("name, email, color_primario, notification_emails")
       .eq("id", company_id)
       .single()
 
-    if (companyError || !company || !company.email) {
+    if (companyError || !company) {
       console.error("Error al obtener empresa:", companyError)
-      return NextResponse.json({ error: "Empresa no encontrada o sin email" }, { status: 404 })
+      return NextResponse.json({ error: "Empresa no encontrada" }, { status: 404 })
+    }
+
+    // Determinar a quién enviar: notification_emails si existe, si no el email principal
+    const recipientEmails = company.notification_emails && company.notification_emails.length > 0
+      ? company.notification_emails
+      : [company.email]
+
+    if (!recipientEmails || recipientEmails.length === 0) {
+      console.error("No hay emails a los que enviar")
+      return NextResponse.json({ error: "No hay emails configurados para notificaciones" }, { status: 400 })
     }
 
     const color = company.color_primario || "#1e3a5f"
 
     const { error } = await resend.emails.send({
       from: `Busvio <onboarding@resend.dev>`,
-      to: [company.email],
+      to: recipientEmails,
       subject: `Nueva solicitud de presupuesto — ${requester_name}`,
       html: `
         <!DOCTYPE html>
