@@ -691,6 +691,28 @@ export function QuoteForm({ slug }: QuoteFormProps) {
     })
 
     if (error) { alert('No se pudo enviar la solicitud'); setIsSubmitting(false); return }
+
+    // Enviar notificación por email a la empresa (silencioso, no bloquea el flujo)
+    try {
+      await fetch('/api/enviar-notificacion-empresa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: company.id,
+          requester_name: requesterName,
+          requester_email: requesterEmail,
+          origin,
+          destination: arrivalFinal,
+          trip_date: tripDate,
+          passengers,
+          service_type: serviceType,
+        }),
+      })
+    } catch (err) {
+      // Error silencioso - no bloquea el envío del formulario
+      console.error('Error al enviar notificación:', err)
+    }
+
     router.push('/' + slug + '/gracias')
   }
 
