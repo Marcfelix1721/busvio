@@ -41,7 +41,7 @@ const tipoIconColor: Record<string, string> = {
 
 const emptyForm = {
   matricula: "", marca_modelo: "", anio: "", plazas: "", tipo: "autocar", estado: "activo",
-  consumo: "", precio_combustible: "", amortizacion_km: "", mantenimiento_km: "", seguro_dia: "",
+  consumo: "", amortizacion_km: "", mantenimiento_km: "", seguro_dia: "",
 }
 
 export function VehiculosManager({ companyId, initialVehiculos }: {
@@ -65,7 +65,6 @@ export function VehiculosManager({ companyId, initialVehiculos }: {
       anio: v.anio?.toString() ?? "", plazas: v.plazas.toString(),
       tipo: v.tipo, estado: v.estado,
       consumo: v.consumo?.toString() ?? "",
-      precio_combustible: v.precio_combustible?.toString() ?? "",
       amortizacion_km: v.amortizacion_km?.toString() ?? "",
       mantenimiento_km: v.mantenimiento_km?.toString() ?? "",
       seguro_dia: v.seguro_dia?.toString() ?? "",
@@ -90,7 +89,6 @@ export function VehiculosManager({ companyId, initialVehiculos }: {
       tipo: form.tipo as Vehicle["tipo"],
       estado: form.estado as Vehicle["estado"],
       consumo: parseNum(form.consumo),
-      precio_combustible: parseNum(form.precio_combustible),
       amortizacion_km: parseNum(form.amortizacion_km),
       mantenimiento_km: parseNum(form.mantenimiento_km),
       seguro_dia: parseNum(form.seguro_dia),
@@ -215,15 +213,16 @@ export function VehiculosManager({ companyId, initialVehiculos }: {
           </div>
 
           {/* COSTES PROPIOS */}
-          <span style={sectionLabel}>Costes propios del vehículo <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, color: "#b0b7c3" }}>— déjalo vacío para usar los valores globales de Ajustes</span></span>
+          <span style={sectionLabel}>Costes operativos del vehículo</span>
+          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "11px 14px", marginBottom: "1rem" }}>
+            <p style={{ fontSize: 12, color: "#92400e", margin: 0, lineHeight: 1.6, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+              El <strong>precio del combustible</strong> se configura globalmente en Ajustes y se aplica a todos los vehículos.
+            </p>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <label style={labelStyle}>Consumo <span style={{ color: "#9ca3af", fontWeight: 400 }}>· L/100km</span></label>
               <input type="number" step="0.1" value={form.consumo} onChange={e => handleField("consumo", e.target.value)} placeholder="Ej: 28" style={inputStyle} {...focusHandlers} />
-            </div>
-            <div>
-              <label style={labelStyle}>Precio combustible <span style={{ color: "#9ca3af", fontWeight: 400 }}>· €/litro</span></label>
-              <input type="number" step="0.01" value={form.precio_combustible} onChange={e => handleField("precio_combustible", e.target.value)} placeholder="Ej: 1.65" style={inputStyle} {...focusHandlers} />
             </div>
             <div>
               <label style={labelStyle}>Amortización <span style={{ color: "#9ca3af", fontWeight: 400 }}>· €/km</span></label>

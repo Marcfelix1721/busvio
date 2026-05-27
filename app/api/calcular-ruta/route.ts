@@ -240,10 +240,11 @@ export async function POST(req: NextRequest) {
       company_id, quote_request_id, vehicle_id,
     } = body
 
-    // 1. Garaje
+    // 1. Garaje y precio combustible global
     const { data: pricingSettings } = await supabase
-      .from('pricing_settings').select('garage_address').eq('company_id', company_id).single()
+      .from('pricing_settings').select('garage_address, precio_combustible_global').eq('company_id', company_id).single()
     const garageAddress = pricingSettings?.garage_address || null
+    const precioCombustibleGlobal = pricingSettings?.precio_combustible_global || 0
 
     // 2. Km servicio
     const kmServicio = await calcularKmEntrePuntos([origin, ...stops, destination])
@@ -274,9 +275,9 @@ export async function POST(req: NextRequest) {
     let totalVehiculo = 0
 
     if (vehiculo) {
-      if (vehiculo.consumo && vehiculo.precio_combustible) {
-        const coste = Math.round(kmTotal * (vehiculo.consumo / 100) * vehiculo.precio_combustible * 100) / 100
-        costesVehiculo.push({ concepto: 'Combustible', formula: `${kmTotal} km × ${vehiculo.consumo}L/100km × ${vehiculo.precio_combustible}€/L`, coste })
+      if (vehiculo.consumo && precioCombustibleGlobal) {
+        const coste = Math.round(kmTotal * (vehiculo.consumo / 100) * precioCombustibleGlobal * 100) / 100
+        costesVehiculo.push({ concepto: 'Combustible', formula: `${kmTotal} km × ${vehiculo.consumo}L/100km × ${precioCombustibleGlobal}€/L`, coste })
         totalVehiculo += coste
       }
       if (vehiculo.amortizacion_km) {
@@ -298,7 +299,7 @@ export async function POST(req: NextRequest) {
         await supabase.from('vehicle_cost_snapshots').upsert({
           quote_request_id, vehicle_id: vehiculo.id,
           matricula: vehiculo.matricula, marca_modelo: vehiculo.marca_modelo,
-          consumo: vehiculo.consumo, precio_combustible: vehiculo.precio_combustible,
+          consumo: vehiculo.consumo, precio_combustible: precioCombustibleGlobal,
           amortizacion_km: vehiculo.amortizacion_km, mantenimiento_km: vehiculo.mantenimiento_km,
           seguro_dia: vehiculo.seguro_dia,
         }, { onConflict: 'quote_request_id' })

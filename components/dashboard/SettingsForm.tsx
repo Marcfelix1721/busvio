@@ -8,7 +8,7 @@ type Company = {
   id: string; name: string; slug: string; email: string; phone: string
   cif?: string; address?: string; website?: string; logo_url?: string; color_primario?: string
 }
-type PricingSettings = { garage_address?: string; parking_address?: string }
+type PricingSettings = { garage_address?: string; parking_address?: string; precio_combustible_global?: number }
 type Settings = Record<string, number>
 
 function Label({ children }: { children: React.ReactNode }) {
@@ -123,6 +123,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
   const [locationValues, setLocationValues] = useState({
     garage_address: pricingSettings?.garage_address ?? "",
     parking_address: pricingSettings?.parking_address ?? "",
+    precio_combustible_global: pricingSettings?.precio_combustible_global ?? 0,
   })
 
   const [values, setValues] = useState<Settings>({
@@ -165,6 +166,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
       company_id: companyId,
       garage_address: locationValues.garage_address || null,
       parking_address: locationValues.parking_address || null,
+      precio_combustible_global: locationValues.precio_combustible_global,
     }, { onConflict: "company_id" })
     if (e2) { setMessage("Error: " + e2.message); setSaving(false); return }
 
@@ -237,7 +239,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
       </SectionBlock>
 
       {/* BASE DE OPERACIONES */}
-      <SectionBlock icon={MapPin} color="#0f766e" title="Base de operaciones" desc="Garaje y parking para calcular km en vacío">
+      <SectionBlock icon={MapPin} color="#0f766e" title="Base de operaciones" desc="Garaje, parking y precio combustible">
         <Pad>
           <div style={{ background: "#f0fdf9", border: "1px solid #bbf7d0", borderRadius: 10, padding: "11px 14px", marginBottom: 18 }}>
             <p style={{ fontSize: 12, color: "#166534", margin: 0, lineHeight: 1.6, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
@@ -248,6 +250,21 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
             <TextField id="garage_address" label="Dirección del garaje" value={locationValues.garage_address} onChange={handleLocationChange} placeholder="Calle del Garaje 5, 08001 Barcelona" />
             <TextField id="parking_address" label="Parking habitual" value={locationValues.parking_address} onChange={handleLocationChange} placeholder="Parking Central, Madrid" />
           </Grid>
+        </Pad>
+        <Pad top>
+          <Label>Precio combustible global</Label>
+          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "11px 14px", marginBottom: 14 }}>
+            <p style={{ fontSize: 12, color: "#92400e", margin: 0, lineHeight: 1.6, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+              Este precio se aplica a <strong>todos los vehículos</strong> para calcular el coste de combustible. Actualízalo regularmente según el precio del mercado.
+            </p>
+          </div>
+          <NumberField
+            id="precio_combustible_global"
+            label="Precio combustible"
+            value={locationValues.precio_combustible_global}
+            onChange={(id, val) => handleLocationChange(id, String(val))}
+            unit="€/L"
+          />
         </Pad>
       </SectionBlock>
 
