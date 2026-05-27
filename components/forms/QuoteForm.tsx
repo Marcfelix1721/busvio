@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase"
 type QuoteFormProps = { slug: string }
 type Company = { id: string; name: string; logo_url: string | null; color_primario: string | null }
 
-const STEPS = ["Contacto", "Viaje", "Vehículo", "Resumen"]
+const STEPS = ["Contacto", "Viaje", "Servicio", "Resumen"]
 
 function StepBar({ current, color }: { current: number; color: string }) {
   return (
@@ -619,8 +619,7 @@ export function QuoteForm({ slug }: QuoteFormProps) {
   const [returnTime, setReturnTime] = useState('')
   const [passengers, setPassengers] = useState(1)
 
-  // Paso 2 — Vehículo
-  const [vehicleType, setVehicleType] = useState<'minibus' | 'autobus' | 'autocar'>('minibus')
+  // Paso 2 — Servicio
   const [serviceType, setServiceType] = useState('Servicio discrecional (viaje a medida)')
   const [otherServiceType, setOtherServiceType] = useState('')
   const [comments, setComments] = useState('')
@@ -687,7 +686,7 @@ export function QuoteForm({ slug }: QuoteFormProps) {
       return_date: tripType === 'idavuelta' ? returnDate || null : null,
       return_time: tripType === 'idavuelta' ? returnTime || null : null,
       passengers,
-      vehicle_type: vehicleType,
+      vehicle_type: null,
       comments: extraDetails || null,
     })
 
@@ -1023,100 +1022,10 @@ export function QuoteForm({ slug }: QuoteFormProps) {
             </div>
           )}
 
-          {/* PASO 2 — VEHÍCULO */}
+          {/* PASO 2 — Servicio */}
           {step === 2 && (
             <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 28 }}>
-              <h2 style={sectionTitle}>Vehículo y servicio</h2>
-
-              <Field label="Tipo de vehículo">
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
-                  {([
-                    ['minibus', 'Minibús', 'Hasta 20 pasajeros', '🚐'],
-                    ['autobus', 'Autobús', 'Hasta 55 pasajeros', '🚌'],
-                    ['autocar', 'Autocar Gran Turismo', 'Hasta 70 pasajeros', '🚍'],
-                  ] as const).map(([val, label, sub, icon]) => (
-                    <button key={val} type="button" onClick={() => setVehicleType(val)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 18,
-                        padding: '18px 20px',
-                        borderRadius: 16,
-                        border: `1px solid ${vehicleType === val ? color : '#e5e7eb'}`,
-                        background: vehicleType === val ? `${color}08` : '#fff',
-                        cursor: 'pointer',
-                        fontFamily: "'DM Sans', system-ui, sans-serif",
-                        transition: 'all 0.2s',
-                        textAlign: 'left' as const,
-                        boxShadow: vehicleType === val ? `0 4px 12px ${color}15` : '0 1px 3px rgba(0,0,0,0.04)'
-                      }}
-                      onMouseEnter={e => {
-                        if (vehicleType !== val) {
-                          e.currentTarget.style.borderColor = '#d1d5db'
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
-                        }
-                      }}
-                      onMouseLeave={e => {
-                        if (vehicleType !== val) {
-                          e.currentTarget.style.borderColor = '#e5e7eb'
-                          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'
-                        }
-                      }}
-                    >
-                      <div style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 12,
-                        background: vehicleType === val ? color : '#f9fafb',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 28,
-                        flexShrink: 0,
-                        transition: 'all 0.2s'
-                      }}>
-                        {icon}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <p style={{
-                          fontSize: 16,
-                          fontWeight: 700,
-                          color: vehicleType === val ? color : '#111827',
-                          margin: 0,
-                          letterSpacing: '-0.01em'
-                        }}>
-                          {label}
-                        </p>
-                        <p style={{
-                          fontSize: 13,
-                          color: '#6b7280',
-                          margin: '4px 0 0',
-                          fontWeight: 500
-                        }}>
-                          {sub}
-                        </p>
-                      </div>
-                      {vehicleType === val && (
-                        <div style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: '50%',
-                          background: color,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#fff',
-                          fontSize: 12,
-                          fontWeight: 700,
-                          flexShrink: 0
-                        }}>
-                          ✓
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </Field>
+              <h2 style={sectionTitle}>Tipo de servicio</h2>
 
               <Field label="Tipo de servicio">
                 <Sel value={serviceType} onChange={e => setServiceType(e.target.value)}>
@@ -1186,7 +1095,6 @@ export function QuoteForm({ slug }: QuoteFormProps) {
                 { label: 'Fecha de salida', value: `${tripDate} a las ${departureTime}` },
                 tripType === 'idavuelta' ? { label: 'Regreso', value: `${returnDate} a las ${returnTime}` } : null,
                 { label: 'Pasajeros', value: String(passengers) },
-                { label: 'Vehículo', value: vehicleType === 'minibus' ? 'Minibús' : vehicleType === 'autobus' ? 'Autobús' : 'Autocar GT' },
                 { label: 'Tipo de servicio', value: serviceType },
                 comments ? { label: 'Comentarios', value: comments } : null,
               ].filter(Boolean).map((row: any, i) => (
