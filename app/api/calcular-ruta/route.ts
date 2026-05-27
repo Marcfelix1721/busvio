@@ -57,12 +57,83 @@ function calcularHoras(horaSalida: string, horaRegreso: string | null, dias: num
   return Math.max(1, Math.round(minutosTotales / 60))
 }
 
+/**
+ * Calcula la fecha de Viernes Santo usando el algoritmo de Gauss
+ * para el cálculo de la Pascua
+ */
+function calcularViernesSanto(year: number): Date {
+  const a = year % 19
+  const b = Math.floor(year / 100)
+  const c = year % 100
+  const d = Math.floor(b / 4)
+  const e = b % 4
+  const f = Math.floor((b + 8) / 25)
+  const g = Math.floor((b - f + 1) / 3)
+  const h = (19 * a + b - d - g + 15) % 30
+  const i = Math.floor(c / 4)
+  const k = c % 4
+  const l = (32 + 2 * e + 2 * i - h - k) % 7
+  const m = Math.floor((a + 11 * h + 22 * l) / 451)
+  const month = Math.floor((h + l - 7 * m + 114) / 31) // 3=marzo, 4=abril
+  const day = ((h + l - 7 * m + 114) % 31) + 1
+
+  // Domingo de Pascua
+  const pascua = new Date(year, month - 1, day)
+
+  // Viernes Santo = Pascua - 2 días
+  const viernesSanto = new Date(pascua)
+  viernesSanto.setDate(pascua.getDate() - 2)
+
+  return viernesSanto
+}
+
+/**
+ * Verifica si una fecha es festivo nacional de España
+ */
+function esFestivoNacional(fecha: Date): boolean {
+  const dia = fecha.getDate()
+  const mes = fecha.getMonth() + 1 // 0-indexed
+  const year = fecha.getFullYear()
+
+  // Festivos nacionales fijos
+  const festivosFijos = [
+    { dia: 1, mes: 1 },   // Año Nuevo
+    { dia: 6, mes: 1 },   // Reyes
+    { dia: 19, mes: 3 },  // San José (algunas CCAA)
+    { dia: 1, mes: 5 },   // Día del Trabajo
+    { dia: 15, mes: 8 },  // Asunción
+    { dia: 12, mes: 10 }, // Fiesta Nacional
+    { dia: 1, mes: 11 },  // Todos los Santos
+    { dia: 6, mes: 12 },  // Constitución
+    { dia: 8, mes: 12 },  // Inmaculada
+    { dia: 25, mes: 12 }, // Navidad
+  ]
+
+  // Verificar festivos fijos
+  if (festivosFijos.some(f => f.dia === dia && f.mes === mes)) {
+    return true
+  }
+
+  // Verificar Viernes Santo (variable)
+  const viernesSanto = calcularViernesSanto(year)
+  if (
+    fecha.getDate() === viernesSanto.getDate() &&
+    fecha.getMonth() === viernesSanto.getMonth() &&
+    fecha.getFullYear() === viernesSanto.getFullYear()
+  ) {
+    return true
+  }
+
+  return false
+}
+
 function esDiaEspecial(tripDate: string, tipo: string): boolean {
   const fecha = new Date(tripDate)
   const diaSemana = fecha.getDay() // 0=dom, 1=lun, ..., 6=sab
   if (tipo === 'sabado') return diaSemana === 6
   if (tipo === 'domingo') return diaSemana === 0
-  // festivo_nacional y festivo_local se gestionan manualmente por el gestor
+  if (tipo === 'festivo_nacional') return esFestivoNacional(fecha)
+  // festivo_local se gestiona manualmente por el gestor
   return false
 }
 
