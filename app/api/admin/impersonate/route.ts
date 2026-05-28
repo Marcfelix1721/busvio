@@ -1,36 +1,49 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient as createServerClient } from "@supabase/supabase-js"
+import { createServerClient } from "@supabase/ssr"
 
 export async function POST(req: NextRequest) {
   try {
-    // Verificar que el usuario sea admin
-    const authHeader = req.headers.get("authorization")
-    if (!authHeader) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
     const { company_id } = await req.json()
 
     if (!company_id) {
       return NextResponse.json({ error: "Falta company_id" }, { status: 400 })
     }
 
-    // Crear cliente con Service Role
-    const supabaseAdmin = createServerClient(
+    // Crear cliente de Supabase con cookies para obtener el usuario actual
+    const response = NextResponse.next()
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
+        cookies: {
+          getAll() {
+            return req.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options)
+            })
+          },
         },
       }
     )
 
-    // Obtener el email de la empresa
-    const { data: company, error: companyError } = await supabaseAdmin
+    // Verificar que el usuario actual sea el admin
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      return NextResponse.json({ error: "No autenticado" }, { status: 401 })
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL || "marcfelixkrayer@gmail.com"
+    if (user.email !== adminEmail) {
+      return NextResponse.json({ error: "No autorizado - solo admin" }, { status: 403 })
+    }
+
+    // Verificar que la empresa existe
+    const { data: company, error: companyError } = await supabase
       .from("companies")
-      .select("email")
+      .select("id, name")
       .eq("id", company_id)
       .single()
 
@@ -38,35 +51,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Empresa no encontrada" }, { status: 404 })
     }
 
-    // Generar magic link para ese usuario
-    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
-      email: company.email,
-    })
+    // Limpiar sesiones expiradas del admin
+    await supabase
+      .from("admin_sessions")
+      .delete()
+      .eq("admin_user_id", user.id)
 
-    if (error) {
-      console.error("Error generando magic link:", error)
-      return NextResponse.json({ error: "Error al generar sesión" }, { status: 500 })
+    // Crear nueva sesión de impersonation
+    const expiresAt = new Date()
+    expiresAt.setHours(expiresAt.getHours() + 1) // 1 hora de duración
+
+    const { error: sessionError } = await supabase
+      .from("admin_sessions")
+      .insert({
+        admin_user_id: user.id,
+        impersonated_company_id: company_id,
+        expires_at: expiresAt.toISOString(),
+      })
+
+    if (sessionError) {
+      console.error("Error creando sesión de admin:", sessionError)
+      return NextResponse.json({ error: "Error al crear sesión de impersonation" }, { status: 500 })
     }
 
-    // Extraer el token del magic link
-    // El magic link tiene formato: http://...#access_token=...&refresh_token=...
-    const url = new URL(data.properties.action_link)
-    const hash = url.hash.substring(1) // Quitar el #
-    const params = new URLSearchParams(hash)
-    const accessToken = params.get("access_token")
-    const refreshToken = params.get("refresh_token")
-
-    if (!accessToken || !refreshToken) {
-      return NextResponse.json({ error: "Error al extraer tokens" }, { status: 500 })
-    }
-
-    // Devolver los tokens para que el cliente los use
-    return NextResponse.json({
-      ok: true,
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    })
+    return NextResponse.json({ ok: true })
   } catch (err) {
     console.error("Error en impersonate:", err)
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })

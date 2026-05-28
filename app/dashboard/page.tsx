@@ -11,6 +11,7 @@ import {
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { QuoteRequest } from "@/lib/types"
 import { DashboardClient } from "@/components/dashboard/DashboardClient"
+import { ImpersonationBanner } from "@/components/dashboard/ImpersonationBanner"
 
 export const revalidate = 0
 
@@ -32,8 +33,28 @@ export default async function DashboardPage() {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect("/login")
 
-  const { data: userData } = await supabase.from("users").select("company_id").eq("id", session.user.id).single()
-  const companyId = userData?.company_id
+  // Verificar si el admin está impersonando
+  const adminEmail = process.env.ADMIN_EMAIL || "marcfelixkrayer@gmail.com"
+  let companyId = session.user.id // Por defecto, el user.id ES el company_id
+
+  if (session.user.email === adminEmail) {
+    // Es el admin, verificar si está impersonando
+    const { data: impersonation } = await supabase
+      .from("admin_sessions")
+      .select("impersonated_company_id")
+      .eq("admin_user_id", session.user.id)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (impersonation?.impersonated_company_id) {
+      companyId = impersonation.impersonated_company_id
+    } else {
+      // Admin sin impersonación activa, redirigir a /admin
+      redirect("/admin")
+    }
+  }
 
   // Si es conductor, redirigir a su portal
   if (session.user.user_metadata?.role === "conductor") {
@@ -62,6 +83,9 @@ export default async function DashboardPage() {
 
   const companyName = companyData?.name ?? "Dashboard"
   const today = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })
+
+  // Verificar si está impersonando para mostrar el banner
+  const isImpersonating = session.user.email === adminEmail && companyId !== session.user.id
 
   const kpis = [
     {
@@ -145,6 +169,41 @@ export default async function DashboardPage() {
 
       {/* MAIN */}
       <main style={{ flex: 1, overflowY: "auto" }}>
+        {/* IMPERSONATION BANNER */}
+        {isImpersonating && (
+          <div style={{
+            background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+            borderBottom: "1px solid rgba(255,255,255,0.1)",
+            padding: "12px 32px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                <span style={{ fontSize: 16 }}>👑</span>
+              </div>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", margin: 0 }}>
+                  Modo Superadmin: Impersonando {companyName}
+                </p>
+                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", margin: 0 }}>
+                  Estás viendo el dashboard como si fueras esta empresa
+                </p>
+              </div>
+            </div>
+            <ImpersonationBanner />
+          </div>
+        )}
+
         <div style={{ maxWidth: 1400, margin: "0 auto", padding: "32px 32px 48px" }}>
 
           {/* HEADER */}

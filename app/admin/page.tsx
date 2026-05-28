@@ -124,14 +124,10 @@ export default function AdminPanel() {
 
   async function impersonateCompany(companyId: string) {
     try {
-      // Obtener token del usuario actual
-      const { data: { session } } = await supabase.auth.getSession()
-
       const response = await fetch("/api/admin/impersonate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({ company_id: companyId }),
       })
@@ -143,18 +139,7 @@ export default function AdminPanel() {
         return
       }
 
-      // Establecer la sesión con los tokens de la empresa
-      const { error } = await supabase.auth.setSession({
-        access_token: result.access_token,
-        refresh_token: result.refresh_token,
-      })
-
-      if (error) {
-        alert("Error al establecer sesión: " + error.message)
-        return
-      }
-
-      // Redirigir al dashboard
+      // Redirigir al dashboard - la sesión de impersonation está guardada
       window.location.href = "/dashboard"
     } catch (err) {
       console.error(err)
