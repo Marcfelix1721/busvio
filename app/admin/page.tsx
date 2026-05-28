@@ -82,48 +82,25 @@ export default function AdminPanel() {
     setCreating(true)
 
     try {
-      // 1. Crear usuario en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        email_confirm: true,
+      // Obtener token del usuario actual para verificar que es admin
+      const { data: { session } } = await supabase.auth.getSession()
+
+      const response = await fetch("/api/admin/crear-empresa", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify(formData),
       })
 
-      if (authError) {
-        alert("Error al crear usuario: " + authError.message)
+      const result = await response.json()
+
+      if (!response.ok) {
+        alert("Error al crear empresa: " + (result.error || "Error desconocido"))
         setCreating(false)
         return
       }
-
-      // 2. Crear empresa en tabla companies
-      const { error: companyError } = await supabase.from("companies").insert({
-        id: authData.user.id,
-        name: formData.name,
-        email: formData.email,
-        slug: formData.slug,
-        phone: formData.phone || null,
-        cif: formData.cif || null,
-        address: formData.address || null,
-      })
-
-      if (companyError) {
-        alert("Error al crear empresa: " + companyError.message)
-        setCreating(false)
-        return
-      }
-
-      // 3. Crear company_settings
-      await supabase.from("company_settings").insert({
-        company_id: authData.user.id,
-        margen_beneficio: 20,
-        iva: 10,
-        precio_minimo_servicio: 0,
-      })
-
-      // 4. Crear pricing_settings
-      await supabase.from("pricing_settings").insert({
-        company_id: authData.user.id,
-      })
 
       alert("Empresa creada correctamente")
       setShowCreateForm(false)
