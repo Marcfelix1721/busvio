@@ -123,9 +123,43 @@ export default function AdminPanel() {
   }
 
   async function impersonateCompany(companyId: string) {
-    // Simplemente redirigir al dashboard - Supabase no permite impersonation directo
-    // El admin debe hacer logout y login con las credenciales de la empresa
-    alert("Para acceder como esta empresa, inicia sesión con sus credenciales en /login")
+    try {
+      // Obtener token del usuario actual
+      const { data: { session } } = await supabase.auth.getSession()
+
+      const response = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ company_id: companyId }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        alert("Error al acceder: " + (result.error || "Error desconocido"))
+        return
+      }
+
+      // Establecer la sesión con los tokens de la empresa
+      const { error } = await supabase.auth.setSession({
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
+      })
+
+      if (error) {
+        alert("Error al establecer sesión: " + error.message)
+        return
+      }
+
+      // Redirigir al dashboard
+      window.location.href = "/dashboard"
+    } catch (err) {
+      console.error(err)
+      alert("Error al acceder como empresa")
+    }
   }
 
   if (loading) {
