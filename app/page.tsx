@@ -1,7 +1,49 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
-import { BusFront, ArrowRight, Zap, FileText, LayoutDashboard } from "lucide-react"
+import { BusFront, ArrowRight, Zap, FileText, LayoutDashboard, X } from "lucide-react"
 
 export default function LandingPage() {
+  const [showDemoForm, setShowDemoForm] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+
+  const [demoForm, setDemoForm] = useState({
+    nombre: "",
+    empresa: "",
+    email: "",
+    telefono: "",
+  })
+
+  async function handleSubmitDemo(e: React.FormEvent) {
+    e.preventDefault()
+    setSubmitting(true)
+
+    try {
+      const response = await fetch("/api/solicitar-demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(demoForm),
+      })
+
+      if (response.ok) {
+        setSubmitted(true)
+        setTimeout(() => {
+          setShowDemoForm(false)
+          setSubmitted(false)
+          setDemoForm({ nombre: "", empresa: "", email: "", telefono: "" })
+        }, 3000)
+      } else {
+        alert("Error al enviar la solicitud")
+      }
+    } catch (err) {
+      alert("Error al enviar la solicitud")
+    }
+
+    setSubmitting(false)
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: "#fff", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
 
@@ -22,9 +64,9 @@ export default function LandingPage() {
             <Link href="/login" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 500, color: "#6b7280", padding: "6px 14px", borderRadius: "8px", textDecoration: "none" }}>
               Iniciar sesión
             </Link>
-            <Link href="/registro" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#fff", background: "#111827", padding: "7px 16px", borderRadius: "9px", textDecoration: "none" }}>
-              Empieza gratis
-            </Link>
+            <button onClick={() => setShowDemoForm(true)} style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#fff", background: "#111827", padding: "7px 16px", borderRadius: "9px", border: "none", cursor: "pointer" }}>
+              Solicitar demo
+            </button>
           </div>
         </div>
       </nav>
@@ -48,11 +90,11 @@ export default function LandingPage() {
           </p>
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", flexWrap: "wrap", marginBottom: "1rem" }}>
-            <Link href="/registro" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "inline-flex", alignItems: "center", gap: "6px", background: "#111827", color: "#fff", padding: "10px 22px", borderRadius: "10px", fontSize: "0.875rem", fontWeight: 600, textDecoration: "none" }}>
-              Empieza gratis <ArrowRight style={{ width: "14px", height: "14px" }} />
-            </Link>
-            <Link href="/demo" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "inline-flex", alignItems: "center", gap: "6px", background: "#fff", color: "#374151", padding: "10px 22px", borderRadius: "10px", fontSize: "0.875rem", fontWeight: 500, border: "1px solid #e5e7eb", textDecoration: "none" }}>
-              Ver demo en vivo
+            <button onClick={() => setShowDemoForm(true)} style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "inline-flex", alignItems: "center", gap: "6px", background: "#111827", color: "#fff", padding: "10px 22px", borderRadius: "10px", fontSize: "0.875rem", fontWeight: 600, border: "none", cursor: "pointer" }}>
+              Solicitar demo <ArrowRight style={{ width: "14px", height: "14px" }} />
+            </button>
+            <Link href="/login" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "inline-flex", alignItems: "center", gap: "6px", background: "#fff", color: "#374151", padding: "10px 22px", borderRadius: "10px", fontSize: "0.875rem", fontWeight: 500, border: "1px solid #e5e7eb", textDecoration: "none" }}>
+              Acceder a mi cuenta
             </Link>
           </div>
 
@@ -195,9 +237,9 @@ export default function LandingPage() {
             <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.9375rem", color: "#9ca3af", marginBottom: "2rem", lineHeight: 1.6 }}>
               Configura tu empresa en menos de 5 minutos y empieza a enviar presupuestos profesionales al instante.
             </p>
-            <Link href="/registro" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "inline-flex", alignItems: "center", gap: "6px", background: "#fff", color: "#111827", fontWeight: 600, fontSize: "0.875rem", padding: "11px 24px", borderRadius: "10px", textDecoration: "none" }}>
-              Crear mi cuenta gratis <ArrowRight style={{ width: "14px", height: "14px" }} />
-            </Link>
+            <button onClick={() => setShowDemoForm(true)} style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "inline-flex", alignItems: "center", gap: "6px", background: "#fff", color: "#111827", fontWeight: 600, fontSize: "0.875rem", padding: "11px 24px", borderRadius: "10px", border: "none", cursor: "pointer" }}>
+              Solicitar demo <ArrowRight style={{ width: "14px", height: "14px" }} />
+            </button>
             <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#4b5563", marginTop: "1rem" }}>
               Sin tarjeta de crédito · Sin compromiso
             </p>
@@ -218,12 +260,180 @@ export default function LandingPage() {
             © {new Date().getFullYear()} Busvio · Gestión de presupuestos para transporte discrecional
           </p>
           <div style={{ display: "flex", gap: "1.5rem" }}>
-            {[["Acceder", "/login"], ["Registro", "/registro"]].map(([label, href]) => (
-              <Link key={href} href={href} style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#9ca3af", textDecoration: "none" }}>{label}</Link>
-            ))}
+            <Link href="/login" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#9ca3af", textDecoration: "none" }}>Acceder</Link>
           </div>
         </div>
       </footer>
+
+      {/* Modal solicitar demo */}
+      {showDemoForm && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+          padding: "1rem",
+        }} onClick={() => !submitting && setShowDemoForm(false)}>
+          <div style={{
+            background: "#fff",
+            borderRadius: "16px",
+            maxWidth: "480px",
+            width: "100%",
+            padding: "32px",
+            position: "relative",
+          }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowDemoForm(false)} style={{
+              position: "absolute",
+              top: "16px",
+              right: "16px",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "8px",
+            }}>
+              <X style={{ width: "20px", height: "20px", color: "#9ca3af" }} />
+            </button>
+
+            {!submitted ? (
+              <>
+                <h2 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.5rem", fontWeight: 700, color: "#111827", marginBottom: "0.5rem", letterSpacing: "-0.02em" }}>
+                  Solicitar demo
+                </h2>
+                <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.875rem", color: "#6b7280", marginBottom: "1.5rem" }}>
+                  Déjanos tus datos y nos pondremos en contacto contigo en menos de 24 horas.
+                </p>
+
+                <form onSubmit={handleSubmitDemo} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  <div>
+                    <label style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 500, color: "#374151", display: "block", marginBottom: "6px" }}>
+                      Nombre *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={demoForm.nombre}
+                      onChange={e => setDemoForm(p => ({ ...p, nombre: e.target.value }))}
+                      style={{
+                        width: "100%",
+                        height: "42px",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        padding: "0 14px",
+                        fontSize: "0.875rem",
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                        boxSizing: "border-box",
+                      }}
+                      placeholder="Tu nombre completo"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 500, color: "#374151", display: "block", marginBottom: "6px" }}>
+                      Empresa
+                    </label>
+                    <input
+                      type="text"
+                      value={demoForm.empresa}
+                      onChange={e => setDemoForm(p => ({ ...p, empresa: e.target.value }))}
+                      style={{
+                        width: "100%",
+                        height: "42px",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        padding: "0 14px",
+                        fontSize: "0.875rem",
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                        boxSizing: "border-box",
+                      }}
+                      placeholder="Nombre de tu empresa"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 500, color: "#374151", display: "block", marginBottom: "6px" }}>
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={demoForm.email}
+                      onChange={e => setDemoForm(p => ({ ...p, email: e.target.value }))}
+                      style={{
+                        width: "100%",
+                        height: "42px",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        padding: "0 14px",
+                        fontSize: "0.875rem",
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                        boxSizing: "border-box",
+                      }}
+                      placeholder="tu@email.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 500, color: "#374151", display: "block", marginBottom: "6px" }}>
+                      Teléfono
+                    </label>
+                    <input
+                      type="tel"
+                      value={demoForm.telefono}
+                      onChange={e => setDemoForm(p => ({ ...p, telefono: e.target.value }))}
+                      style={{
+                        width: "100%",
+                        height: "42px",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        padding: "0 14px",
+                        fontSize: "0.875rem",
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                        boxSizing: "border-box",
+                      }}
+                      placeholder="+34 600 000 000"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    style={{
+                      marginTop: "8px",
+                      height: "44px",
+                      background: "#111827",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "10px",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      fontFamily: "'DM Sans', system-ui, sans-serif",
+                      cursor: submitting ? "not-allowed" : "pointer",
+                      opacity: submitting ? 0.6 : 1,
+                    }}
+                  >
+                    {submitting ? "Enviando..." : "Enviar solicitud"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div style={{ textAlign: "center", padding: "2rem 0" }}>
+                <div style={{ width: "64px", height: "64px", background: "#10b981", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem" }}>
+                  <span style={{ fontSize: "32px" }}>✓</span>
+                </div>
+                <h3 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.25rem", fontWeight: 700, color: "#111827", marginBottom: "0.5rem" }}>
+                  ¡Solicitud enviada!
+                </h3>
+                <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.875rem", color: "#6b7280" }}>
+                  Nos pondremos en contacto contigo muy pronto.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   )
