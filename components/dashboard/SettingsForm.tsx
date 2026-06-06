@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import { createClient } from "@/lib/supabase"
-import { Building2, MapPin, TrendingUp, Save, Upload, Check, Bell } from "lucide-react"
+import { Building2, MapPin, TrendingUp, Save, Upload, Check, Bell, Shield, Lock } from "lucide-react"
 
 type Company = {
   id: string; name: string; slug: string; email: string; phone: string
@@ -59,6 +59,23 @@ function NumberField({ label, id, value, onChange, unit, span = false }: {
           </span>
         )}
       </div>
+    </div>
+  )
+}
+
+function PasswordField({ label, id, value, onChange, error, placeholder }: {
+  label: string; id: string; value: string
+  onChange: (id: string, val: string) => void; error?: string; placeholder?: string
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
+      <label htmlFor={id} style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>{label}</label>
+      <input id={id} type="password" value={value} onChange={e => onChange(id, e.target.value)} placeholder={placeholder} autoComplete="new-password"
+        style={{ height: 38, width: "100%", borderRadius: 9, border: `1.5px solid ${error ? "#fca5a5" : "#e5e7eb"}`, background: "#fafafa", padding: "0 12px", fontSize: 13, color: "#111827", outline: "none", fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: "border-box" as const, transition: "all 0.15s" }}
+        onFocus={e => { e.target.style.borderColor = error ? "#ef4444" : "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = `0 0 0 3px ${error ? "rgba(239,68,68,0.08)" : "rgba(30,58,95,0.07)"}` }}
+        onBlur={e => { e.target.style.borderColor = error ? "#fca5a5" : "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" }}
+      />
+      {error && <p style={{ fontSize: 11.5, color: "#dc2626", margin: "1px 0 0", fontFamily: "'DM Sans', system-ui, sans-serif" }}>{error}</p>}
     </div>
   )
 }
@@ -123,6 +140,34 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
 
   const [notificationEmails, setNotificationEmails] = useState<string[]>(company?.notification_emails ?? [])
   const [newEmail, setNewEmail] = useState("")
+
+  // Seguridad — cambio de contraseña
+  const [pwd, setPwd] = useState({ current: "", next: "", confirm: "" })
+  const [pwdErrors, setPwdErrors] = useState<{ current?: string; next?: string; confirm?: string }>({})
+  const [pwdSaving, setPwdSaving] = useState(false)
+  const [pwdMessage, setPwdMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const handlePwdChange = (id: string, val: string) => setPwd(p => ({ ...p, [id]: val }))
+
+  const handleChangePassword = async () => {
+    setPwdMessage(null)
+    const errs: { current?: string; next?: string; confirm?: string } = {}
+    if (!pwd.current) errs.current = "Introduce tu contraseña actual"
+    if (pwd.next.length < 8) errs.next = "La nueva contraseña debe tener al menos 8 caracteres"
+    if (pwd.confirm !== pwd.next) errs.confirm = "Las contraseñas no coinciden"
+    setPwdErrors(errs)
+    if (Object.keys(errs).length > 0) return
+
+    setPwdSaving(true)
+    const { error } = await supabase.auth.updateUser({ password: pwd.next })
+    setPwdSaving(false)
+    if (error) {
+      setPwdMessage({ type: "error", text: error.message || "No se pudo cambiar la contraseña" })
+      return
+    }
+    setPwd({ current: "", next: "", confirm: "" })
+    setPwdErrors({})
+    setPwdMessage({ type: "success", text: "Contraseña actualizada correctamente" })
+  }
 
   const [locationValues, setLocationValues] = useState({
     garage_address: pricingSettings?.garage_address ?? "",
@@ -448,6 +493,38 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
           </button>
         </div>
       </div>
+
+      {/* SEGURIDAD */}
+      <SectionBlock icon={Shield} color="#0f766e" title="Seguridad" desc="Gestiona tu contraseña y acceso a la cuenta">
+        <Pad>
+          <div style={{ display: "flex", flexDirection: "column" as const, gap: 16, maxWidth: 440 }}>
+            <PasswordField id="current" label="Contraseña actual" value={pwd.current} onChange={handlePwdChange} error={pwdErrors.current} placeholder="••••••••" />
+            <PasswordField id="next" label="Nueva contraseña" value={pwd.next} onChange={handlePwdChange} error={pwdErrors.next} placeholder="Mínimo 8 caracteres" />
+            <PasswordField id="confirm" label="Confirmar nueva contraseña" value={pwd.confirm} onChange={handlePwdChange} error={pwdErrors.confirm} placeholder="Repite la nueva contraseña" />
+          </div>
+
+          {pwdMessage && (
+            <div style={{
+              marginTop: 16, borderRadius: 10, padding: "11px 14px",
+              background: pwdMessage.type === "success" ? "#f0fdf4" : "#fef2f2",
+              border: `1px solid ${pwdMessage.type === "success" ? "#bbf7d0" : "#fecaca"}`,
+              maxWidth: 440,
+            }}>
+              <p style={{ fontSize: 12.5, margin: 0, fontWeight: 600, color: pwdMessage.type === "success" ? "#15803d" : "#dc2626", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                {pwdMessage.text}
+              </p>
+            </div>
+          )}
+
+          <div style={{ marginTop: 18 }}>
+            <button onClick={handleChangePassword} disabled={pwdSaving}
+              style={{ display: "flex", alignItems: "center", gap: 8, height: 38, padding: "0 20px", borderRadius: 9, border: "none", fontSize: 13, fontWeight: 600, cursor: pwdSaving ? "not-allowed" : "pointer", fontFamily: "'DM Sans', system-ui, sans-serif", background: "#111827", color: "#fff", opacity: pwdSaving ? 0.7 : 1, transition: "all 0.2s" }}>
+              <Lock style={{ width: 14, height: 14 }} />
+              {pwdSaving ? "Cambiando..." : "Cambiar contraseña"}
+            </button>
+          </div>
+        </Pad>
+      </SectionBlock>
 
     </div>
   )
