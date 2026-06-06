@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { createClient } from "@/lib/supabase"
 import { Building2, MapPin, TrendingUp, Save, Upload, Check, Bell, Shield, Lock } from "lucide-react"
 
@@ -146,7 +146,30 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
   const [pwdErrors, setPwdErrors] = useState<{ current?: string; next?: string; confirm?: string }>({})
   const [pwdSaving, setPwdSaving] = useState(false)
   const [pwdMessage, setPwdMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [authEmail, setAuthEmail] = useState("")
+  const [isImpersonating, setIsImpersonating] = useState(false)
   const handlePwdChange = (id: string, val: string) => setPwd(p => ({ ...p, [id]: val }))
+
+  // Detecta el usuario autenticado y si hay una sesión de impersonation activa
+  useEffect(() => {
+    let cancelled = false
+    const check = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+      setAuthEmail(user.email ?? "")
+      const { data: imp } = await supabase
+        .from("admin_sessions")
+        .select("id")
+        .eq("admin_user_id", user.id)
+        .gt("expires_at", new Date().toISOString())
+        .limit(1)
+        .maybeSingle()
+      if (!cancelled) setIsImpersonating(!!imp)
+    }
+    check()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleChangePassword = async () => {
     setPwdMessage(null)
@@ -158,6 +181,21 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
     if (Object.keys(errs).length > 0) return
 
     setPwdSaving(true)
+
+    // 1. Verifica que la contraseña actual es correcta re-autenticando
+    if (!authEmail) {
+      setPwdSaving(false)
+      setPwdMessage({ type: "error", text: "No se pudo verificar la sesión actual" })
+      return
+    }
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email: authEmail, password: pwd.current })
+    if (signInError) {
+      setPwdSaving(false)
+      setPwdErrors({ current: "La contraseña actual es incorrecta" })
+      return
+    }
+
+    // 2. Cambia la contraseña
     const { error } = await supabase.auth.updateUser({ password: pwd.next })
     setPwdSaving(false)
     if (error) {
@@ -495,6 +533,14 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
       </div>
 
       {/* SEGURIDAD */}
+      {isImpersonating ? (
+        <div style={{ marginBottom: 20, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: "16px 20px", display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 16 }}>🔒</span>
+          <p style={{ fontSize: 13, color: "#6b7280", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+            La gestión de contraseña no está disponible en modo impersonación
+          </p>
+        </div>
+      ) : (
       <SectionBlock icon={Shield} color="#0f766e" title="Seguridad" desc="Gestiona tu contraseña y acceso a la cuenta">
         <Pad>
           <div style={{ display: "flex", flexDirection: "column" as const, gap: 16, maxWidth: 440 }}>
@@ -525,6 +571,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
           </div>
         </Pad>
       </SectionBlock>
+      )}
 
     </div>
   )
