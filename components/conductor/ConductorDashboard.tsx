@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { FlotaFlyLogo } from '@/components/FlotaFlyLogo'
 import { createBrowserClient } from '@supabase/ssr'
 import { LogOut, ChevronRight, MapPin, Clock, Users, Bus, AlertTriangle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -161,7 +162,7 @@ export default function ConductorDashboard({ conductor, company, servicios, logs
       <div style={s.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 30, height: 30, background: '#fff', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+            <FlotaFlyLogo size={22} />
           </div>
           <div>
             <p style={{ color: '#fff', fontWeight: 700, fontSize: 13, margin: 0 }}>{company?.name || 'FlotaFly'}</p>

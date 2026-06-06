@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase"
+import { FlotaFlyLogo } from "@/components/FlotaFlyLogo"
 import {
   MapPin, Bus, TrendingUp, PartyPopper,
   ChevronLeft, ChevronRight, Check, Copy, ArrowRight,
@@ -251,7 +252,7 @@ export function OnboardingWizard({ companyId, companyName, slug, initialGarage, 
 
       {/* Marca arriba */}
       <div style={{ padding: "24px 32px", display: "flex", alignItems: "center", gap: 10 }}>
-        <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: 32, height: 32, objectFit: "contain" }} />
+        <FlotaFlyLogo size={32} />
         <p style={{ color: "#111827", fontWeight: 700, fontSize: 15, margin: 0, letterSpacing: "-0.01em" }}>FlotaFly</p>
       </div>
 
@@ -264,7 +265,7 @@ export function OnboardingWizard({ companyId, companyName, slug, initialGarage, 
           {/* PASO 1 — Bienvenida */}
           {step === 0 && (
             <div style={{ textAlign: "center", padding: "16px 0" }}>
-              <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: 80, height: 80, objectFit: "contain", display: "block", margin: "0 auto 24px" }} />
+              <FlotaFlyLogo size={80} style={{ margin: "0 auto 24px" }} />
               <h1 style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: 0, letterSpacing: "-0.025em" }}>
                 Bienvenido a FlotaFly, {companyName}
               </h1>

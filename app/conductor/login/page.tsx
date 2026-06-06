@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { FlotaFlyLogo } from '@/components/FlotaFlyLogo'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 
@@ -88,7 +89,7 @@ export default function ConductorLoginPage() {
     <div style={s.page}>
       <div style={s.card}>
         <div style={s.logo}>
-          <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+          <FlotaFlyLogo size={40} />
           <div>
             <p style={{ ...s.title, fontSize: 18 }}>FlotaFly</p>
             <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>Portal del conductor</p>

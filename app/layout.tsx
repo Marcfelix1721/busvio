@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "FlotaFly — Gestión de presupuestos para autocares",
   description: "Calcula y envía presupuestos de autocares en segundos. Gestión de presupuestos para empresas de transporte discrecional.",
-  icons: { icon: "/logo-flotafly.png" },
+  icons: { icon: "/logo-flotafly.svg" },
 };
 
 export default function RootLayout({

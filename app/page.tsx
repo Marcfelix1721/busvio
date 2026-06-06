@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { ArrowRight, Zap, FileText, LayoutDashboard, X } from "lucide-react"
+import { FlotaFlyLogo } from "@/components/FlotaFlyLogo"
 
 export default function LandingPage() {
   const [showDemoForm, setShowDemoForm] = useState(false)
@@ -55,7 +56,7 @@ export default function LandingPage() {
       }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 1.5rem", height: "56px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: "32px", height: "32px", objectFit: "contain" }} />
+            <FlotaFlyLogo size={32} />
             <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1rem", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>FlotaFly</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -120,7 +121,7 @@ export default function LandingPage() {
                 <div style={{ width: "160px", background: "#111827", padding: "1rem 0.75rem", display: "flex", flexDirection: "column", gap: "4px", flexShrink: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 8px", marginBottom: "8px" }}>
                     <div style={{ width: "22px", height: "22px", borderRadius: "6px", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: "17px", height: "17px", objectFit: "contain" }} />
+                      <FlotaFlyLogo size={17} />
                     </div>
                     <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 700, color: "#fff" }}>FlotaFly</span>
                   </div>
@@ -249,7 +250,7 @@ export default function LandingPage() {
       <footer style={{ borderTop: "1px solid #f3f4f6", padding: "1.5rem", background: "#fff" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-            <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: "24px", height: "24px", objectFit: "contain" }} />
+            <FlotaFlyLogo size={24} />
             <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#374151" }}>FlotaFly</span>
           </div>
           <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#9ca3af" }}>

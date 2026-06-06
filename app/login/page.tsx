@@ -2,6 +2,7 @@
 
 import { FormEvent, useRef, useState } from "react"
 import { ArrowRight } from "lucide-react"
+import { FlotaFlyLogo } from "@/components/FlotaFlyLogo"
 import { createClient } from "@/lib/supabase"
 
 export default function LoginPage() {
@@ -38,7 +39,7 @@ export default function LoginPage() {
 
         {/* LOGO */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: "60px", height: "60px", objectFit: "contain", display: "block", margin: "0 auto 1rem" }} />
+          <FlotaFlyLogo size={60} style={{ margin: "0 auto 1rem" }} />
           <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.5rem", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
             FlotaFly
           </h1>

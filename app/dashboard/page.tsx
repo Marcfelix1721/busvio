@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { FlotaFlyLogo } from "@/components/FlotaFlyLogo"
 import type { ReactNode } from "react"
 import { redirect } from "next/navigation"
 import { createServerClient } from "@supabase/ssr"
@@ -159,7 +160,7 @@ export default async function DashboardPage() {
         <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 32, height: 32, background: "#fff", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: 24, height: 24, objectFit: "contain" }} />
+              <FlotaFlyLogo size={24} />
             </div>
             <div>
               <p style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0, letterSpacing: "-0.01em" }}>FlotaFly</p>
