@@ -60,16 +60,20 @@ export default function LoginPage() {
       {/* ===================== COLUMNA IZQUIERDA (desktop) ===================== */}
       <section
         className="hidden lg:flex lg:w-3/5 flex-col justify-between"
-        style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)", padding: 64 }}
+        style={{ position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)", padding: 64 }}
       >
+        {/* Decoración: blobs teal difuminados para dar profundidad */}
+        <div aria-hidden style={{ position: "absolute", top: -120, right: -100, width: 420, height: 420, borderRadius: "50%", background: "rgba(8,145,178,0.10)", filter: "blur(80px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "absolute", bottom: -140, left: -120, width: 380, height: 380, borderRadius: "50%", background: "rgba(8,145,178,0.08)", filter: "blur(80px)", pointerEvents: "none" }} />
+
         {/* Logo arriba */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}>
           <FlotaFlyLogo size={38} style={{ filter: "brightness(0) invert(1)" }} />
           <span style={{ fontSize: 20, fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>FlotaFly</span>
         </div>
 
         {/* Contenido central */}
-        <div style={{ maxWidth: 600 }}>
+        <div style={{ position: "relative", maxWidth: 600 }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: TEAL, textTransform: "uppercase", letterSpacing: "0.14em", margin: "0 0 20px" }}>
             Plataforma para empresas de autocares
           </p>
@@ -89,9 +93,10 @@ export default function LoginPage() {
           </ul>
         </div>
 
-        {/* Frase abajo */}
-        <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.45)", margin: 0 }}>
-          ✨ Empresas de toda España ya confían en FlotaFly
+        {/* Frase abajo con indicador de actividad en vivo */}
+        <p style={{ position: "relative", display: "flex", alignItems: "center", gap: 11, fontSize: 15, color: "rgba(255,255,255,0.6)", margin: 0 }}>
+          <span className="animate-pulse" aria-hidden style={{ width: 9, height: 9, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 4px rgba(34,197,94,0.18)", flexShrink: 0 }} />
+          Empresas de toda España ya confían en FlotaFly
         </p>
       </section>
 
@@ -102,7 +107,7 @@ export default function LoginPage() {
           {/* Logo solo en móvil */}
           <div className="lg:hidden" style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <FlotaFlyLogo size={40} />
+              <FlotaFlyLogo size={48} />
               <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em" }}>
                 <FlotaFlyWordmark />
               </span>
@@ -114,7 +119,7 @@ export default function LoginPage() {
             <h2 style={{ fontSize: 28, fontWeight: 600, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
               Bienvenido de nuevo
             </h2>
-            <p style={{ fontSize: 15, color: "#6b7280", margin: "6px 0 0" }}>
+            <p style={{ fontSize: 15, color: "#6b7280", margin: "12px 0 0" }}>
               Accede a tu panel de gestión
             </p>
           </div>
