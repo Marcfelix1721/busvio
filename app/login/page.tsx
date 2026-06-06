@@ -29,9 +29,19 @@ export default function LoginPage() {
     const password = passwordRef.current?.value ?? ""
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setLoading(false); setErrorMessage("Email o contraseña incorrectos"); return }
-    // Registrar el último acceso de la empresa (el user.id ES el company_id;
-    // en cuentas que no son empresa no afecta a ninguna fila).
+
+    const SUPERADMIN_EMAIL = "betstorrente@gmail.com"
     if (data.user?.id) {
+      // Bloquear acceso si la empresa está desactivada (no aplica al superadmin
+      // ni a cuentas sin fila en companies).
+      const { data: comp } = await supabase.from("companies").select("active").eq("id", data.user.id).maybeSingle()
+      if (comp && comp.active === false && data.user.email !== SUPERADMIN_EMAIL) {
+        await supabase.auth.signOut()
+        setLoading(false)
+        setErrorMessage("Tu cuenta está desactivada. Contacta con soporte para más información.")
+        return
+      }
+      // Registrar el último acceso de la empresa (el user.id ES el company_id).
       await supabase.from("companies").update({ last_login: new Date().toISOString() }).eq("id", data.user.id)
     }
     setLoading(false)

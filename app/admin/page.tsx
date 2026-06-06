@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase"
 import {
   Building2, Plus, TrendingUp, Users, FileText, LayoutDashboard,
   BarChart3, Settings, Send, ArrowUpRight, ArrowDownRight, Search,
-  MoreVertical, ExternalLink, Eye, Pencil, Ban, LogOut,
+  MoreVertical, ExternalLink, Eye, Pencil, Ban, LogOut, Power, X,
 } from "lucide-react"
 import Link from "next/link"
 import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
@@ -23,6 +23,7 @@ type Company = {
   cif?: string
   address?: string
   last_login?: string | null
+  active?: boolean | null
 }
 
 type Quote = {
@@ -157,7 +158,7 @@ export default function AdminPanel() {
     // Cargar empresas
     const { data: companiesData } = await supabase
       .from("companies")
-      .select("id, name, slug, email, created_at, phone, cif, address, last_login")
+      .select("id, name, slug, email, created_at, phone, cif, address, last_login, active")
       .order("created_at", { ascending: false })
 
     if (companiesData) setCompanies(companiesData)
@@ -456,6 +457,7 @@ export default function AdminPanel() {
                 formData={formData} setFormData={setFormData}
                 creating={creating} onCreate={handleCreateCompany}
                 slugManual={slugManual} setSlugManual={setSlugManual}
+                reload={loadData}
               />
             </>
           )}
@@ -472,6 +474,7 @@ export default function AdminPanel() {
               formData={formData} setFormData={setFormData}
               creating={creating} onCreate={handleCreateCompany}
               slugManual={slugManual} setSlugManual={setSlugManual}
+              reload={loadData}
             />
           )}
 
@@ -598,17 +601,62 @@ function CompaniesTable(props: {
   setFormData: React.Dispatch<React.SetStateAction<{ name: string; email: string; password: string; slug: string; phone: string; cif: string; address: string }>>
   creating: boolean; onCreate: () => void
   slugManual: boolean; setSlugManual: (v: boolean) => void
+  reload: () => void
 }) {
-  const { companies, companyInfo, search, setSearch, openMenu, setOpenMenu, onImpersonate, showCreate, setShowCreate, formData, setFormData, creating, onCreate, slugManual, setSlugManual } = props
+  const { companies, companyInfo, search, setSearch, openMenu, setOpenMenu, onImpersonate, showCreate, setShowCreate, formData, setFormData, creating, onCreate, slugManual, setSlugManual, reload } = props
+  const supabase = createClient()
 
   const th: React.CSSProperties = { padding: "11px 20px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }
   const td: React.CSSProperties = { padding: "14px 20px", fontSize: 13, color: "#374151", verticalAlign: "middle" }
   const inputStyle: React.CSSProperties = { height: 38, border: "1px solid #e5e7eb", borderRadius: 8, padding: "0 12px", fontSize: 13, fontFamily: "'DM Sans', system-ui, sans-serif", outline: "none" }
 
-  const notImplemented = (action: string, name: string) =>
-    alert(`"${action}" para ${name} estará disponible próximamente.`)
+  // Editar empresa
+  const [editCompany, setEditCompany] = useState<Company | null>(null)
+  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", cif: "", address: "" })
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState("")
+  const openEdit = (c: Company) => {
+    setEditCompany(c)
+    setEditForm({ name: c.name, email: c.email, phone: c.phone ?? "", cif: c.cif ?? "", address: c.address ?? "" })
+    setEditError(""); setOpenMenu(null)
+  }
+  const saveEdit = async () => {
+    if (!editCompany) return
+    if (!editForm.name.trim() || !editForm.email.trim()) { setEditError("Nombre y email son obligatorios"); return }
+    setEditSaving(true); setEditError("")
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch("/api/admin/editar-empresa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ companyId: editCompany.id, ...editForm }),
+    })
+    const data = await res.json()
+    setEditSaving(false)
+    if (!res.ok) { setEditError(data.error || "Error al guardar"); return }
+    setEditCompany(null)
+    reload()
+  }
+
+  // Desactivar / Reactivar
+  const [confirmToggle, setConfirmToggle] = useState<{ company: Company; action: "desactivar" | "reactivar" } | null>(null)
+  const [toggleBusy, setToggleBusy] = useState(false)
+  const doToggle = async () => {
+    if (!confirmToggle) return
+    setToggleBusy(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch("/api/admin/editar-empresa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ companyId: confirmToggle.company.id, active: confirmToggle.action === "reactivar" }),
+    })
+    setToggleBusy(false)
+    if (!res.ok) { alert("No se pudo actualizar la empresa"); return }
+    setConfirmToggle(null)
+    reload()
+  }
 
   return (
+    <>
     <div style={CARD}>
       {/* cabecera + búsqueda */}
       <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1f3f5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
@@ -700,10 +748,16 @@ function CompaniesTable(props: {
                     <p style={{ fontSize: 12, color: "#9ca3af", margin: "1px 0 0" }}>flotafly.com/{c.slug}</p>
                   </td>
                   <td style={td}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, background: info.active ? "#f0fdf4" : "#f3f4f6", color: info.active ? "#15803d" : "#6b7280" }}>
-                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: info.active ? "#22c55e" : "#9ca3af" }} />
-                      {info.active ? "Activa" : "Inactiva"}
-                    </span>
+                    {c.active === false ? (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, background: "#f3f4f6", color: "#6b7280" }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#9ca3af" }} /> Desactivada
+                      </span>
+                    ) : (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, background: info.active ? "#f0fdf4" : "#f3f4f6", color: info.active ? "#15803d" : "#6b7280" }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: info.active ? "#22c55e" : "#9ca3af" }} />
+                        {info.active ? "Activa" : "Inactiva"}
+                      </span>
+                    )}
                   </td>
                   <td style={{ ...td, textAlign: "center", fontWeight: 600, color: info.thisMonth > 0 ? "#111827" : "#9ca3af" }}>{info.thisMonth}</td>
                   <td style={{ ...td, color: c.last_login ? "#6b7280" : "#9ca3af" }}>{c.last_login ? relativeTime(c.last_login) : "Nunca"}</td>
@@ -728,12 +782,18 @@ function CompaniesTable(props: {
                             <a href={`/${c.slug}`} target="_blank" rel="noreferrer" onClick={() => setOpenMenu(null)} style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "#374151", textDecoration: "none" }}>
                               <Eye style={{ width: 14, height: 14, color: "#6b7280" }} /> Ver detalle
                             </a>
-                            <button onClick={() => { setOpenMenu(null); notImplemented("Editar", c.name) }} style={menuBtn}>
+                            <button onClick={() => openEdit(c)} style={menuBtn}>
                               <Pencil style={{ width: 14, height: 14, color: "#6b7280" }} /> Editar
                             </button>
-                            <button onClick={() => { setOpenMenu(null); notImplemented("Desactivar", c.name) }} style={{ ...menuBtn, color: "#dc2626" }}>
-                              <Ban style={{ width: 14, height: 14, color: "#dc2626" }} /> Desactivar
-                            </button>
+                            {c.active === false ? (
+                              <button onClick={() => { setOpenMenu(null); setConfirmToggle({ company: c, action: "reactivar" }) }} style={{ ...menuBtn, color: "#15803d" }}>
+                                <Power style={{ width: 14, height: 14, color: "#15803d" }} /> Reactivar
+                              </button>
+                            ) : (
+                              <button onClick={() => { setOpenMenu(null); setConfirmToggle({ company: c, action: "desactivar" }) }} style={{ ...menuBtn, color: "#dc2626" }}>
+                                <Ban style={{ width: 14, height: 14, color: "#dc2626" }} /> Desactivar
+                              </button>
+                            )}
                           </div>
                         </>
                       )}
@@ -752,8 +812,82 @@ function CompaniesTable(props: {
         </div>
       )}
     </div>
+
+    {/* MODAL EDITAR EMPRESA */}
+    {editCompany && (
+      <div onClick={() => setEditCompany(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 18, width: "100%", maxWidth: 480, padding: 24, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: "#111827", margin: 0 }}>Editar empresa</h3>
+            <button onClick={() => setEditCompany(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><X style={{ width: 20, height: 20 }} /></button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={editLabel}>Nombre de la empresa</label>
+              <input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} style={{ ...inputStyle, width: "100%" }} />
+            </div>
+            <div>
+              <label style={editLabel}>Email de contacto</label>
+              <input type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} style={{ ...inputStyle, width: "100%" }} />
+            </div>
+            <div>
+              <label style={editLabel}>Teléfono</label>
+              <input value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} style={{ ...inputStyle, width: "100%" }} />
+            </div>
+            <div>
+              <label style={editLabel}>CIF</label>
+              <input value={editForm.cif} onChange={e => setEditForm(p => ({ ...p, cif: e.target.value }))} style={{ ...inputStyle, width: "100%" }} />
+            </div>
+            <div>
+              <label style={editLabel}>Dirección</label>
+              <input value={editForm.address} onChange={e => setEditForm(p => ({ ...p, address: e.target.value }))} style={{ ...inputStyle, width: "100%" }} />
+            </div>
+          </div>
+          <p style={{ fontSize: 11.5, color: "#9ca3af", margin: "12px 0 0" }}>La URL pública (flotafly.com/{editCompany.slug}) no se puede cambiar.</p>
+          {editError && <p style={{ fontSize: 13, color: "#dc2626", margin: "10px 0 0" }}>{editError}</p>}
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+            <button onClick={() => setEditCompany(null)} style={{ height: 40, padding: "0 16px", borderRadius: 9, border: "1px solid #e5e7eb", background: "#fff", fontSize: 13, fontWeight: 600, color: "#374151", cursor: "pointer", fontFamily: "'DM Sans', system-ui, sans-serif" }}>Cancelar</button>
+            <button onClick={saveEdit} disabled={editSaving} style={{ height: 40, padding: "0 18px", borderRadius: 9, border: "none", background: "#111827", color: "#fff", fontSize: 13, fontWeight: 600, cursor: editSaving ? "not-allowed" : "pointer", opacity: editSaving ? 0.7 : 1, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+              {editSaving ? "Guardando..." : "Guardar cambios"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* MODAL CONFIRMAR DESACTIVAR/REACTIVAR */}
+    {confirmToggle && (
+      <div onClick={() => setConfirmToggle(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 440, padding: 24, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 11, background: confirmToggle.action === "desactivar" ? "#fef2f2" : "#f0fdf4", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {confirmToggle.action === "desactivar"
+                ? <Ban style={{ width: 20, height: 20, color: "#dc2626" }} />
+                : <Power style={{ width: 20, height: 20, color: "#15803d" }} />}
+            </div>
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: "#111827", margin: 0 }}>
+              {confirmToggle.action === "desactivar" ? "Desactivar empresa" : "Reactivar empresa"}
+            </h3>
+          </div>
+          <p style={{ fontSize: 14, color: "#374151", margin: "0 0 20px", lineHeight: 1.55 }}>
+            {confirmToggle.action === "desactivar"
+              ? <>¿Seguro que quieres desactivar <strong>{confirmToggle.company.name}</strong>? No podrán acceder al panel ni recibirán nuevas solicitudes hasta que la reactives.</>
+              : <>¿Reactivar <strong>{confirmToggle.company.name}</strong>? Volverá a tener acceso al panel y a recibir solicitudes.</>}
+          </p>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <button onClick={() => setConfirmToggle(null)} style={{ height: 38, padding: "0 16px", borderRadius: 9, border: "1px solid #e5e7eb", background: "#fff", fontSize: 13, fontWeight: 600, color: "#374151", cursor: "pointer", fontFamily: "'DM Sans', system-ui, sans-serif" }}>Cancelar</button>
+            <button onClick={doToggle} disabled={toggleBusy} style={{ height: 38, padding: "0 18px", borderRadius: 9, border: "none", background: confirmToggle.action === "desactivar" ? "#dc2626" : "#15803d", color: "#fff", fontSize: 13, fontWeight: 700, cursor: toggleBusy ? "not-allowed" : "pointer", opacity: toggleBusy ? 0.7 : 1, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+              {toggleBusy ? "Procesando..." : confirmToggle.action === "desactivar" ? "Desactivar" : "Reactivar"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
+
+const editLabel: React.CSSProperties = { fontSize: 12.5, fontWeight: 500, color: "#6b7280", display: "block", marginBottom: 6 }
 
 const menuBtn: React.CSSProperties = {
   display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "#374151",
