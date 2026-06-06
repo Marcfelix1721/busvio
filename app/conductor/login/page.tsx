@@ -89,7 +89,7 @@ export default function ConductorLoginPage() {
     <div style={s.page}>
       <div style={s.card}>
         <div style={s.logo}>
-          <FlotaFlyLogo size={40} />
+          <FlotaFlyLogo size={80} />
           <div>
             <p style={{ ...s.title, fontSize: 18 }}><FlotaFlyWordmark /></p>
             <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>Portal del conductor</p>

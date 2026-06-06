@@ -56,7 +56,7 @@ export default function LandingPage() {
       }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 1.5rem", height: "56px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <FlotaFlyLogo size={32} />
+            <FlotaFlyLogo size={36} />
             <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1rem", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}><FlotaFlyWordmark /></span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

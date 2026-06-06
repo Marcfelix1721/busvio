@@ -34,8 +34,8 @@ export default async function StaffPage() {
     <div style={{ minHeight: "100vh", background: "#f5f5f4", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <div style={{ background: "#111827", padding: "0 1.5rem", height: "56px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 26, height: 26, background: "#fff", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <FlotaFlyLogo size={19} />
+          <div style={{ width: 36, height: 36, background: "#fff", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <FlotaFlyLogo size={28} />
           </div>
           <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontWeight: 600, color: "#fff", fontSize: "0.9375rem" }}><FlotaFlyWordmark flotaColor="#fff" /></span>
         </div>

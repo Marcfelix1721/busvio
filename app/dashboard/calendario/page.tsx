@@ -66,8 +66,8 @@ export default async function CalendarioPage() {
       <aside className="hidden md:flex w-[220px] flex-col bg-[#111827] flex-shrink-0">
         <div className="px-5 pt-6 pb-5 border-b border-white/5">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-white rounded-md flex items-center justify-center flex-shrink-0">
-              <FlotaFlyLogo size={20} />
+            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+              <FlotaFlyLogo size={40} />
             </div>
             <span className="text-white font-semibold text-sm tracking-tight"><FlotaFlyWordmark flotaColor="#fff" /></span>
           </div>

@@ -103,8 +103,8 @@ export default async function ClientesPage() {
       <aside style={{ width: 228, background: "#111827", display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 32, height: 32, background: "#fff", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <FlotaFlyLogo size={24} />
+            <div style={{ width: 48, height: 48, background: "#fff", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <FlotaFlyLogo size={40} />
             </div>
             <div>
               <p style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0 }}><FlotaFlyWordmark flotaColor="#fff" /></p>

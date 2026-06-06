@@ -161,8 +161,8 @@ export default function ConductorDashboard({ conductor, company, servicios, logs
       {/* HEADER */}
       <div style={s.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 30, height: 30, background: '#fff', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <FlotaFlyLogo size={22} />
+          <div style={{ width: 34, height: 34, background: '#fff', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <FlotaFlyLogo size={26} />
           </div>
           <div>
             <p style={{ color: '#fff', fontWeight: 700, fontSize: 13, margin: 0 }}>{company?.name || 'FlotaFly'}</p>

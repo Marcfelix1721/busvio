@@ -39,7 +39,7 @@ export default function LoginPage() {
 
         {/* LOGO */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <FlotaFlyLogo size={60} style={{ margin: "0 auto 1rem" }} />
+          <FlotaFlyLogo size={96} style={{ margin: "0 auto 1rem" }} />
           <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.5rem", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
             <FlotaFlyWordmark />
           </h1>
