@@ -9,7 +9,7 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 import {
   BusFront, Settings, Users, Bus,
-  BarChart3, Inbox, Calendar, ArrowUpRight, ChevronRight
+  BarChart3, Inbox, Calendar, ArrowUpRight, ChevronRight, ClipboardList
 } from "lucide-react"
 
 async function createClient() {
@@ -60,6 +60,7 @@ export default async function AjustesPage() {
         <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
           <p style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "0 8px", marginBottom: 6 }}>Principal</p>
           <SideLink href="/dashboard" icon={<Inbox style={{ width: 14, height: 14 }} />} label="Solicitudes" />
+          <SideLink href="/dashboard/servicios" icon={<ClipboardList style={{ width: 14, height: 14 }} />} label="Servicios" />
           <SideLink href="/dashboard/clientes" icon={<Users style={{ width: 14, height: 14 }} />} label="Clientes" />
           <SideLink href="/dashboard/analytics" icon={<BarChart3 style={{ width: 14, height: 14 }} />} label="Analytics" />
           <SideLink href="/dashboard/calendario" icon={<Calendar style={{ width: 14, height: 14 }} />} label="Calendario" />

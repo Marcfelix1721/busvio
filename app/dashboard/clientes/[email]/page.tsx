@@ -7,7 +7,7 @@ import type { ReactNode } from "react"
 import {
   BusFront, Settings, Users, BarChart3,
   Inbox, Calendar, ArrowLeft, Mail, Phone,
-  FileText, CheckCircle, XCircle, Clock,
+  FileText, CheckCircle, XCircle, Clock, ClipboardList,
 } from "lucide-react"
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { ClienteActions } from "@/components/dashboard/ClienteActions"
@@ -102,6 +102,7 @@ export default async function ClienteFichaPage({ params }: { params: Promise<{ e
         <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
           <p style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "0 8px", marginBottom: 6 }}>Principal</p>
           <SideLink href="/dashboard" icon={<Inbox style={{ width: 14, height: 14 }} />} label="Solicitudes" />
+          <SideLink href="/dashboard/servicios" icon={<ClipboardList style={{ width: 14, height: 14 }} />} label="Servicios" />
           <SideLink href="/dashboard/clientes" icon={<Users style={{ width: 14, height: 14 }} />} label="Clientes" active />
           <SideLink href="/dashboard/analytics" icon={<BarChart3 style={{ width: 14, height: 14 }} />} label="Analytics" />
           <SideLink href="/dashboard/calendario" icon={<Calendar style={{ width: 14, height: 14 }} />} label="Calendario" />

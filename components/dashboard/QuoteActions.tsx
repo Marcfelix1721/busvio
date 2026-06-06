@@ -52,6 +52,7 @@ type Props = {
   quote: any
   companyId: string
   vehicles: any[]
+  busyVehicleIds?: string[]
 }
 
 const ESTADOS = [
@@ -63,7 +64,8 @@ const ESTADOS = [
   { value: 'cancelado', label: 'Cancelado', color: '#9ca3af', bg: '#f9fafb' },
 ]
 
-export default function QuoteActions({ quote, companyId, vehicles }: Props) {
+export default function QuoteActions({ quote, companyId, vehicles, busyVehicleIds = [] }: Props) {
+  const busyVehicles = new Set(busyVehicleIds)
   const [estado, setEstado] = useState(quote.status)
   const [vehicleId, setVehicleId] = useState(quote.vehicle_id || '')
   const [calcResult, setCalcResult] = useState<CalcResult | null>(null)
@@ -169,10 +171,15 @@ export default function QuoteActions({ quote, companyId, vehicles }: Props) {
           <option value="">Sin asignar</option>
           {vehicles.map(v => (
             <option key={v.id} value={v.id}>
-              {v.marca_modelo} — {v.matricula} ({v.plazas} plazas)
+              {v.marca_modelo} — {v.matricula} ({v.plazas} plazas){busyVehicles.has(v.id) ? "  ⚠️ ya asignado ese día" : ""}
             </option>
           ))}
         </select>
+        {vehicleId && busyVehicles.has(vehicleId) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '7px 11px', marginTop: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#92400e' }}>⚠️ Este vehículo ya está asignado a otro servicio ese día</span>
+          </div>
+        )}
         {vehicleId && (
           <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
             ℹ️ Selecciona el vehículo antes de calcular para usar sus costes propios

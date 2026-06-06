@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'
 import { LogoutButton } from '@/components/dashboard/LogoutButton'
 import { ConductoresList } from '@/components/dashboard/ConductoresList'
 import Link from 'next/link'
-import { BusFront, Users, BarChart3, Calendar, Inbox, Settings } from 'lucide-react'
+import { BusFront, Users, BarChart3, Calendar, Inbox, Settings, ClipboardList } from 'lucide-react'
 import type { Staff, ConductorStats } from '@/lib/staff'
 
 async function createClient() {
@@ -107,6 +107,7 @@ export default async function ConductoresPage() {
 
   const sidebarLinks = [
     { href: '/dashboard', icon: <Inbox style={{ width: 14, height: 14 }} />, label: 'Solicitudes' },
+    { href: '/dashboard/servicios', icon: <ClipboardList style={{ width: 14, height: 14 }} />, label: 'Servicios' },
     { href: '/dashboard/clientes', icon: <Users style={{ width: 14, height: 14 }} />, label: 'Clientes' },
     { href: '/dashboard/analytics', icon: <BarChart3 style={{ width: 14, height: 14 }} />, label: 'Analytics' },
     { href: '/dashboard/calendario', icon: <Calendar style={{ width: 14, height: 14 }} />, label: 'Calendario' },

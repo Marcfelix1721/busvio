@@ -14,6 +14,7 @@ import { ClienteEstado } from "@/components/dashboard/ClienteEstado"
 import { MapaRuta } from "@/components/dashboard/MapaRuta"
 import { ServiceAssignments } from "@/components/dashboard/ServiceAssignments"
 import { QuoteRequest } from "@/lib/types"
+import { conductorConflict, DOCS_CRITICOS, type Conflict } from "@/lib/conflicts"
 
 export const revalidate = 0
 
@@ -99,7 +100,7 @@ export default async function QuoteRequestDetailPage({
 
   const { data: staffData } = await supabase
     .from("staff")
-    .select("id, nombre, rol, estado")
+    .select("id, nombre, rol, estado, email")
     .eq("company_id", quote.company_id)
     .order("rol").order("nombre")
 
@@ -107,6 +108,57 @@ export default async function QuoteRequestDetailPage({
     .from("service_assignments")
     .select("id, staff_id, rol_en_servicio, staff(nombre, rol)")
     .eq("quote_request_id", quote.id)
+
+  // ---- Detección de conflictos (conductores y vehículos) para esta fecha ----
+  const tripDay = quote.trip_date?.slice(0, 10)
+  const staffIds = (staffData ?? []).map(s => s.id)
+  const todayStr = new Date().toISOString().slice(0, 10)
+
+  // Conductores ya ocupados ese día (en otros servicios)
+  const busyStaffIds = new Set<string>()
+  if (staffIds.length > 0) {
+    const { data: otherAsg } = await supabase
+      .from("service_assignments")
+      .select("staff_id, quote_request_id, quote_requests(trip_date)")
+      .in("staff_id", staffIds)
+      .neq("quote_request_id", quote.id)
+    for (const a of (otherAsg ?? []) as any[]) {
+      if (a.quote_requests?.trip_date?.slice(0, 10) === tripDay) busyStaffIds.add(a.staff_id)
+    }
+  }
+
+  // Documentos críticos vencidos por conductor
+  const expiredDocByStaff: Record<string, string> = {}
+  const { data: expiredDocs } = await supabase
+    .from("staff_documentos")
+    .select("staff_id, tipo, fecha_vencimiento")
+    .eq("company_id", quote.company_id)
+    .in("tipo", DOCS_CRITICOS)
+    .lt("fecha_vencimiento", todayStr)
+  for (const d of expiredDocs ?? []) if (!expiredDocByStaff[d.staff_id]) expiredDocByStaff[d.staff_id] = d.tipo
+
+  const conflictByStaff: Record<string, Conflict> = {}
+  for (const s of staffData ?? []) {
+    conflictByStaff[s.id] = conductorConflict({
+      estado: s.estado,
+      busyOnDate: busyStaffIds.has(s.id),
+      expiredDocLabel: expiredDocByStaff[s.id] ?? null,
+    })
+  }
+
+  // Vehículos ya asignados ese día (en otros servicios)
+  const busyVehicleIds: string[] = []
+  const { data: sameDayQuotes } = await supabase
+    .from("quote_requests")
+    .select("id, vehicle_id, trip_date")
+    .eq("company_id", quote.company_id)
+    .neq("id", quote.id)
+  for (const q of sameDayQuotes ?? []) {
+    if (q.vehicle_id && q.trip_date?.slice(0, 10) === tripDay) busyVehicleIds.push(q.vehicle_id)
+  }
+
+  const vehiculoAsignado = vehicles.find(v => v.id === quote.vehicle_id)
+  const vehiculoNombre = vehiculoAsignado ? `${vehiculoAsignado.marca_modelo} (${vehiculoAsignado.matricula})` : null
 
   const serviceType = extractCommentField(quote.comments, "Tipo de servicio") ?? "—"
   const tipoCliente = extractCommentField(quote.comments, "Tipo de cliente") ?? "—"
@@ -217,6 +269,16 @@ export default async function QuoteRequestDetailPage({
                 tripDate={quote.trip_date}
                 initialAssignments={(assignmentsData ?? []) as any}
                 staff={(staffData ?? []) as any}
+                conflictByStaff={conflictByStaff}
+                companyId={quote.company_id}
+                quoteInfo={{
+                  requester_name: quote.requester_name,
+                  origin: quote.origin,
+                  destination: quote.destination,
+                  trip_date: quote.trip_date,
+                  departure_time: quote.departure_time,
+                  vehiculo: vehiculoNombre,
+                }}
               />
             </Section>
 
@@ -279,6 +341,7 @@ export default async function QuoteRequestDetailPage({
               quote={quote}
               companyId={quote.company_id}
               vehicles={vehicles}
+              busyVehicleIds={busyVehicleIds}
             />
           </div>
         </div>

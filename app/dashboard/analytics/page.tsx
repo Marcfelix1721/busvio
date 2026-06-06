@@ -6,7 +6,7 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import {
   BusFront, FileText, Settings, Users,
-  BarChart3, Inbox,
+  BarChart3, Inbox, ClipboardList,
 } from "lucide-react"
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { QuoteRequest } from "@/lib/types"
@@ -88,6 +88,7 @@ export default async function AnalyticsPage() {
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           <p className="text-[10px] font-medium text-white/20 uppercase tracking-widest px-2 pb-1">Principal</p>
           <SideLink href="/dashboard" icon={<Inbox className="size-3.5"/>} label="Solicitudes" />
+          <SideLink href="/dashboard/servicios" icon={<ClipboardList className="size-3.5"/>} label="Servicios" />
           <SideLink href="/dashboard/clientes" icon={<Users className="size-3.5"/>} label="Clientes" />
           <SideLink href="/dashboard/analytics" icon={<BarChart3 className="size-3.5"/>} label="Analytics" active />
           <div className="pt-4 pb-1 px-2">

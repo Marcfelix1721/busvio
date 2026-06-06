@@ -6,7 +6,7 @@ import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { CalendarioClient } from "@/components/dashboard/CalendarioClient"
 import Link from "next/link"
 import {
-  BusFront, Inbox, Users, BarChart3, Settings, Calendar
+  BusFront, Inbox, Users, BarChart3, Settings, Calendar, ClipboardList
 } from "lucide-react"
 
 async function createClient() {
@@ -75,6 +75,7 @@ export default async function CalendarioPage() {
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           <p className="text-[10px] font-medium text-white/20 uppercase tracking-widest px-2 pb-1">Principal</p>
           <SideLink href="/dashboard" icon={<Inbox className="size-3.5" />} label="Solicitudes" />
+          <SideLink href="/dashboard/servicios" icon={<ClipboardList className="size-3.5" />} label="Servicios" />
           <SideLink href="/dashboard/clientes" icon={<Users className="size-3.5" />} label="Clientes" />
           <SideLink href="/dashboard/analytics" icon={<BarChart3 className="size-3.5" />} label="Analytics" />
           <SideLink href="/dashboard/calendario" icon={<Calendar className="size-3.5" />} label="Calendario" active />

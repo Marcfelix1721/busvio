@@ -33,6 +33,7 @@ export type QuoteRequest = {
   estimated_price?: number
   final_price?: number
   internal_notes?: string
+  vehicle_id?: string | null
   created_at: string
   updated_at: string
 }

@@ -7,7 +7,7 @@ import { cookies } from "next/headers"
 import {
   BusFront, Clock3, FileText, Settings,
   CircleCheck, Users, Euro, ChevronRight, AlertTriangle,
-  BarChart3, ArrowUpRight, Inbox, Calendar, TrendingUp,
+  BarChart3, ArrowUpRight, Inbox, Calendar, TrendingUp, ClipboardList,
 } from "lucide-react"
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { QuoteRequest } from "@/lib/types"
@@ -172,6 +172,7 @@ export default async function DashboardPage() {
         <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
           <p style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "0 8px", marginBottom: 6 }}>Principal</p>
           <SideLink href="/dashboard" icon={<Inbox style={{ width: 14, height: 14 }} />} label="Solicitudes" active />
+          <SideLink href="/dashboard/servicios" icon={<ClipboardList style={{ width: 14, height: 14 }} />} label="Servicios" />
           <SideLink href="/dashboard/clientes" icon={<Users style={{ width: 14, height: 14 }} />} label="Clientes" />
           <SideLink href="/dashboard/analytics" icon={<BarChart3 style={{ width: 14, height: 14 }} />} label="Analytics" />
           <SideLink href="/dashboard/calendario" icon={<Calendar style={{ width: 14, height: 14 }} />} label="Calendario" />
