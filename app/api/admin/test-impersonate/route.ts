@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
+import { ADMIN_EMAIL } from "@/lib/admin"
 
 /**
  * Endpoint de diagnóstico para probar la impersonation
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest) {
     diagnostics.step = "user_ok"
 
     // 2. Verificar si es admin
-    const adminEmail = process.env.ADMIN_EMAIL || "marcfelixkrayer@gmail.com"
+    const adminEmail = ADMIN_EMAIL
     diagnostics.info.adminEmail = adminEmail
     diagnostics.info.isAdmin = user.email === adminEmail
 

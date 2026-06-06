@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient as createServerClient } from "@supabase/supabase-js"
+import { ADMIN_EMAIL } from "@/lib/admin"
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,6 +27,13 @@ export async function POST(req: NextRequest) {
         },
       }
     )
+
+    // Verificar que el llamante es realmente el superadmin
+    const token = authHeader.replace(/^Bearer\s+/i, "")
+    const { data: { user: caller }, error: callerErr } = await supabaseAdmin.auth.getUser(token)
+    if (callerErr || !caller || caller.email !== ADMIN_EMAIL) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+    }
 
     // 1. Crear usuario en Supabase Auth
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({

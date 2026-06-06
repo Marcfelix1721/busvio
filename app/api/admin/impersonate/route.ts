@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
+import { ADMIN_EMAIL } from "@/lib/admin"
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 })
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL || "marcfelixkrayer@gmail.com"
+    const adminEmail = ADMIN_EMAIL
     if (user.email !== adminEmail) {
       return NextResponse.json({ error: "No autorizado - solo admin" }, { status: 403 })
     }

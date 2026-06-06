@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient as createServerClient } from "@supabase/supabase-js"
+import { ADMIN_EMAIL } from "@/lib/admin"
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,6 +20,13 @@ export async function POST(req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
+
+    // Verificar que el llamante es realmente el superadmin
+    const token = authHeader.replace(/^Bearer\s+/i, "")
+    const { data: { user: caller }, error: callerErr } = await supabaseAdmin.auth.getUser(token)
+    if (callerErr || !caller || caller.email !== ADMIN_EMAIL) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+    }
 
     // Email actual (para detectar cambios)
     const { data: current } = await supabaseAdmin
@@ -49,6 +57,15 @@ export async function POST(req: NextRequest) {
         console.error("Error actualizando email de acceso:", authError)
         return NextResponse.json({ ok: true, warning: "Empresa actualizada, pero no se pudo cambiar el email de acceso: " + authError.message })
       }
+    }
+
+    // Expulsión inmediata: al desactivar se banea el acceso (revoca el login y
+    // el refresh de sesión); al reactivar se quita el baneo.
+    if (active !== undefined) {
+      const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(companyId, {
+        ban_duration: active ? "none" : "876000h",
+      })
+      if (banError) console.error("No se pudo actualizar el baneo de acceso:", banError)
     }
 
     return NextResponse.json({ ok: true })

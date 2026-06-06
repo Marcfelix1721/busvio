@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
+import { ADMIN_EMAIL } from "@/lib/admin"
 
 export async function GET(req: NextRequest) {
   try {
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ impersonating: false })
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL || "marcfelixkrayer@gmail.com"
+    const adminEmail = ADMIN_EMAIL
     if (user.email !== adminEmail) {
       return NextResponse.json({ impersonating: false })
     }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
+import { ADMIN_EMAIL } from "@/lib/admin"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Faltan datos obligatorios" }, { status: 400 })
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL || "marcfelixkrayer@gmail.com"
+    const adminEmail = ADMIN_EMAIL
 
     const { error } = await resend.emails.send({
       from: "FlotaFly Demo <onboarding@resend.dev>",

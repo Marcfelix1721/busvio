@@ -15,6 +15,7 @@ import { QuoteRequest } from "@/lib/types"
 import { DashboardClient } from "@/components/dashboard/DashboardClient"
 import { ImpersonationBanner } from "@/components/dashboard/ImpersonationBanner"
 import { OnboardingWizard } from "@/components/dashboard/OnboardingWizard"
+import { ADMIN_EMAIL } from "@/lib/admin"
 
 export const revalidate = 0
 
@@ -37,7 +38,7 @@ export default async function DashboardPage() {
   if (!session) redirect("/login")
 
   // Verificar si el admin está impersonando
-  const adminEmail = process.env.ADMIN_EMAIL || "marcfelixkrayer@gmail.com"
+  const adminEmail = ADMIN_EMAIL
   let companyId = session.user.id // Por defecto, el user.id ES el company_id
 
   if (session.user.email === adminEmail) {
@@ -66,9 +67,14 @@ export default async function DashboardPage() {
 
   const { data: companyData } = await supabase
     .from("companies")
-    .select("name, slug, onboarding_completado")
+    .select("name, slug, onboarding_completado, active")
     .eq("id", companyId)
     .single()
+
+  // Empresa desactivada: expulsar al panel (salvo que sea el admin impersonando)
+  if (companyData && companyData.active === false && session.user.email !== adminEmail) {
+    redirect("/login")
+  }
 
   // Si la empresa aún no completó el onboarding, mostrar el wizard guiado
   // en lugar del dashboard normal.

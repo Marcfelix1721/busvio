@@ -4,6 +4,7 @@ import { FormEvent, useRef, useState } from "react"
 import { ArrowRight, CheckCircle2 } from "lucide-react"
 import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createClient } from "@/lib/supabase"
+import { ADMIN_EMAIL } from "@/lib/admin"
 
 const FONT = "'DM Sans', system-ui, sans-serif"
 const TEAL = "#0891b2"
@@ -30,12 +31,11 @@ export default function LoginPage() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setLoading(false); setErrorMessage("Email o contraseña incorrectos"); return }
 
-    const SUPERADMIN_EMAIL = "betstorrente@gmail.com"
     if (data.user?.id) {
       // Bloquear acceso si la empresa está desactivada (no aplica al superadmin
       // ni a cuentas sin fila en companies).
       const { data: comp } = await supabase.from("companies").select("active").eq("id", data.user.id).maybeSingle()
-      if (comp && comp.active === false && data.user.email !== SUPERADMIN_EMAIL) {
+      if (comp && comp.active === false && data.user.email !== ADMIN_EMAIL) {
         await supabase.auth.signOut()
         setLoading(false)
         setErrorMessage("Tu cuenta está desactivada. Contacta con soporte para más información.")

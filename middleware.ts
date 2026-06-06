@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
+import { ADMIN_EMAIL } from "@/lib/admin"
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -27,7 +28,7 @@ export async function middleware(request: NextRequest) {
     )
 
     const { data: { user } } = await supabase.auth.getUser()
-    const adminEmail = process.env.ADMIN_EMAIL || "marcfelixkrayer@gmail.com"
+    const adminEmail = ADMIN_EMAIL
 
     if (!user || user.email !== adminEmail) {
       return NextResponse.redirect(new URL("/dashboard", request.url))
