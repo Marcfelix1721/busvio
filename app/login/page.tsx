@@ -1,9 +1,18 @@
 "use client"
 
 import { FormEvent, useRef, useState } from "react"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, CheckCircle2 } from "lucide-react"
 import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createClient } from "@/lib/supabase"
+
+const FONT = "'DM Sans', system-ui, sans-serif"
+const TEAL = "#0891b2"
+
+const BULLETS = [
+  "Presupuestos automáticos en segundos",
+  "Gestión completa de flota y conductores",
+  "Análisis de ingresos y rentabilidad",
+]
 
 export default function LoginPage() {
   const supabase = createClient()
@@ -30,99 +39,107 @@ export default function LoginPage() {
     window.location.replace("/dashboard")
   }
 
-  return (
-    <main style={{
-      minHeight: "100vh",
-      background: "#f5f5f4",
-      fontFamily: "'DM Sans', system-ui, sans-serif",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "2rem 1rem",
-    }}>
-      <div style={{ width: "100%", maxWidth: "420px" }}>
+  const inputStyle: React.CSSProperties = {
+    fontFamily: FONT,
+    height: "48px", width: "100%",
+    borderRadius: "11px", border: "1px solid #e5e7eb",
+    background: "#fafafa", padding: "0 16px",
+    fontSize: "0.9375rem", color: "#111827", outline: "none",
+    boxSizing: "border-box", transition: "all 0.15s",
+  }
+  const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.12)"
+  }
+  const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none"
+  }
 
-        {/* LOGO */}
-        <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <FlotaFlyLogo size={96} style={{ margin: "0 auto 1rem" }} />
-          <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.5rem", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
-            <FlotaFlyWordmark />
-          </h1>
-          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#9ca3af", marginTop: "4px" }}>
-            Plataforma de gestión de presupuestos
-          </p>
+  return (
+    <main className="min-h-screen flex" style={{ fontFamily: FONT }}>
+
+      {/* ===================== COLUMNA IZQUIERDA (desktop) ===================== */}
+      <section
+        className="hidden lg:flex lg:w-3/5 flex-col justify-between"
+        style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)", padding: 64 }}
+      >
+        {/* Logo arriba */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <FlotaFlyLogo size={38} style={{ filter: "brightness(0) invert(1)" }} />
+          <span style={{ fontSize: 20, fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>FlotaFly</span>
         </div>
 
-        {/* CARD */}
-        <div style={{
-          background: "#fff",
-          borderRadius: "20px",
-          border: "1px solid #e5e7eb",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06)",
-          padding: "2rem",
-        }}>
-          <div style={{ marginBottom: "1.75rem" }}>
-            <h2 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.125rem", fontWeight: 600, color: "#111827", margin: 0, letterSpacing: "-0.01em" }}>
-              Iniciar sesión
+        {/* Contenido central */}
+        <div style={{ maxWidth: 600 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: TEAL, textTransform: "uppercase", letterSpacing: "0.14em", margin: "0 0 20px" }}>
+            Plataforma para empresas de autocares
+          </p>
+          <h1 style={{ fontSize: 48, fontWeight: 700, color: "#fff", lineHeight: 1.1, letterSpacing: "-0.025em", margin: 0 }}>
+            Gestiona presupuestos y solicitudes desde un solo lugar
+          </h1>
+          <p style={{ fontSize: 18, color: "rgba(255,255,255,0.7)", lineHeight: 1.6, margin: "24px 0 40px", maxWidth: 520 }}>
+            Automatiza tus presupuestos, gestiona tu flota y crece tu negocio con la plataforma más potente del sector.
+          </p>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 18 }}>
+            {BULLETS.map(b => (
+              <li key={b} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <CheckCircle2 style={{ width: 22, height: 22, color: TEAL, flexShrink: 0 }} />
+                <span style={{ fontSize: 16, color: "rgba(255,255,255,0.92)" }}>{b}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Frase abajo */}
+        <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.45)", margin: 0 }}>
+          ✨ Empresas de toda España ya confían en FlotaFly
+        </p>
+      </section>
+
+      {/* ===================== COLUMNA DERECHA (formulario) ===================== */}
+      <section className="w-full lg:w-2/5 flex items-center justify-center bg-white px-6 py-10 sm:px-10">
+        <div style={{ width: "100%", maxWidth: 400 }}>
+
+          {/* Logo solo en móvil */}
+          <div className="lg:hidden" style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <FlotaFlyLogo size={40} />
+              <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em" }}>
+                <FlotaFlyWordmark />
+              </span>
+            </div>
+          </div>
+
+          {/* Encabezado */}
+          <div style={{ marginBottom: 28 }}>
+            <h2 style={{ fontSize: 28, fontWeight: 600, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
+              Bienvenido de nuevo
             </h2>
-            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#6b7280", marginTop: "4px" }}>
+            <p style={{ fontSize: 15, color: "#6b7280", margin: "6px 0 0" }}>
               Accede a tu panel de gestión
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label htmlFor="email" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 500, color: "#374151" }}>
+          {/* Formulario */}
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+              <label htmlFor="email" style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>
                 Correo electrónico
               </label>
-              <input
-                ref={emailRef}
-                id="email"
-                type="email"
-                required
-                placeholder="correo@empresa.com"
-                style={{
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  height: "40px", width: "100%",
-                  borderRadius: "9px", border: "1px solid #e5e7eb",
-                  background: "#fafafa", padding: "0 12px",
-                  fontSize: "0.875rem", color: "#111827", outline: "none",
-                  transition: "all 0.15s",
-                }}
-                onFocus={e => { e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.08)" }}
-                onBlur={e => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" }}
-              />
+              <input ref={emailRef} id="email" type="email" required placeholder="correo@empresa.com"
+                style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label htmlFor="password" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 500, color: "#374151" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+              <label htmlFor="password" style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>
                 Contraseña
               </label>
-              <input
-                ref={passwordRef}
-                id="password"
-                type="password"
-                required
-                placeholder="••••••••"
-                style={{
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  height: "40px", width: "100%",
-                  borderRadius: "9px", border: "1px solid #e5e7eb",
-                  background: "#fafafa", padding: "0 12px",
-                  fontSize: "0.875rem", color: "#111827", outline: "none",
-                  transition: "all 0.15s",
-                }}
-                onFocus={e => { e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.08)" }}
-                onBlur={e => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" }}
-              />
+              <input ref={passwordRef} id="password" type="password" required placeholder="••••••••"
+                style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
             </div>
 
             {errorMessage && (
-              <div style={{ borderRadius: "8px", background: "#fef2f2", border: "1px solid #fecaca", padding: "10px 12px" }}>
-                <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#dc2626", margin: 0 }}>
-                  {errorMessage}
-                </p>
+              <div style={{ borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", padding: "11px 14px" }}>
+                <p style={{ fontSize: 13.5, color: "#dc2626", margin: 0 }}>{errorMessage}</p>
               </div>
             )}
 
@@ -130,29 +147,32 @@ export default function LoginPage() {
               type="submit"
               disabled={loading}
               style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                marginTop: "0.5rem",
-                height: "42px", width: "100%",
-                borderRadius: "10px", border: "none",
+                fontFamily: FONT, marginTop: 4,
+                height: 48, width: "100%",
+                borderRadius: 11, border: "none",
                 background: loading ? "#6b7280" : "#111827",
-                color: "#fff", fontSize: "0.875rem", fontWeight: 600,
+                color: "#fff", fontSize: 15, fontWeight: 600,
                 cursor: loading ? "not-allowed" : "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 transition: "background 0.15s",
               }}
               onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = "#1e3a5f" }}
               onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = "#111827" }}
             >
-              {loading ? "Entrando..." : <>Iniciar sesión <ArrowRight style={{ width: "15px", height: "15px" }} /></>}
+              {loading ? "Entrando..." : <>Iniciar sesión <ArrowRight style={{ width: 16, height: 16 }} /></>}
             </button>
           </form>
+
+          {/* Soporte */}
+          <p style={{ textAlign: "center", fontSize: 13, color: "#9ca3af", marginTop: 28 }}>
+            ¿Problemas para acceder?{" "}
+            <a href="mailto:hola@flotafly.com" style={{ color: "#1e3a5f", fontWeight: 600, textDecoration: "none" }}>
+              Contacta con soporte
+            </a>
+          </p>
+
         </div>
-
-        <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", textAlign: "center", fontSize: "0.75rem", color: "#9ca3af", marginTop: "1.5rem" }}>
-          ¿Problemas para acceder? Contacta con soporte.
-        </p>
-
-      </div>
+      </section>
     </main>
   )
 }
