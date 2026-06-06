@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { FlotaFlyLogo } from "@/components/FlotaFlyLogo"
+import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import type { ReactNode } from "react"
 import { redirect } from "next/navigation"
 import { createServerClient } from "@supabase/ssr"
@@ -163,7 +163,7 @@ export default async function DashboardPage() {
               <FlotaFlyLogo size={24} />
             </div>
             <div>
-              <p style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0, letterSpacing: "-0.01em" }}>FlotaFly</p>
+              <p style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0, letterSpacing: "-0.01em" }}><FlotaFlyWordmark flotaColor="#fff" /></p>
               <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, margin: 0 }}>Panel de gestión</p>
             </div>
           </div>

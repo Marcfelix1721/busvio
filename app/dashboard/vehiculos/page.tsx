@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { FlotaFlyLogo } from "@/components/FlotaFlyLogo"
+import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
@@ -37,7 +37,7 @@ export default async function VehiculosPage() {
           <div style={{ width: 26, height: 26, background: "#fff", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <FlotaFlyLogo size={19} />
           </div>
-          <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontWeight: 600, color: "#fff", fontSize: "0.9375rem" }}>FlotaFly</span>
+          <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontWeight: 600, color: "#fff", fontSize: "0.9375rem" }}><FlotaFlyWordmark flotaColor="#fff" /></span>
         </div>
         <LogoutButton />
       </div>

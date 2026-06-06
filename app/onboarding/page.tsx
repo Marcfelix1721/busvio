@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { FlotaFlyWordmark } from '@/components/FlotaFlyLogo'
 import { useEffect, useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 
@@ -50,7 +51,7 @@ export default function OnboardingPage() {
         </div>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-3">
-          ¡Bienvenido a FlotaFly{companyName ? `, ${companyName}` : ''}!
+          ¡Bienvenido a <FlotaFlyWordmark />{companyName ? `, ${companyName}` : ''}!
         </h1>
         <p className="text-gray-500 text-lg mb-10">
           Tu cuenta está lista. Ahora configura tu empresa para empezar a enviar presupuestos profesionales.

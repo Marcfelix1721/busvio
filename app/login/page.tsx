@@ -2,7 +2,7 @@
 
 import { FormEvent, useRef, useState } from "react"
 import { ArrowRight } from "lucide-react"
-import { FlotaFlyLogo } from "@/components/FlotaFlyLogo"
+import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createClient } from "@/lib/supabase"
 
 export default function LoginPage() {
@@ -41,7 +41,7 @@ export default function LoginPage() {
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
           <FlotaFlyLogo size={60} style={{ margin: "0 auto 1rem" }} />
           <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.5rem", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
-            FlotaFly
+            <FlotaFlyWordmark />
           </h1>
           <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#9ca3af", marginTop: "4px" }}>
             Plataforma de gestión de presupuestos

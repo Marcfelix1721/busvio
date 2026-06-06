@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { FlotaFlyLogo } from "@/components/FlotaFlyLogo"
+import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { LogoutButton } from "@/components/dashboard/LogoutButton"
@@ -69,7 +69,7 @@ export default async function CalendarioPage() {
             <div className="w-7 h-7 bg-white rounded-md flex items-center justify-center flex-shrink-0">
               <FlotaFlyLogo size={20} />
             </div>
-            <span className="text-white font-semibold text-sm tracking-tight">FlotaFly</span>
+            <span className="text-white font-semibold text-sm tracking-tight"><FlotaFlyWordmark flotaColor="#fff" /></span>
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">

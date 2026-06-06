@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { ArrowRight, Zap, FileText, LayoutDashboard, X } from "lucide-react"
-import { FlotaFlyLogo } from "@/components/FlotaFlyLogo"
+import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 
 export default function LandingPage() {
   const [showDemoForm, setShowDemoForm] = useState(false)
@@ -57,7 +57,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 1.5rem", height: "56px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <FlotaFlyLogo size={32} />
-            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1rem", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>FlotaFly</span>
+            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1rem", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}><FlotaFlyWordmark /></span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Link href="/login" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 500, color: "#6b7280", padding: "6px 14px", borderRadius: "8px", textDecoration: "none" }}>
@@ -123,7 +123,7 @@ export default function LandingPage() {
                     <div style={{ width: "22px", height: "22px", borderRadius: "6px", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <FlotaFlyLogo size={17} />
                     </div>
-                    <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 700, color: "#fff" }}>FlotaFly</span>
+                    <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 700, color: "#fff" }}><FlotaFlyWordmark flotaColor="#fff" /></span>
                   </div>
                   {["Solicitudes","Clientes","Analytics","Ajustes"].map((item, i) => (
                     <div key={item} style={{ padding: "6px 8px", borderRadius: "6px", background: i === 0 ? "#1e3a5f" : "transparent", fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", fontWeight: 500, color: i === 0 ? "#fff" : "#6b7280" }}>
@@ -251,7 +251,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: "1100px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
             <FlotaFlyLogo size={24} />
-            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#374151" }}>FlotaFly</span>
+            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#374151" }}><FlotaFlyWordmark /></span>
           </div>
           <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#9ca3af" }}>
             © {new Date().getFullYear()} FlotaFly · Gestión de presupuestos para transporte discrecional

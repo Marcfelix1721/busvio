@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase"
-import { FlotaFlyLogo } from "@/components/FlotaFlyLogo"
+import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import {
   MapPin, Bus, TrendingUp, PartyPopper,
   ChevronLeft, ChevronRight, Check, Copy, ArrowRight,
@@ -253,7 +253,7 @@ export function OnboardingWizard({ companyId, companyName, slug, initialGarage, 
       {/* Marca arriba */}
       <div style={{ padding: "24px 32px", display: "flex", alignItems: "center", gap: 10 }}>
         <FlotaFlyLogo size={32} />
-        <p style={{ color: "#111827", fontWeight: 700, fontSize: 15, margin: 0, letterSpacing: "-0.01em" }}>FlotaFly</p>
+        <p style={{ color: "#111827", fontWeight: 700, fontSize: 15, margin: 0, letterSpacing: "-0.01em" }}><FlotaFlyWordmark /></p>
       </div>
 
       {/* Contenido centrado */}
@@ -267,7 +267,7 @@ export function OnboardingWizard({ companyId, companyName, slug, initialGarage, 
             <div style={{ textAlign: "center", padding: "16px 0" }}>
               <FlotaFlyLogo size={80} style={{ margin: "0 auto 24px" }} />
               <h1 style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: 0, letterSpacing: "-0.025em" }}>
-                Bienvenido a FlotaFly, {companyName}
+                Bienvenido a <FlotaFlyWordmark />, {companyName}
               </h1>
               <p style={{ fontSize: 16, color: "#6b7280", margin: "14px 0 36px", lineHeight: 1.6 }}>
                 Configura tu cuenta en 5 minutos y empieza a recibir solicitudes

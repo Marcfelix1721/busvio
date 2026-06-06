@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { FlotaFlyLogo } from "@/components/FlotaFlyLogo"
+import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { redirect } from "next/navigation"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
@@ -107,7 +107,7 @@ export default async function ClientesPage() {
               <FlotaFlyLogo size={24} />
             </div>
             <div>
-              <p style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0 }}>FlotaFly</p>
+              <p style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0 }}><FlotaFlyWordmark flotaColor="#fff" /></p>
               <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, margin: 0 }}>Panel de gestión</p>
             </div>
           </div>
