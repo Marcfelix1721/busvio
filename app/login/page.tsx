@@ -18,9 +18,14 @@ export default function LoginPage() {
     setErrorMessage("")
     const email = emailRef.current?.value ?? ""
     const password = passwordRef.current?.value ?? ""
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) { setLoading(false); setErrorMessage("Email o contraseña incorrectos"); return }
+    // Registrar el último acceso de la empresa (el user.id ES el company_id;
+    // en cuentas que no son empresa no afecta a ninguna fila).
+    if (data.user?.id) {
+      await supabase.from("companies").update({ last_login: new Date().toISOString() }).eq("id", data.user.id)
+    }
     setLoading(false)
-    if (error) { setErrorMessage("Email o contraseña incorrectos"); return }
     await new Promise((resolve) => setTimeout(resolve, 500))
     window.location.replace("/dashboard")
   }

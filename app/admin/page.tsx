@@ -22,6 +22,7 @@ type Company = {
   phone?: string
   cif?: string
   address?: string
+  last_login?: string | null
 }
 
 type Quote = {
@@ -134,7 +135,7 @@ export default function AdminPanel() {
     // Cargar empresas
     const { data: companiesData } = await supabase
       .from("companies")
-      .select("id, name, slug, email, created_at, phone, cif, address")
+      .select("id, name, slug, email, created_at, phone, cif, address, last_login")
       .order("created_at", { ascending: false })
 
     if (companiesData) setCompanies(companiesData)
@@ -206,15 +207,14 @@ export default function AdminPanel() {
   const companyInfo = useMemo(() => {
     const now = new Date()
     const thisMonth = startOfMonth(now)
-    const map: Record<string, { thisMonth: number; lastActivity: string | null; active: boolean }> = {}
-    for (const c of companies) map[c.id] = { thisMonth: 0, lastActivity: null, active: false }
+    const map: Record<string, { thisMonth: number; active: boolean }> = {}
+    for (const c of companies) map[c.id] = { thisMonth: 0, active: false }
     for (const q of quotes) {
       const info = map[q.company_id]
       if (!info) continue
       const ref = q.updated_at || q.created_at
       if (inSameMonth(q.created_at, thisMonth)) info.thisMonth++
       if (inSameMonth(ref, thisMonth)) info.active = true
-      if (!info.lastActivity || new Date(ref) > new Date(info.lastActivity)) info.lastActivity = ref
     }
     return map
   }, [companies, quotes])
@@ -558,7 +558,7 @@ function RecentActivity({ items }: { items: { id: string; text: string; status: 
 
 function CompaniesTable(props: {
   companies: Company[]
-  companyInfo: Record<string, { thisMonth: number; lastActivity: string | null; active: boolean }>
+  companyInfo: Record<string, { thisMonth: number; active: boolean }>
   search: string; setSearch: (v: string) => void
   openMenu: string | null; setOpenMenu: (v: string | null) => void
   onImpersonate: (id: string) => void
@@ -641,8 +641,7 @@ function CompaniesTable(props: {
           </thead>
           <tbody>
             {companies.map(c => {
-              const info = companyInfo[c.id] || { thisMonth: 0, lastActivity: null, active: false }
-              const last = info.lastActivity || c.created_at
+              const info = companyInfo[c.id] || { thisMonth: 0, active: false }
               return (
                 <tr key={c.id} style={{ borderBottom: "1px solid #f4f5f7" }}>
                   <td style={td}>
@@ -656,7 +655,7 @@ function CompaniesTable(props: {
                     </span>
                   </td>
                   <td style={{ ...td, textAlign: "center", fontWeight: 600, color: info.thisMonth > 0 ? "#111827" : "#9ca3af" }}>{info.thisMonth}</td>
-                  <td style={{ ...td, color: "#6b7280" }}>{relativeTime(last)}</td>
+                  <td style={{ ...td, color: c.last_login ? "#6b7280" : "#9ca3af" }}>{c.last_login ? relativeTime(c.last_login) : "Nunca"}</td>
                   <td style={{ ...td, textAlign: "right" }}>
                     <div style={{ display: "inline-flex", alignItems: "center", gap: 6, position: "relative" }}>
                       <button
