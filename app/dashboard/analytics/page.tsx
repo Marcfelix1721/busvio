@@ -78,10 +78,10 @@ export default async function AnalyticsPage() {
       <aside className="hidden md:flex w-[220px] flex-col bg-[#111827] flex-shrink-0">
         <div className="px-5 pt-6 pb-5 border-b border-white/5">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-blue-500 rounded-md flex items-center justify-center flex-shrink-0">
-              <BusFront className="size-3.5 text-white" />
+            <div className="w-7 h-7 bg-white rounded-md flex items-center justify-center flex-shrink-0">
+              <img src="/logo-flotafly.png" alt="FlotaFly" className="w-5 h-5 object-contain" />
             </div>
-            <span className="text-white font-semibold text-sm tracking-tight">Busvio</span>
+            <span className="text-white font-semibold text-sm tracking-tight">FlotaFly</span>
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">

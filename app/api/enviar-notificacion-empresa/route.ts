@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     const color = company.color_primario || "#1e3a5f"
 
     const { error } = await resend.emails.send({
-      from: `Busvio <onboarding@resend.dev>`,
+      from: `FlotaFly <onboarding@resend.dev>`,
       to: recipientEmails,
       subject: `Nueva solicitud de presupuesto — ${requester_name}`,
       html: `
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
                       <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
                           <td align="center" style="padding: 8px 0 24px 0;">
-                            <a href="https://busvio.vercel.app/dashboard" style="display: inline-block; background-color: ${color}; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-size: 15px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.2s;">
+                            <a href="https://flotafly.com/dashboard" style="display: inline-block; background-color: ${color}; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-size: 15px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.2s;">
                               Ver solicitud en el dashboard
                             </a>
                           </td>
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
                   <tr>
                     <td style="background-color: #f9fafb; padding: 24px 40px; border-top: 1px solid #e5e7eb;">
                       <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center; line-height: 1.6;">
-                        ${company.name} — Sistema de gestión de presupuestos Busvio<br>
+                        ${company.name} — Sistema de gestión de presupuestos FlotaFly<br>
                         Este email se envía automáticamente cuando recibes una nueva solicitud
                       </p>
                     </td>

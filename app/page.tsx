@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { BusFront, ArrowRight, Zap, FileText, LayoutDashboard, X } from "lucide-react"
+import { ArrowRight, Zap, FileText, LayoutDashboard, X } from "lucide-react"
 
 export default function LandingPage() {
   const [showDemoForm, setShowDemoForm] = useState(false)
@@ -55,10 +55,8 @@ export default function LandingPage() {
       }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 1.5rem", height: "56px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#111827", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <BusFront style={{ width: "17px", height: "17px", color: "#fff" }} />
-            </div>
-            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1rem", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>Busvio</span>
+            <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: "32px", height: "32px", objectFit: "contain" }} />
+            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1rem", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>FlotaFly</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Link href="/login" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 500, color: "#6b7280", padding: "6px 14px", borderRadius: "8px", textDecoration: "none" }}>
@@ -86,7 +84,7 @@ export default function LandingPage() {
           </h1>
 
           <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1rem", color: "#6b7280", maxWidth: "520px", margin: "0 auto 2rem", lineHeight: 1.7 }}>
-            Busvio calcula automáticamente el precio real de cada servicio — combustible, conductor, peajes y margen — y envía el presupuesto al cliente en segundos.
+            FlotaFly calcula automáticamente el precio real de cada servicio — combustible, conductor, peajes y margen — y envía el presupuesto al cliente en segundos.
           </p>
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", flexWrap: "wrap", marginBottom: "1rem" }}>
@@ -113,7 +111,7 @@ export default function LandingPage() {
                   {["#fca5a5","#fcd34d","#86efac"].map(c => <div key={c} style={{ width: "10px", height: "10px", borderRadius: "50%", background: c }} />)}
                 </div>
                 <div style={{ flex: 1, maxWidth: "260px", margin: "0 auto", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "6px", padding: "4px 12px", fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", color: "#9ca3af" }}>
-                  app.busvio.com/dashboard
+                  app.flotafly.com/dashboard
                 </div>
               </div>
               {/* Dashboard mockup */}
@@ -121,10 +119,10 @@ export default function LandingPage() {
                 {/* Sidebar */}
                 <div style={{ width: "160px", background: "#111827", padding: "1rem 0.75rem", display: "flex", flexDirection: "column", gap: "4px", flexShrink: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 8px", marginBottom: "8px" }}>
-                    <div style={{ width: "22px", height: "22px", borderRadius: "6px", background: "#1e3a5f", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <BusFront style={{ width: "12px", height: "12px", color: "#fff" }} />
+                    <div style={{ width: "22px", height: "22px", borderRadius: "6px", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: "17px", height: "17px", objectFit: "contain" }} />
                     </div>
-                    <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 700, color: "#fff" }}>Busvio</span>
+                    <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 700, color: "#fff" }}>FlotaFly</span>
                   </div>
                   {["Solicitudes","Clientes","Analytics","Ajustes"].map((item, i) => (
                     <div key={item} style={{ padding: "6px 8px", borderRadius: "6px", background: i === 0 ? "#1e3a5f" : "transparent", fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", fontWeight: 500, color: i === 0 ? "#fff" : "#6b7280" }}>
@@ -187,7 +185,7 @@ export default function LandingPage() {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px,1fr))", gap: "1rem" }}>
             {[
-              { icon: Zap, title: "Cálculo automático del precio", desc: "Introduce el origen y destino y Busvio calcula los kilómetros reales, combustible, conductor, peajes y margen al instante.", color: "#1e3a5f" },
+              { icon: Zap, title: "Cálculo automático del precio", desc: "Introduce el origen y destino y FlotaFly calcula los kilómetros reales, combustible, conductor, peajes y margen al instante.", color: "#1e3a5f" },
               { icon: FileText, title: "PDF profesional en un clic", desc: "Genera un presupuesto en PDF con tu logo y colores corporativos. Se envía automáticamente al cliente por email.", color: "#0f766e" },
               { icon: LayoutDashboard, title: "Dashboard centralizado", desc: "Gestiona todas tus solicitudes desde un panel. Filtra por estado, busca por cliente y actualiza precios antes de enviar.", color: "#6d28d9" },
             ].map(({ icon: Icon, title, desc, color }, i) => (
@@ -214,7 +212,7 @@ export default function LandingPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px,1fr))", gap: "2rem" }}>
             {[
               { step: "01", title: "Tu cliente rellena el formulario", desc: "Comparte tu enlace personalizado. El cliente introduce el origen, destino, fecha y pasajeros." },
-              { step: "02", title: "Busvio calcula el precio", desc: "En segundos tienes el coste real del servicio con desglose completo visible solo para ti." },
+              { step: "02", title: "FlotaFly calcula el precio", desc: "En segundos tienes el coste real del servicio con desglose completo visible solo para ti." },
               { step: "03", title: "Envías el presupuesto en PDF", desc: "Con un clic envías el PDF por email con tu imagen de marca. El cliente acepta o negocia." },
             ].map((item, i) => (
               <div key={i}>
@@ -251,13 +249,11 @@ export default function LandingPage() {
       <footer style={{ borderTop: "1px solid #f3f4f6", padding: "1.5rem", background: "#fff" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-            <div style={{ width: "24px", height: "24px", borderRadius: "6px", background: "#111827", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <BusFront style={{ width: "13px", height: "13px", color: "#fff" }} />
-            </div>
-            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#374151" }}>Busvio</span>
+            <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: "24px", height: "24px", objectFit: "contain" }} />
+            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#374151" }}>FlotaFly</span>
           </div>
           <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#9ca3af" }}>
-            © {new Date().getFullYear()} Busvio · Gestión de presupuestos para transporte discrecional
+            © {new Date().getFullYear()} FlotaFly · Gestión de presupuestos para transporte discrecional
           </p>
           <div style={{ display: "flex", gap: "1.5rem" }}>
             <Link href="/login" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#9ca3af", textDecoration: "none" }}>Acceder</Link>

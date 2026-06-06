@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { BusFront, LogOut, ChevronRight, MapPin, Clock, Users, Bus, AlertTriangle } from 'lucide-react'
+import { LogOut, ChevronRight, MapPin, Clock, Users, Bus, AlertTriangle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -160,11 +160,11 @@ export default function ConductorDashboard({ conductor, company, servicios, logs
       {/* HEADER */}
       <div style={s.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 30, height: 30, background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <BusFront style={{ width: 15, height: 15, color: '#fff' }} />
+          <div style={{ width: 30, height: 30, background: '#fff', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: 22, height: 22, objectFit: 'contain' }} />
           </div>
           <div>
-            <p style={{ color: '#fff', fontWeight: 700, fontSize: 13, margin: 0 }}>{company?.name || 'Busvio'}</p>
+            <p style={{ color: '#fff', fontWeight: 700, fontSize: 13, margin: 0 }}>{company?.name || 'FlotaFly'}</p>
             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, margin: 0 }}>Portal conductor</p>
           </div>
         </div>

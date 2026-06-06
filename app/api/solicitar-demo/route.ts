@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const adminEmail = process.env.ADMIN_EMAIL || "marcfelixkrayer@gmail.com"
 
     const { error } = await resend.emails.send({
-      from: "Busvio Demo <onboarding@resend.dev>",
+      from: "FlotaFly Demo <onboarding@resend.dev>",
       to: [adminEmail],
       subject: `Nueva solicitud de demo — ${nombre}`,
       html: `
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
                         🚌 Nueva solicitud de demo
                       </h1>
                       <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 500;">
-                        Alguien quiere conocer Busvio
+                        Alguien quiere conocer FlotaFly
                       </p>
                     </td>
                   </tr>
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
                   <tr>
                     <td style="background-color: #f9fafb; padding: 24px 40px; border-top: 1px solid #e5e7eb;">
                       <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center; line-height: 1.6;">
-                        Busvio — Sistema de gestión de presupuestos<br>
+                        FlotaFly — Sistema de gestión de presupuestos<br>
                         Este email se envía automáticamente cuando alguien solicita una demo
                       </p>
                     </td>

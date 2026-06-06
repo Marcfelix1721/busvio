@@ -1,7 +1,7 @@
 "use client"
 
 import { FormEvent, useRef, useState } from "react"
-import { BusFront, ArrowRight } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import { createClient } from "@/lib/supabase"
 
 export default function LoginPage() {
@@ -38,16 +38,9 @@ export default function LoginPage() {
 
         {/* LOGO */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <div style={{
-            width: "52px", height: "52px", borderRadius: "14px",
-            background: "#111827", display: "flex", alignItems: "center",
-            justifyContent: "center", margin: "0 auto 1rem",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
-          }}>
-            <BusFront style={{ width: "26px", height: "26px", color: "#fff" }} />
-          </div>
+          <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: "60px", height: "60px", objectFit: "contain", display: "block", margin: "0 auto 1rem" }} />
           <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.5rem", fontWeight: 700, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
-            Busvio
+            FlotaFly
           </h1>
           <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#9ca3af", marginTop: "4px" }}>
             Plataforma de gestión de presupuestos

@@ -50,7 +50,7 @@ export default function OnboardingPage() {
         </div>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-3">
-          ¡Bienvenido a Busvio{companyName ? `, ${companyName}` : ''}!
+          ¡Bienvenido a FlotaFly{companyName ? `, ${companyName}` : ''}!
         </h1>
         <p className="text-gray-500 text-lg mb-10">
           Tu cuenta está lista. Ahora configura tu empresa para empezar a enviar presupuestos profesionales.
@@ -61,7 +61,7 @@ export default function OnboardingPage() {
           {[
             { num: '1', title: 'Configura tu empresa', desc: 'Añade tu logo, color corporativo y datos fiscales.' },
             { num: '2', title: 'Ajusta los precios', desc: 'Introduce el coste de combustible, conductor y márgenes.' },
-            { num: '3', title: 'Comparte tu enlace', desc: slug ? `busvio.vercel.app/${slug}` : 'Tu enlace personalizado estará listo en segundos.' },
+            { num: '3', title: 'Comparte tu enlace', desc: slug ? `flotafly.com/${slug}` : 'Tu enlace personalizado estará listo en segundos.' },
           ].map((step) => (
             <div key={step.num} className="flex items-start gap-4">
               <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
@@ -95,7 +95,7 @@ export default function OnboardingPage() {
           <div className="mt-8 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
             <p className="text-xs text-blue-500 mb-1">Tu enlace para clientes</p>
             <p className="text-sm font-mono font-semibold text-blue-700">
-              busvio.vercel.app/{slug}
+              flotafly.com/{slug}
             </p>
           </div>
         )}

@@ -67,11 +67,11 @@ export default async function ConductoresPage() {
       <aside style={{ width: 228, background: '#111827', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
         <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <BusFront style={{ width: 16, height: 16, color: '#fff' }} />
+            <div style={{ width: 32, height: 32, background: '#fff', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: 24, height: 24, objectFit: 'contain' }} />
             </div>
             <div>
-              <p style={{ color: '#fff', fontWeight: 700, fontSize: 14, margin: 0 }}>Busvio</p>
+              <p style={{ color: '#fff', fontWeight: 700, fontSize: 14, margin: 0 }}>FlotaFly</p>
               <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, margin: 0 }}>Panel de gestión</p>
             </div>
           </div>
@@ -121,9 +121,9 @@ export default async function ConductoresPage() {
           <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 12, padding: '14px 18px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <p style={{ fontSize: 13, fontWeight: 600, color: '#0369a1', margin: 0 }}>🔗 Link de acceso para conductores</p>
-              <p style={{ fontSize: 12, color: '#0284c7', margin: '2px 0 0' }}>busvio.vercel.app/conductor/login</p>
+              <p style={{ fontSize: 12, color: '#0284c7', margin: '2px 0 0' }}>flotafly.com/conductor/login</p>
             </div>
-            <a href="https://busvio.vercel.app/conductor/login" target="_blank" style={{ background: '#0369a1', color: '#fff', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
+            <a href="https://flotafly.com/conductor/login" target="_blank" style={{ background: '#0369a1', color: '#fff', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
               Abrir →
             </a>
           </div>

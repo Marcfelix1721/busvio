@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
-import { BusFront } from 'lucide-react'
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -64,15 +63,6 @@ export default function ConductorLoginPage() {
       gap: 10,
       marginBottom: 32,
     },
-    logoIcon: {
-      width: 40,
-      height: 40,
-      background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-      borderRadius: 10,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
     title: { fontSize: 22, fontWeight: 700, color: '#111827', margin: 0 },
     subtitle: { fontSize: 13, color: '#6b7280', marginTop: 4 },
     label: { fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6, display: 'block' },
@@ -98,11 +88,9 @@ export default function ConductorLoginPage() {
     <div style={s.page}>
       <div style={s.card}>
         <div style={s.logo}>
-          <div style={s.logoIcon}>
-            <BusFront style={{ width: 20, height: 20, color: '#fff' }} />
-          </div>
+          <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: 40, height: 40, objectFit: 'contain' }} />
           <div>
-            <p style={{ ...s.title, fontSize: 18 }}>Busvio</p>
+            <p style={{ ...s.title, fontSize: 18 }}>FlotaFly</p>
             <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>Portal del conductor</p>
           </div>
         </div>

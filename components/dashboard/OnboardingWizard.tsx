@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase"
 import {
-  BusFront, MapPin, Bus, TrendingUp, PartyPopper,
+  MapPin, Bus, TrendingUp, PartyPopper,
   ChevronLeft, ChevronRight, Check, Copy, ArrowRight,
 } from "lucide-react"
 
@@ -143,7 +143,7 @@ export function OnboardingWizard({ companyId, companyName, slug, initialGarage, 
     iva: initialSettings?.iva != null ? String(initialSettings.iva) : "10",
   })
 
-  const publicUrl = `busvio.vercel.app/${slug}`
+  const publicUrl = `flotafly.com/${slug}`
   const num = (v: string) => (v.trim() === "" ? null : parseFloat(v.replace(",", ".")))
 
   // Persiste la base de operaciones (Paso 2)
@@ -251,10 +251,8 @@ export function OnboardingWizard({ companyId, companyName, slug, initialGarage, 
 
       {/* Marca arriba */}
       <div style={{ padding: "24px 32px", display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 32, height: 32, background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <BusFront style={{ width: 16, height: 16, color: "#fff" }} />
-        </div>
-        <p style={{ color: "#111827", fontWeight: 700, fontSize: 15, margin: 0, letterSpacing: "-0.01em" }}>Busvio</p>
+        <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: 32, height: 32, objectFit: "contain" }} />
+        <p style={{ color: "#111827", fontWeight: 700, fontSize: 15, margin: 0, letterSpacing: "-0.01em" }}>FlotaFly</p>
       </div>
 
       {/* Contenido centrado */}
@@ -266,11 +264,9 @@ export function OnboardingWizard({ companyId, companyName, slug, initialGarage, 
           {/* PASO 1 — Bienvenida */}
           {step === 0 && (
             <div style={{ textAlign: "center", padding: "16px 0" }}>
-              <div style={{ width: 72, height: 72, borderRadius: 18, background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
-                <BusFront style={{ width: 36, height: 36, color: "#fff" }} />
-              </div>
+              <img src="/logo-flotafly.png" alt="FlotaFly" style={{ width: 80, height: 80, objectFit: "contain", display: "block", margin: "0 auto 24px" }} />
               <h1 style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: 0, letterSpacing: "-0.025em" }}>
-                Bienvenido a Busvio, {companyName}
+                Bienvenido a FlotaFly, {companyName}
               </h1>
               <p style={{ fontSize: 16, color: "#6b7280", margin: "14px 0 36px", lineHeight: 1.6 }}>
                 Configura tu cuenta en 5 minutos y empieza a recibir solicitudes
