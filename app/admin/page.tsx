@@ -83,6 +83,27 @@ function greeting(): string {
   return "Buenas noches"
 }
 
+// "Autocares García Hermanos S.L." -> "autocares-garcia-hermanos-sl"
+function slugify(str: string): string {
+  return str
+    .normalize("NFD").replace(/\p{Diacritic}/gu, "") // quita acentos (á→a, é→e, ñ→n)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")  // elimina caracteres especiales (puntos, etc.)
+    .trim()
+    .replace(/[\s_]+/g, "-")        // espacios → guion medio
+    .replace(/-+/g, "-")            // colapsa guiones duplicados
+    .replace(/^-+|-+$/g, "")        // quita guiones al inicio/final
+}
+
+// Devuelve un slug que no colisione con los existentes (añade -2, -3, ...)
+function uniqueSlug(base: string, taken: Set<string>): string {
+  if (!base) return base
+  if (!taken.has(base)) return base
+  let n = 2
+  while (taken.has(`${base}-${n}`)) n++
+  return `${base}-${n}`
+}
+
 const NAV = [
   { key: "dashboard",   label: "Dashboard",            icon: LayoutDashboard },
   { key: "empresas",    label: "Empresas",             icon: Building2 },
@@ -111,6 +132,7 @@ export default function AdminPanel() {
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [slugManual, setSlugManual] = useState(false)
 
   const [formData, setFormData] = useState({
     name: "",
@@ -264,6 +286,12 @@ export default function AdminPanel() {
     }
     setCreating(true)
     try {
+      // Generar un slug único: parte del slug actual (o del nombre) y verifica
+      // colisiones en la BD, añadiendo -2, -3, ... si ya existe.
+      const { data: existingSlugs } = await supabase.from("companies").select("slug")
+      const taken = new Set((existingSlugs ?? []).map(c => c.slug))
+      const finalSlug = uniqueSlug(slugify(formData.slug || formData.name), taken)
+
       const { data: { session } } = await supabase.auth.getSession()
       const response = await fetch("/api/admin/crear-empresa", {
         method: "POST",
@@ -271,7 +299,7 @@ export default function AdminPanel() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, slug: finalSlug }),
       })
       const result = await response.json()
       if (!response.ok) {
@@ -281,6 +309,7 @@ export default function AdminPanel() {
       }
       alert("Empresa creada correctamente")
       setShowCreateForm(false)
+      setSlugManual(false)
       setFormData({ name: "", email: "", password: "", slug: "", phone: "", cif: "", address: "" })
       loadData()
     } catch (err) {
@@ -426,6 +455,7 @@ export default function AdminPanel() {
                 showCreate={showCreateForm} setShowCreate={setShowCreateForm}
                 formData={formData} setFormData={setFormData}
                 creating={creating} onCreate={handleCreateCompany}
+                slugManual={slugManual} setSlugManual={setSlugManual}
               />
             </>
           )}
@@ -441,6 +471,7 @@ export default function AdminPanel() {
               showCreate={showCreateForm} setShowCreate={setShowCreateForm}
               formData={formData} setFormData={setFormData}
               creating={creating} onCreate={handleCreateCompany}
+              slugManual={slugManual} setSlugManual={setSlugManual}
             />
           )}
 
@@ -566,8 +597,9 @@ function CompaniesTable(props: {
   formData: { name: string; email: string; password: string; slug: string; phone: string; cif: string; address: string }
   setFormData: React.Dispatch<React.SetStateAction<{ name: string; email: string; password: string; slug: string; phone: string; cif: string; address: string }>>
   creating: boolean; onCreate: () => void
+  slugManual: boolean; setSlugManual: (v: boolean) => void
 }) {
-  const { companies, companyInfo, search, setSearch, openMenu, setOpenMenu, onImpersonate, showCreate, setShowCreate, formData, setFormData, creating, onCreate } = props
+  const { companies, companyInfo, search, setSearch, openMenu, setOpenMenu, onImpersonate, showCreate, setShowCreate, formData, setFormData, creating, onCreate, slugManual, setSlugManual } = props
 
   const th: React.CSSProperties = { padding: "11px 20px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }
   const td: React.CSSProperties = { padding: "14px 20px", fontSize: 13, color: "#374151", verticalAlign: "middle" }
@@ -608,10 +640,29 @@ function CompaniesTable(props: {
         <div style={{ padding: "24px", background: "#f9fafb", borderBottom: "1px solid #f1f3f5" }}>
           <h3 style={{ fontSize: 14, fontWeight: 600, color: "#111827", marginBottom: 16 }}>Nueva empresa</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 16 }}>
-            <input placeholder="Nombre *" value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))} style={inputStyle} />
+            <input placeholder="Nombre de la empresa *" value={formData.name} onChange={e => { const name = e.target.value; setFormData(p => ({ ...p, name, slug: slugManual ? p.slug : slugify(name) })) }} style={inputStyle} />
             <input placeholder="Email *" type="email" value={formData.email} onChange={e => setFormData(p => ({ ...p, email: e.target.value }))} style={inputStyle} />
             <input placeholder="Contraseña *" type="password" value={formData.password} onChange={e => setFormData(p => ({ ...p, password: e.target.value }))} style={inputStyle} />
-            <input placeholder="Slug (URL) *" value={formData.slug} onChange={e => setFormData(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }))} style={inputStyle} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                <input
+                  placeholder="slug-automatico"
+                  value={formData.slug}
+                  readOnly={!slugManual}
+                  onChange={e => setFormData(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }))}
+                  style={{ ...inputStyle, flex: 1, background: slugManual ? "#fff" : "#f3f4f6", color: slugManual ? "#111827" : "#6b7280", cursor: slugManual ? "text" : "default" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setSlugManual(!slugManual)}
+                  title={slugManual ? "Volver a automático" : "Editar manualmente"}
+                  style={{ width: 38, height: 38, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid #e5e7eb", background: slugManual ? "#1e3a5f" : "#fff", color: slugManual ? "#fff" : "#6b7280", cursor: "pointer" }}
+                >
+                  <Pencil style={{ width: 14, height: 14 }} />
+                </button>
+              </div>
+              <p style={{ fontSize: 11.5, color: "#9ca3af", margin: 0 }}>URL pública: flotafly.com/{formData.slug || "—"}</p>
+            </div>
             <input placeholder="Teléfono" value={formData.phone} onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))} style={inputStyle} />
             <input placeholder="CIF" value={formData.cif} onChange={e => setFormData(p => ({ ...p, cif: e.target.value }))} style={inputStyle} />
             <input placeholder="Dirección" value={formData.address} onChange={e => setFormData(p => ({ ...p, address: e.target.value }))} style={{ ...inputStyle, gridColumn: "1 / -1" }} />
