@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
 import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import type { ReactNode } from "react"
 import { redirect } from "next/navigation"
@@ -76,34 +77,7 @@ export default async function AnalyticsPage() {
     <div className="flex h-screen bg-[#f5f5f4] overflow-hidden" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
 
       {/* SIDEBAR */}
-      <aside className="hidden md:flex w-[220px] flex-col bg-[#111827] flex-shrink-0">
-        <div className="px-5 pt-6 pb-5 border-b border-white/5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-              <FlotaFlyLogo size={40} />
-            </div>
-            <span className="text-white font-semibold text-sm tracking-tight"><FlotaFlyWordmark flotaColor="#fff" /></span>
-          </div>
-        </div>
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
-          <p className="text-[10px] font-medium text-white/20 uppercase tracking-widest px-2 pb-1">Principal</p>
-          <SideLink href="/dashboard" icon={<Inbox className="size-3.5"/>} label="Solicitudes" />
-          <SideLink href="/dashboard/servicios" icon={<ClipboardList className="size-3.5"/>} label="Servicios" />
-          <SideLink href="/dashboard/clientes" icon={<Users className="size-3.5"/>} label="Clientes" />
-          <SideLink href="/dashboard/analytics" icon={<BarChart3 className="size-3.5"/>} label="Analytics" active />
-          <div className="pt-4 pb-1 px-2">
-            <p className="text-[10px] font-medium text-white/20 uppercase tracking-widest">Config</p>
-          </div>
-          <SideLink href="/dashboard/ajustes" icon={<Settings className="size-3.5"/>} label="Ajustes" />
-          <Link href="/dashboard/conductores" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, fontSize: 13, fontWeight: 500, textDecoration: 'none', color: 'rgba(255,255,255,0.45)' }}>
-            <BusFront style={{ width: 14, height: 14 }} /> Conductores
-          </Link>
-        </nav>
-        <div className="px-3 py-4 border-t border-white/5 space-y-2">
-          <p className="text-[11px] text-white/30 truncate px-2">{session.user.email}</p>
-          <LogoutButton />
-        </div>
-      </aside>
+      <DashboardSidebar email={session.user.email} />
 
       {/* MAIN */}
       <main className="flex-1 overflow-y-auto">

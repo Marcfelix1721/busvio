@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
 import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { redirect } from "next/navigation"
 import { createServerClient } from "@supabase/ssr"
@@ -100,40 +101,7 @@ export default async function ClientesPage() {
     <div style={{ display: "flex", height: "100vh", background: "#f5f5f4", ...s, overflow: "hidden" }}>
 
       {/* SIDEBAR */}
-      <aside style={{ width: 228, background: "#111827", display: "flex", flexDirection: "column", flexShrink: 0 }}>
-        <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 48, height: 48, background: "#fff", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <FlotaFlyLogo size={40} />
-            </div>
-            <div>
-              <p style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0 }}><FlotaFlyWordmark flotaColor="#fff" /></p>
-              <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, margin: 0 }}>Panel de gestión</p>
-            </div>
-          </div>
-        </div>
-        <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
-          <p style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "0 8px", marginBottom: 6 }}>Principal</p>
-          <SideLink href="/dashboard" icon={<Inbox style={{ width: 14, height: 14 }} />} label="Solicitudes" />
-          <SideLink href="/dashboard/servicios" icon={<ClipboardList style={{ width: 14, height: 14 }} />} label="Servicios" />
-          <SideLink href="/dashboard/clientes" icon={<Users style={{ width: 14, height: 14 }} />} label="Clientes" active />
-          <SideLink href="/dashboard/analytics" icon={<BarChart3 style={{ width: 14, height: 14 }} />} label="Analytics" />
-          <SideLink href="/dashboard/calendario" icon={<Calendar style={{ width: 14, height: 14 }} />} label="Calendario" />
-          <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "12px 0" }} />
-          <p style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "0 8px", marginBottom: 6 }}>Config</p>
-          <SideLink href="/dashboard/ajustes" icon={<Settings style={{ width: 14, height: 14 }} />} label="Ajustes" />
-          <SideLink href="/dashboard/conductores" icon={<BusFront style={{ width: 14, height: 14 }} />} label="Conductores" />
-        </nav>
-        <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>{session.user.email?.[0]?.toUpperCase()}</span>
-            </div>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</p>
-          </div>
-          <LogoutButton />
-        </div>
-      </aside>
+      <DashboardSidebar email={session.user.email} />
 
       {/* MAIN */}
       <main style={{ flex: 1, overflowY: "auto" }}>
