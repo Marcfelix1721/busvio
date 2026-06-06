@@ -12,6 +12,7 @@ import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { QuoteRequest } from "@/lib/types"
 import { DashboardClient } from "@/components/dashboard/DashboardClient"
 import { ImpersonationBanner } from "@/components/dashboard/ImpersonationBanner"
+import { OnboardingWizard } from "@/components/dashboard/OnboardingWizard"
 
 export const revalidate = 0
 
@@ -61,7 +62,34 @@ export default async function DashboardPage() {
     redirect("/conductor")
   }
 
-  const { data: companyData } = await supabase.from("companies").select("name").eq("id", companyId).single()
+  const { data: companyData } = await supabase
+    .from("companies")
+    .select("name, slug, onboarding_completado")
+    .eq("id", companyId)
+    .single()
+
+  // Si la empresa aún no completó el onboarding, mostrar el wizard guiado
+  // en lugar del dashboard normal.
+  if (companyData && !companyData.onboarding_completado) {
+    const [{ data: pricing }, { data: settings }] = await Promise.all([
+      supabase.from("pricing_settings").select("garage_address, price_per_km").eq("company_id", companyId).maybeSingle(),
+      supabase.from("company_settings").select("margen_beneficio, iva, precio_minimo_servicio").eq("company_id", companyId).maybeSingle(),
+    ])
+    return (
+      <OnboardingWizard
+        companyId={companyId}
+        companyName={companyData.name ?? "tu empresa"}
+        slug={companyData.slug ?? ""}
+        initialGarage={pricing?.garage_address ?? ""}
+        initialPricing={{ price_per_km: pricing?.price_per_km }}
+        initialSettings={{
+          margen_beneficio: settings?.margen_beneficio,
+          iva: settings?.iva,
+          precio_minimo_servicio: settings?.precio_minimo_servicio,
+        }}
+      />
+    )
+  }
 
   const { data: rawData } = await supabase
     .from("quote_requests").select("*").eq("company_id", companyId).order("created_at", { ascending: false })
