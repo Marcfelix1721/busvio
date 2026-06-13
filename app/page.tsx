@@ -33,6 +33,7 @@ export default function LandingPage() {
   const [submitted, setSubmitted] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [demoForm, setDemoForm] = useState({ nombre: "", empresa: "", email: "", telefono: "" })
+  const [demoError, setDemoError] = useState("")
   const rootRef = useRef<HTMLDivElement>(null)
 
   // Activa animaciones tras hidratar (contenido visible si no hay JS) y observa
@@ -63,9 +64,25 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
+  // Modal: cerrar con Escape y bloquear el scroll del fondo mientras está abierto.
+  useEffect(() => {
+    if (!showDemoForm) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !submitting) { setShowDemoForm(false); setDemoError("") }
+    }
+    document.addEventListener("keydown", onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.removeEventListener("keydown", onKey)
+      document.body.style.overflow = prevOverflow
+    }
+  }, [showDemoForm, submitting])
+
   async function handleSubmitDemo(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
+    setDemoError("")
     try {
       const response = await fetch("/api/solicitar-demo", {
         method: "POST",
@@ -80,15 +97,16 @@ export default function LandingPage() {
           setDemoForm({ nombre: "", empresa: "", email: "", telefono: "" })
         }, 3200)
       } else {
-        alert("Error al enviar la solicitud")
+        setDemoError("No se pudo enviar la solicitud. Inténtalo de nuevo o escríbenos a hola@flotafly.com.")
       }
     } catch {
-      alert("Error al enviar la solicitud")
+      setDemoError("No se pudo enviar la solicitud. Revisa tu conexión e inténtalo de nuevo.")
     }
     setSubmitting(false)
   }
 
-  const openDemo = () => setShowDemoForm(true)
+  const openDemo = () => { setDemoError(""); setShowDemoForm(true) }
+  const closeDemo = () => { if (!submitting) { setShowDemoForm(false); setDemoError("") } }
 
   return (
     <div ref={rootRef} className="lp font-body min-h-screen overflow-x-hidden text-[#0f1b2d]" style={{ background: "#fafafa" }}>
@@ -571,18 +589,27 @@ export default function LandingPage() {
       {/* ============================ MODAL DEMO ============================ */}
       {showDemoForm && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-          style={{ background: "rgba(12,28,48,0.55)", backdropFilter: "blur(4px)", animation: "ff-fade 0.2s ease both" }}
-          onClick={() => !submitting && setShowDemoForm(false)}
+          className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-4 sm:p-6"
+          style={{ background: "rgba(10,22,38,0.6)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", animation: "ff-fade 0.2s ease both" }}
+          onClick={closeDemo}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Solicitar demo"
         >
           <div
-            className="relative w-full max-w-md rounded-3xl bg-white p-7 sm:p-8"
-            style={{ boxShadow: "0 30px 70px -20px rgba(0,0,0,0.5)", animation: "ff-pop 0.25s cubic-bezier(0.16,0.84,0.44,1) both" }}
+            className="relative my-auto w-full max-w-md rounded-3xl border bg-white p-6 sm:p-8"
+            style={{
+              borderColor: "#eceef1",
+              boxShadow: "0 40px 90px -30px rgba(10,22,38,0.6)",
+              animation: "ff-pop 0.25s cubic-bezier(0.16,0.84,0.44,1) both",
+              maxHeight: "calc(100vh - 2rem)",
+              overflowY: "auto",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => setShowDemoForm(false)}
-              className="absolute right-4 top-4 rounded-lg p-1.5 text-[#9aa5b1] transition hover:bg-[#f3f5f7] hover:text-[#0f1b2d]"
+              onClick={closeDemo}
+              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-lg text-[#9aa5b1] transition hover:bg-[#f3f5f7] hover:text-[#0f1b2d]"
               aria-label="Cerrar"
             >
               <X className="h-5 w-5" />
@@ -590,36 +617,52 @@ export default function LandingPage() {
 
             {!submitted ? (
               <>
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: "#eaf6f9", color: TEAL }}>
-                  <Sparkles className="h-5 w-5" />
+                {/* Cabecera con el isotipo de marca */}
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: "#f5f8fa", border: "1px solid #e8edf1" }}>
+                  <FlotaFlyLogo size={26} />
                 </div>
-                <h2 className="font-display mt-4 text-2xl font-bold tracking-tight" style={{ color: INK }}>Solicitar demo</h2>
-                <p className="mt-1.5 text-sm" style={{ color: MUTED }}>
-                  Déjanos tus datos y te enseñamos FlotaFly con tus tarifas. Respondemos en menos de 24 h.
+                <h2 className="font-display mt-4 text-[1.6rem] font-bold tracking-tight" style={{ color: INK }}>Solicitar demo</h2>
+                <p className="mt-1.5 text-[0.92rem] leading-relaxed" style={{ color: MUTED }}>
+                  Déjanos tus datos y te enseñamos FlotaFly funcionando con tus tarifas.
                 </p>
 
-                <form onSubmit={handleSubmitDemo} className="mt-6 flex flex-col gap-4">
+                <form onSubmit={handleSubmitDemo} className="mt-6 flex flex-col gap-3.5">
                   <Field label="Nombre" required value={demoForm.nombre} onChange={(v) => setDemoForm((p) => ({ ...p, nombre: v }))} placeholder="Tu nombre completo" />
                   <Field label="Empresa" value={demoForm.empresa} onChange={(v) => setDemoForm((p) => ({ ...p, empresa: v }))} placeholder="Nombre de tu empresa" />
                   <Field label="Email" type="email" required value={demoForm.email} onChange={(v) => setDemoForm((p) => ({ ...p, email: v }))} placeholder="tu@empresa.com" />
                   <Field label="Teléfono" type="tel" value={demoForm.telefono} onChange={(v) => setDemoForm((p) => ({ ...p, telefono: v }))} placeholder="+34 600 000 000" />
+
+                  {demoError && (
+                    <div className="rounded-xl border px-3.5 py-3" style={{ background: "#fef2f2", borderColor: "#fecaca" }}>
+                      <p className="text-[0.85rem]" style={{ color: "#dc2626", margin: 0 }}>{demoError}</p>
+                    </div>
+                  )}
+
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="ff-btn mt-1 inline-flex h-12 items-center justify-center gap-2 rounded-xl text-[0.95rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                    style={{ background: NAVY }}
+                    className="ff-btn mt-1 inline-flex h-12 items-center justify-center gap-2 rounded-xl text-[0.95rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
+                    style={{ background: submitting ? "#475569" : NAVY, boxShadow: submitting ? "none" : "0 14px 30px -12px rgba(30,58,95,0.75)" }}
                   >
                     {submitting ? "Enviando..." : <>Enviar solicitud <ArrowRight className="h-4 w-4" /></>}
                   </button>
                 </form>
+
+                <p className="mt-4 text-center text-[0.78rem]" style={{ color: "#9aa5b1" }}>
+                  Sin permanencia · Sin tarjeta · Respondemos en menos de 24 h
+                </p>
               </>
             ) : (
-              <div className="py-8 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full" style={{ background: "#10b981" }}>
-                  <Check className="h-8 w-8 text-white" />
+              <div className="py-6 text-center sm:py-8">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full" style={{ background: "#eafaf0", boxShadow: "0 0 0 8px rgba(16,185,129,0.08)" }}>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full" style={{ background: "#10b981" }}>
+                    <Check className="h-7 w-7 text-white" />
+                  </span>
                 </div>
-                <h3 className="font-display mt-5 text-xl font-bold" style={{ color: INK }}>¡Solicitud enviada!</h3>
-                <p className="mt-1.5 text-sm" style={{ color: MUTED }}>Nos pondremos en contacto contigo muy pronto.</p>
+                <h3 className="font-display mt-5 text-xl font-bold tracking-tight" style={{ color: INK }}>¡Solicitud recibida!</h3>
+                <p className="mt-2 text-[0.92rem] leading-relaxed" style={{ color: MUTED }}>
+                  Gracias. Te contactamos en menos de 24 h en el correo que nos has dejado.
+                </p>
               </div>
             )}
           </div>
@@ -656,8 +699,8 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-11 rounded-xl border px-3.5 text-sm outline-none transition focus:border-[#1e3a5f] focus:ring-4 focus:ring-[#1e3a5f]/10"
-        style={{ borderColor: "#e2e6ea", background: "#fafbfc" }}
+        className="h-12 rounded-xl border bg-[#fafbfc] px-3.5 text-[0.95rem] text-[#0f1b2d] outline-none transition focus:border-[#0891b2] focus:bg-white focus:ring-4 focus:ring-[#0891b2]/15"
+        style={{ borderColor: "#e2e6ea" }}
       />
     </label>
   )
