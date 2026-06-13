@@ -91,7 +91,7 @@ export default function LoginPage() {
             Gestiona presupuestos y solicitudes desde un solo lugar
           </h1>
           <p style={{ fontSize: 18, color: "rgba(255,255,255,0.7)", lineHeight: 1.6, margin: "24px 0 40px", maxWidth: 520 }}>
-            Automatiza tus presupuestos, gestiona tu flota y crece tu negocio con la plataforma más potente del sector.
+            Automatiza el cálculo de cada servicio y gestiona tu flota y tus conductores sin hojas de cálculo.
           </p>
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 18 }}>
             {BULLETS.map(b => (
@@ -103,10 +103,10 @@ export default function LoginPage() {
           </ul>
         </div>
 
-        {/* Frase abajo con indicador de actividad en vivo */}
+        {/* Frase abajo: descriptiva y neutra (sin afirmaciones de prueba social) */}
         <p style={{ position: "relative", display: "flex", alignItems: "center", gap: 11, fontSize: 15, color: "rgba(255,255,255,0.6)", margin: 0 }}>
-          <span className="animate-pulse" aria-hidden style={{ width: 9, height: 9, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 4px rgba(34,197,94,0.18)", flexShrink: 0 }} />
-          Empresas de toda España ya confían en FlotaFly
+          <span aria-hidden style={{ width: 9, height: 9, borderRadius: "50%", background: TEAL, boxShadow: "0 0 0 4px rgba(8,145,178,0.18)", flexShrink: 0 }} />
+          Gestión de presupuestos para transporte discrecional
         </p>
       </section>
 
@@ -114,8 +114,10 @@ export default function LoginPage() {
       <section className="w-full lg:w-2/5 flex items-center justify-center bg-white px-6 py-10 sm:px-10">
         <div style={{ width: "100%", maxWidth: 400 }}>
 
-          {/* Logo solo en móvil */}
-          <div className="lg:hidden" style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
+          {/* Logo solo en móvil (en escritorio ya aparece en el panel navy izquierdo).
+              Nota: el display se controla por clase, no inline, para que `lg:hidden`
+              pueda ocultarlo en escritorio (un `display:flex` inline lo anularía). */}
+          <div className="lg:hidden flex justify-center" style={{ marginBottom: 32 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <FlotaFlyLogo size={48} />
               <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em" }}>
