@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { getCompanyIdServer } from "@/lib/get-company-id-server"
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
 import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createServerClient } from "@supabase/ssr"
@@ -26,9 +27,8 @@ export default async function ServiciosPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login")
-  const { data: userData } = await supabase.from("users").select("company_id").eq("id", user.id).single()
-  if (!userData?.company_id) redirect("/dashboard")
-  const companyId = userData.company_id
+  const companyId = await getCompanyIdServer(supabase, user.id)
+  if (!companyId) redirect("/dashboard")
   const todayStr = new Date().toISOString().slice(0, 10)
 
   const { data: quotesData } = await supabase

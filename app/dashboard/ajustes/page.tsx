@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { getCompanyIdServer } from "@/lib/get-company-id-server"
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
 import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createServerClient } from "@supabase/ssr"
@@ -27,15 +28,15 @@ export default async function AjustesPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const { data: userData } = await supabase.from("users").select("company_id").eq("id", user.id).maybeSingle()
-  if (!userData?.company_id) redirect("/dashboard")
+  const companyId = await getCompanyIdServer(supabase, user.id)
+  if (!companyId) redirect("/dashboard")
 
   const [{ data: settings }, { data: company }, { data: pricingSettings }, { data: vehiculosData }, { data: staffData }] = await Promise.all([
-    supabase.from("company_settings").select("*").eq("company_id", userData.company_id).maybeSingle(),
-    supabase.from("companies").select("*").eq("id", userData.company_id).maybeSingle(),
-    supabase.from("pricing_settings").select("garage_address, parking_address").eq("company_id", userData.company_id).maybeSingle(),
-    supabase.from("vehicles").select("id").eq("company_id", userData.company_id),
-    supabase.from("staff").select("id").eq("company_id", userData.company_id),
+    supabase.from("company_settings").select("*").eq("company_id", companyId).maybeSingle(),
+    supabase.from("companies").select("*").eq("id", companyId).maybeSingle(),
+    supabase.from("pricing_settings").select("garage_address, parking_address").eq("company_id", companyId).maybeSingle(),
+    supabase.from("vehicles").select("id").eq("company_id", companyId),
+    supabase.from("staff").select("id").eq("company_id", companyId),
   ])
 
   const totalVehiculos = vehiculosData?.length ?? 0
@@ -62,7 +63,7 @@ export default async function AjustesPage() {
           {/* 1. EMPRESA + OPERACIONES + MARGEN */}
           <SettingsForm
             settings={settings}
-            companyId={userData.company_id}
+            companyId={companyId}
             company={company}
             pricingSettings={pricingSettings}
           />
@@ -72,7 +73,7 @@ export default async function AjustesPage() {
             title="Motor de costes"
             desc="Variables, condiciones y grupos de exclusión — se aplican al calcular cada presupuesto"
           >
-            <CostVariablesManager companyId={userData.company_id} />
+            <CostVariablesManager companyId={companyId} />
           </SectionWrapper>
 
           {/* 3. RECURSOS — FLOTA Y PERSONAL */}

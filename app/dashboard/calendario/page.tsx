@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { getCompanyIdServer } from "@/lib/get-company-id-server"
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
 import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createServerClient } from "@supabase/ssr"
@@ -24,14 +25,13 @@ export default async function CalendarioPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const { data: userData } = await supabase
-    .from("users").select("company_id").eq("id", user.id).maybeSingle()
-  if (!userData?.company_id) redirect("/dashboard")
+  const companyId = await getCompanyIdServer(supabase, user.id)
+  if (!companyId) redirect("/dashboard")
 
   const { data: servicios } = await supabase
     .from("quote_requests")
     .select("id, trip_date, origin, destination, passengers, vehicle_type, requester_name, final_price, estimated_price, vehicle_id")
-    .eq("company_id", userData.company_id)
+    .eq("company_id", companyId)
     .eq("status", "aceptado")
     .order("trip_date", { ascending: true })
 
@@ -50,7 +50,7 @@ export default async function CalendarioPage() {
   const { data: vehiculos } = await supabase
     .from("vehicles")
     .select("id, matricula, marca_modelo")
-    .eq("company_id", userData.company_id)
+    .eq("company_id", companyId)
 
   const vehiculosMap = Object.fromEntries((vehiculos ?? []).map(v => [v.id, v]))
 

@@ -2,6 +2,7 @@ import Link from "next/link"
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
 import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { redirect } from "next/navigation"
+import { getCompanyIdServer } from "@/lib/get-company-id-server"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import {
@@ -37,8 +38,8 @@ export default async function ClientesPage() {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect("/login")
 
-  const { data: userData } = await supabase.from("users").select("company_id").eq("id", session.user.id).single()
-  const companyId = userData?.company_id
+  const companyId = await getCompanyIdServer(supabase, session.user.id)
+  if (!companyId) redirect("/dashboard")
 
   const { data: rawRequests } = await supabase
     .from("quote_requests")
