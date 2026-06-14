@@ -298,7 +298,7 @@ function DatePicker({ value, onChange, color, min }: { value: string; onChange: 
   )
 }
 
-function TimePicker({ value, onChange, color }: { value: string; onChange: (v: string) => void; color: string }) {
+function TimePicker({ value, onChange, color, minExclusive }: { value: string; onChange: (v: string) => void; color: string; minExclusive?: string }) {
   const [open, setOpen] = useState(false)
   const [focused, setFocused] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -326,11 +326,13 @@ function TimePicker({ value, onChange, color }: { value: string; onChange: (v: s
         <ul ref={listRef} style={{ position: 'absolute', zIndex: 70, top: 'calc(100% + 6px)', left: 0, width: '100%', minWidth: 120, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 18px 40px -16px rgba(15,27,45,0.3)', listStyle: 'none', margin: 0, padding: 4, maxHeight: 240, overflowY: 'auto', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
           {TIME_SLOTS.map(t => {
             const selected = t === value
+            const disabled = !!minExclusive && t <= minExclusive // mismo día: no antes/igual que la salida
             return (
               <li key={t} data-selected={selected}
-                onClick={() => { onChange(t); setOpen(false) }}
-                style={{ padding: '9px 12px', borderRadius: 8, fontSize: 14, fontWeight: selected ? 700 : 500, color: selected ? '#fff' : '#111827', background: selected ? color : 'transparent', cursor: 'pointer', textAlign: 'center' }}
-                onMouseEnter={e => { if (!selected) e.currentTarget.style.background = `${color}12` }}
+                onClick={() => { if (disabled) return; onChange(t); setOpen(false) }}
+                aria-disabled={disabled}
+                style={{ padding: '9px 12px', borderRadius: 8, fontSize: 14, fontWeight: selected ? 700 : 500, color: disabled ? '#d1d5db' : selected ? '#fff' : '#111827', background: selected ? color : 'transparent', cursor: disabled ? 'not-allowed' : 'pointer', textAlign: 'center' }}
+                onMouseEnter={e => { if (!selected && !disabled) e.currentTarget.style.background = `${color}12` }}
                 onMouseLeave={e => { if (!selected) e.currentTarget.style.background = 'transparent' }}>
                 {t}
               </li>
@@ -798,6 +800,13 @@ export function QuoteForm({ slug }: QuoteFormProps) {
       if (!origin.trim() || !destination.trim()) { alert('Indica origen y destino'); return false }
       if (!tripDate || !departureTime) { alert('Indica fecha y hora de salida'); return false }
       if (tripType === 'idavuelta' && (!returnDate || !returnTime)) { alert('Indica fecha y hora de regreso'); return false }
+      // Validar la combinación fecha+hora completa del regreso (no solo la fecha).
+      if (tripType === 'idavuelta' && returnDate && tripDate && returnDate < tripDate) {
+        alert('La fecha de regreso no puede ser anterior a la de salida'); return false
+      }
+      if (tripType === 'idavuelta' && returnDate === tripDate && returnTime && departureTime && returnTime <= departureTime) {
+        alert('Si el regreso es el mismo día, la hora de regreso debe ser posterior a la de salida'); return false
+      }
       if (!sameArrival && !arrival.trim()) { alert('Indica la dirección de llegada final'); return false }
     }
     return true
@@ -1181,7 +1190,7 @@ export function QuoteForm({ slug }: QuoteFormProps) {
                     }}>Regreso</h3>
                     <div style={grid2}>
                       <Field label="Fecha" required><DatePicker value={returnDate} onChange={setReturnDate} color={color} min={tripDate || undefined} /></Field>
-                      <Field label="Hora" required><TimePicker value={returnTime} onChange={setReturnTime} color={color} /></Field>
+                      <Field label="Hora" required><TimePicker value={returnTime} onChange={setReturnTime} color={color} minExclusive={returnDate && returnDate === tripDate ? departureTime : undefined} /></Field>
                     </div>
                   </div>
                 )}
