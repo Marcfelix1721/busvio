@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
       phone: phone || null,
       cif: cif || null,
       address: address || null,
+      active: true,
     })
 
     if (companyError) {
