@@ -294,6 +294,11 @@ export default function AdminPanel() {
       const finalSlug = uniqueSlug(slugify(formData.slug || formData.name), taken)
 
       const { data: { session } } = await supabase.auth.getSession()
+      // ===== TEMP DIAGNÓSTICO (eliminar tras diagnosticar el 403) =====
+      console.log("[DIAG admin] sesión?", !!session,
+        "| tokenLen:", session?.access_token?.length ?? 0,
+        "| email sesión:", session?.user?.email ?? null)
+      // ===== FIN TEMP DIAGNÓSTICO =====
       const response = await fetch("/api/admin/crear-empresa", {
         method: "POST",
         headers: {

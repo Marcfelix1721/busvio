@@ -7,6 +7,7 @@ export async function POST(req: NextRequest) {
     // Verificar que el usuario sea admin
     const authHeader = req.headers.get("authorization")
     if (!authHeader) {
+      console.log("[DIAG crear-empresa] sin cabecera Authorization -> 401")
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
@@ -31,6 +32,25 @@ export async function POST(req: NextRequest) {
     // Verificar que el llamante es realmente el superadmin
     const token = authHeader.replace(/^Bearer\s+/i, "")
     const { data: { user: caller }, error: callerErr } = await supabaseAdmin.auth.getUser(token)
+
+    // ===== TEMP DIAGNÓSTICO (eliminar tras diagnosticar el 403) =====
+    console.log("[DIAG crear-empresa]", JSON.stringify({
+      hasAuthHeader: !!authHeader,
+      authHeaderPrefix: authHeader.slice(0, 16),
+      tokenLen: token.length,
+      tokenPreview: token ? `${token.slice(0, 8)}...${token.slice(-6)}` : null,
+      tokenLiteralVacio: token === "" || token === "undefined" || token === "null",
+      getUserError: callerErr ? (callerErr.message || String(callerErr)) : null,
+      callerPresent: !!caller,
+      callerEmail: caller?.email ?? null,
+      resolvedAdminEmail: ADMIN_EMAIL,
+      env_NEXT_PUBLIC_ADMIN_EMAIL: process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? null,
+      env_ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? null,
+      emailsMatch: caller?.email === ADMIN_EMAIL,
+      caeEn: callerErr ? "getUser_error" : (!caller ? "no_caller" : (caller.email !== ADMIN_EMAIL ? "email_mismatch" : "pasa")),
+    }))
+    // ===== FIN TEMP DIAGNÓSTICO =====
+
     if (callerErr || !caller || caller.email !== ADMIN_EMAIL) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 })
     }
