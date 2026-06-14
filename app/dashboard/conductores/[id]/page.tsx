@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation"
+import { getCompanyIdServer } from "@/lib/get-company-id-server"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { ConductorFicha } from "@/components/dashboard/ConductorFicha"
@@ -31,9 +32,8 @@ export default async function ConductorFichaPage({ params }: { params: Promise<{
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const { data: userData } = await supabase.from("users").select("company_id").eq("id", user.id).maybeSingle()
-  if (!userData?.company_id) redirect("/dashboard")
-  const companyId = userData.company_id
+  const companyId = await getCompanyIdServer(supabase, user.id)
+  if (!companyId) redirect("/dashboard")
 
   const { data: staffRow } = await supabase
     .from("staff").select("*").eq("id", id).eq("company_id", companyId).maybeSingle()

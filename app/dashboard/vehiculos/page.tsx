@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { getCompanyIdServer } from "@/lib/get-company-id-server"
 import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
@@ -21,13 +22,12 @@ export default async function VehiculosPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const { data: userData } = await supabase
-    .from("users").select("company_id").eq("id", user.id).maybeSingle()
-  if (!userData?.company_id) redirect("/dashboard")
+  const companyId = await getCompanyIdServer(supabase, user.id)
+  if (!companyId) redirect("/dashboard")
 
   const { data: vehiculos } = await supabase
     .from("vehicles").select("*")
-    .eq("company_id", userData.company_id)
+    .eq("company_id", companyId)
     .order("created_at", { ascending: false })
 
   return (
@@ -53,7 +53,7 @@ export default async function VehiculosPage() {
             Gestiona tus vehículos y su estado de disponibilidad
           </p>
         </div>
-        <VehiculosManager companyId={userData.company_id} initialVehiculos={vehiculos ?? []} />
+        <VehiculosManager companyId={companyId} initialVehiculos={vehiculos ?? []} />
       </div>
     </div>
   )

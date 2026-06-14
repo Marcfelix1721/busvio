@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
-import { createClient } from "@/lib/supabase"
+import { createClient as createServerClient } from "@supabase/supabase-js"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -21,8 +21,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Faltan datos obligatorios" }, { status: 400 })
     }
 
-    // Obtener datos de la empresa
-    const supabase = createClient()
+    // Obtener datos de la empresa (service role: lee email/notification_emails
+    // server-side, sin depender de los permisos de columna de anon tras el revoke).
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
     const { data: company, error: companyError } = await supabase
       .from("companies")
       .select("name, email, color_primario, notification_emails")
