@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, type CSSProperties, type FocusEvent } from "react"
 import { createClient } from "@/lib/supabase"
+import { AddressAutocomplete } from "@/components/AddressAutocomplete"
 import { Building2, MapPin, TrendingUp, Save, Upload, Check, Bell, Shield, Lock } from "lucide-react"
 
 type Company = {
@@ -11,6 +12,20 @@ type Company = {
 }
 type PricingSettings = { garage_address?: string; parking_address?: string; precio_combustible_global?: number }
 type Settings = Record<string, number>
+
+// Estilo y foco compartidos para los inputs de dirección con autocompletado
+// (mismo aspecto que TextField).
+const ADDR_STYLE: CSSProperties = {
+  height: 38, width: "100%", borderRadius: 9, border: "1.5px solid #e5e7eb",
+  background: "#fafafa", padding: "0 12px", fontSize: 13, color: "#111827", outline: "none",
+  fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: "border-box", transition: "all 0.15s",
+}
+const addrFocus = (e: FocusEvent<HTMLInputElement>) => {
+  e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.07)"
+}
+const addrBlur = (e: FocusEvent<HTMLInputElement>) => {
+  e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none"
+}
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
@@ -335,8 +350,26 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
             </p>
           </div>
           <Grid>
-            <TextField id="garage_address" label="Dirección del garaje" value={locationValues.garage_address} onChange={handleLocationChange} placeholder="Calle del Garaje 5, 08001 Barcelona" />
-            <TextField id="parking_address" label="Parking habitual" value={locationValues.parking_address} onChange={handleLocationChange} placeholder="Parking Central, Madrid" />
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <label htmlFor="garage_address" style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>Dirección del garaje</label>
+              <AddressAutocomplete
+                id="garage_address"
+                value={locationValues.garage_address}
+                onChange={(v) => handleLocationChange("garage_address", v)}
+                placeholder="Calle del Garaje 5, 08001 Barcelona"
+                inputStyle={ADDR_STYLE} onFocus={addrFocus} onBlur={addrBlur}
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <label htmlFor="parking_address" style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>Parking habitual</label>
+              <AddressAutocomplete
+                id="parking_address"
+                value={locationValues.parking_address}
+                onChange={(v) => handleLocationChange("parking_address", v)}
+                placeholder="Parking Central, Madrid"
+                inputStyle={ADDR_STYLE} onFocus={addrFocus} onBlur={addrBlur}
+              />
+            </div>
           </Grid>
         </Pad>
         <Pad top>

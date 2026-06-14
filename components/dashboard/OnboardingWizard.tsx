@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase"
+import { AddressAutocomplete } from "@/components/AddressAutocomplete"
 import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import {
   MapPin, Bus, TrendingUp, PartyPopper,
@@ -284,8 +285,19 @@ export function OnboardingWizard({ companyId, companyName, slug, initialGarage, 
               <StepHeader icon={MapPin} color="#0f766e" title="Base de operaciones"
                 desc="Indícanos dónde guardas el bus cuando no está trabajando." />
               <InfoBox>Necesitamos esta dirección para calcular los <strong>km en vacío</strong> que recorre el bus desde el garaje hasta el inicio de cada servicio.</InfoBox>
-              <Field label="Dirección del garaje" hint="Calle, número, código postal y ciudad">
-                <Inp value={garage} onChange={e => setGarage(e.target.value)} placeholder="Calle del Garaje 5, 08001 Barcelona" />
+              <Field label="Dirección del garaje" hint="Empieza a escribir y elige una sugerencia">
+                <AddressAutocomplete
+                  value={garage}
+                  onChange={setGarage}
+                  placeholder="Calle del Garaje 5, 08001 Barcelona"
+                  inputStyle={{
+                    height: 48, width: "100%", borderRadius: 12, border: "1px solid #e5e7eb",
+                    background: "#fff", padding: "0 16px", fontSize: 15, color: "#111827", outline: "none",
+                    fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: "border-box", transition: "all 0.2s",
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = ACCENT; e.target.style.boxShadow = `0 0 0 3px ${ACCENT}12` }}
+                  onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.boxShadow = "none" }}
+                />
               </Field>
             </div>
           )}
