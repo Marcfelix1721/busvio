@@ -132,63 +132,212 @@ function Sel({ children, style, ...props }: React.SelectHTMLAttributes<HTMLSelec
 }
 
 function PaxCounter({ value, onChange, color }: { value: number; onChange: (v: number) => void; color: string }) {
+  // Permite ESCRIBIR el número (teclado numérico en móvil) y ajustar con − / +.
+  const [text, setText] = useState(String(value))
+  useEffect(() => { setText(String(value)) }, [value])
+
+  const handleText = (raw: string) => {
+    const digits = raw.replace(/[^0-9]/g, '')
+    if (digits === '') { setText(''); return } // permitir vacío mientras se escribe
+    let n = parseInt(digits, 10)
+    if (n < 1) n = 1
+    if (n > 100) n = 100
+    setText(String(n))
+    onChange(n)
+  }
+  const handleBlur = () => {
+    let n = parseInt(text || '0', 10)
+    if (isNaN(n) || n < 1) n = 1
+    if (n > 100) n = 100
+    setText(String(n))
+    onChange(n)
+  }
+
+  const stepBtn = (label: string, onClick: () => void, disabled: boolean) => (
+    <button type="button" onClick={onClick} disabled={disabled} aria-label={label === '−' ? 'Quitar pasajero' : 'Añadir pasajero'}
+      style={{
+        width: 48, height: 48, background: 'none', border: 'none', fontSize: 22,
+        cursor: disabled ? 'not-allowed' : 'pointer', color: disabled ? '#d1d5db' : '#6b7280',
+        fontWeight: 600, flexShrink: 0, transition: 'all 0.2s'
+      }}
+      onMouseEnter={e => { if (!disabled) e.currentTarget.style.color = color }}
+      onMouseLeave={e => { if (!disabled) e.currentTarget.style.color = '#6b7280' }}
+    >
+      {label}
+    </button>
+  )
+
   return (
     <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      border: '1px solid #e5e7eb',
-      borderRadius: 12,
-      overflow: 'hidden',
-      width: 180,
-      background: '#fff'
+      display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb',
+      borderRadius: 12, overflow: 'hidden', width: 200, background: '#fff'
     }}>
-      <button
-        type="button"
-        onClick={() => onChange(Math.max(1, value - 1))}
+      {stepBtn('−', () => onChange(Math.max(1, value - 1)), value <= 1)}
+      <input
+        type="text" inputMode="numeric" pattern="[0-9]*"
+        value={text}
+        onChange={e => handleText(e.target.value)}
+        onBlur={handleBlur}
+        onFocus={e => e.currentTarget.select()}
+        aria-label="Número de pasajeros"
         style={{
-          width: 48,
-          height: 48,
-          background: 'none',
-          border: 'none',
-          fontSize: 20,
-          cursor: 'pointer',
-          color: '#6b7280',
-          fontWeight: 600,
-          flexShrink: 0,
-          transition: 'all 0.2s'
+          flex: 1, width: '100%', minWidth: 0, height: 48, padding: 0,
+          textAlign: 'center' as const, fontSize: 18, fontWeight: 700, color: '#111827',
+          border: 'none', borderLeft: '1px solid #f3f4f6', borderRight: '1px solid #f3f4f6',
+          outline: 'none', background: 'transparent', fontFamily: "'DM Sans', system-ui, sans-serif"
         }}
-        onMouseEnter={e => (e.currentTarget.style.color = color)}
-        onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
-      >
-        −
+      />
+      {stepBtn('+', () => onChange(Math.min(100, value + 1)), value >= 100)}
+    </div>
+  )
+}
+
+/* ===================== Fecha y hora (calendario + lista de horas) ===================== */
+const MONTHS_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+const WEEKDAYS_ES = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
+const TIME_SLOTS: string[] = (() => {
+  const out: string[] = []
+  for (let h = 0; h < 24; h++) for (const m of [0, 30]) out.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
+  return out
+})()
+const pad2 = (n: number) => String(n).padStart(2, '0')
+const toISO = (y: number, m: number, d: number) => `${y}-${pad2(m)}-${pad2(d)}`
+const fromISO = (s: string) => { const [y, m, d] = s.split('-').map(Number); return { y, m, d } }
+const fmtFechaES = (s: string) => { if (!s) return ''; const { y, m, d } = fromISO(s); return `${pad2(d)}/${pad2(m)}/${y}` }
+
+const triggerStyle = (open: boolean, focused: boolean, color: string): React.CSSProperties => ({
+  height: 48, width: '100%', border: `1px solid ${open || focused ? color : '#e5e7eb'}`, borderRadius: 12,
+  padding: '0 14px', fontSize: 15, background: '#fff', fontFamily: "'DM Sans', system-ui, sans-serif",
+  boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  cursor: 'pointer', outline: 'none', boxShadow: open ? `0 0 0 3px ${color}12` : 'none', transition: 'all 0.2s', gap: 8,
+})
+
+function CalIcon() {
+  return (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>)
+}
+function ClockIcon() {
+  return (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></svg>)
+}
+function NavBtn({ dir, onClick, disabled }: { dir: 'left' | 'right'; onClick: () => void; disabled: boolean }) {
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} aria-label={dir === 'left' ? 'Mes anterior' : 'Mes siguiente'}
+      style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: disabled ? 'not-allowed' : 'pointer', color: disabled ? '#d1d5db' : '#374151', padding: 0 }}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        {dir === 'left' ? <polyline points="15 18 9 12 15 6" /> : <polyline points="9 18 15 12 9 6" />}
+      </svg>
+    </button>
+  )
+}
+
+function DatePicker({ value, onChange, color, min }: { value: string; onChange: (v: string) => void; color: string; min?: string }) {
+  const [open, setOpen] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  const now = new Date()
+  const todayISO = toISO(now.getFullYear(), now.getMonth() + 1, now.getDate())
+  const minISO = min && min > todayISO ? min : todayISO
+
+  const base = value ? fromISO(value) : fromISO(minISO)
+  const [view, setView] = useState<{ y: number; m: number }>({ y: base.y, m: base.m })
+  useEffect(() => { if (value) { const v = fromISO(value); setView({ y: v.y, m: v.m }) } }, [value])
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+
+  const firstDow = (new Date(view.y, view.m - 1, 1).getDay() + 6) % 7 // Lunes = 0
+  const daysInMonth = new Date(view.y, view.m, 0).getDate()
+  const cells: (number | null)[] = []
+  for (let i = 0; i < firstDow; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+
+  const prev = () => setView(v => v.m === 1 ? { y: v.y - 1, m: 12 } : { y: v.y, m: v.m - 1 })
+  const next = () => setView(v => v.m === 12 ? { y: v.y + 1, m: 1 } : { y: v.y, m: v.m + 1 })
+  const minView = fromISO(minISO)
+  const canPrev = view.y > minView.y || (view.y === minView.y && view.m > minView.m)
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button type="button" onClick={() => setOpen(o => !o)} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} style={triggerStyle(open, focused, color)}>
+        <span style={{ color: value ? '#111827' : '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value ? fmtFechaES(value) : 'dd/mm/aaaa'}</span>
+        <CalIcon />
       </button>
-      <span style={{
-        flex: 1,
-        textAlign: 'center' as const,
-        fontSize: 18,
-        fontWeight: 700,
-        color: '#111827'
-      }}>
-        {value}
-      </span>
-      <button
-        type="button"
-        onClick={() => onChange(value + 1)}
-        style={{
-          width: 48,
-          height: 48,
-          background: 'none',
-          border: 'none',
-          fontSize: 20,
-          cursor: 'pointer',
-          color,
-          fontWeight: 600,
-          flexShrink: 0,
-          transition: 'all 0.2s'
-        }}
-      >
-        +
+      {open && (
+        <div style={{ position: 'absolute', zIndex: 70, top: 'calc(100% + 6px)', left: 0, width: 300, maxWidth: '85vw', background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14, boxShadow: '0 18px 40px -16px rgba(15,27,45,0.3)', padding: 14, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <NavBtn dir="left" onClick={prev} disabled={!canPrev} />
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#111827', textTransform: 'capitalize' }}>{MONTHS_ES[view.m - 1]} {view.y}</span>
+            <NavBtn dir="right" onClick={next} disabled={false} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4 }}>
+            {WEEKDAYS_ES.map((w, i) => <div key={i} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#9ca3af', padding: '4px 0' }}>{w}</div>)}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2 }}>
+            {cells.map((d, i) => {
+              if (d === null) return <div key={i} />
+              const iso = toISO(view.y, view.m, d)
+              const disabled = iso < minISO
+              const selected = value === iso
+              const isToday = iso === todayISO
+              return (
+                <button key={i} type="button" disabled={disabled} onClick={() => { onChange(iso); setOpen(false) }}
+                  style={{ height: 38, borderRadius: 9, border: isToday && !selected ? `1px solid ${color}55` : '1px solid transparent', background: selected ? color : 'transparent', color: disabled ? '#d1d5db' : selected ? '#fff' : '#111827', fontSize: 14, fontWeight: selected ? 700 : 500, cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.12s', fontFamily: "'DM Sans', system-ui, sans-serif" }}
+                  onMouseEnter={e => { if (!disabled && !selected) e.currentTarget.style.background = `${color}12` }}
+                  onMouseLeave={e => { if (!disabled && !selected) e.currentTarget.style.background = 'transparent' }}>
+                  {d}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TimePicker({ value, onChange, color }: { value: string; onChange: (v: string) => void; color: string }) {
+  const [open, setOpen] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+  useEffect(() => {
+    if (open && listRef.current) {
+      const sel = listRef.current.querySelector('[data-selected="true"]') as HTMLElement | null
+      if (sel) sel.scrollIntoView({ block: 'center' })
+    }
+  }, [open])
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button type="button" onClick={() => setOpen(o => !o)} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} style={triggerStyle(open, focused, color)}>
+        <span style={{ color: value ? '#111827' : '#9ca3af' }}>{value || 'hh:mm'}</span>
+        <ClockIcon />
       </button>
+      {open && (
+        <ul ref={listRef} style={{ position: 'absolute', zIndex: 70, top: 'calc(100% + 6px)', left: 0, width: '100%', minWidth: 120, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 18px 40px -16px rgba(15,27,45,0.3)', listStyle: 'none', margin: 0, padding: 4, maxHeight: 240, overflowY: 'auto', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+          {TIME_SLOTS.map(t => {
+            const selected = t === value
+            return (
+              <li key={t} data-selected={selected}
+                onClick={() => { onChange(t); setOpen(false) }}
+                style={{ padding: '9px 12px', borderRadius: 8, fontSize: 14, fontWeight: selected ? 700 : 500, color: selected ? '#fff' : '#111827', background: selected ? color : 'transparent', cursor: 'pointer', textAlign: 'center' }}
+                onMouseEnter={e => { if (!selected) e.currentTarget.style.background = `${color}12` }}
+                onMouseLeave={e => { if (!selected) e.currentTarget.style.background = 'transparent' }}>
+                {t}
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </div>
   )
 }
@@ -1012,8 +1161,8 @@ export function QuoteForm({ slug }: QuoteFormProps) {
                     letterSpacing: '-0.01em'
                   }}>Salida</h3>
                   <div style={grid2}>
-                    <Field label="Fecha" required><Inp type="date" value={tripDate} onChange={e => setTripDate(e.target.value)} required /></Field>
-                    <Field label="Hora" required><Inp type="time" value={departureTime} onChange={e => setDepartureTime(e.target.value)} required /></Field>
+                    <Field label="Fecha" required><DatePicker value={tripDate} onChange={setTripDate} color={color} /></Field>
+                    <Field label="Hora" required><TimePicker value={departureTime} onChange={setDepartureTime} color={color} /></Field>
                   </div>
                 </div>
                 {tripType === 'idavuelta' && (
@@ -1031,8 +1180,8 @@ export function QuoteForm({ slug }: QuoteFormProps) {
                       letterSpacing: '-0.01em'
                     }}>Regreso</h3>
                     <div style={grid2}>
-                      <Field label="Fecha" required><Inp type="date" value={returnDate} onChange={e => setReturnDate(e.target.value)} required /></Field>
-                      <Field label="Hora" required><Inp type="time" value={returnTime} onChange={e => setReturnTime(e.target.value)} required /></Field>
+                      <Field label="Fecha" required><DatePicker value={returnDate} onChange={setReturnDate} color={color} min={tripDate || undefined} /></Field>
+                      <Field label="Hora" required><TimePicker value={returnTime} onChange={setReturnTime} color={color} /></Field>
                     </div>
                   </div>
                 )}
@@ -1114,8 +1263,8 @@ export function QuoteForm({ slug }: QuoteFormProps) {
                 stops.filter(Boolean).length > 0 ? { label: 'Paradas', value: stops.filter(Boolean).join(' → ') } : null,
                 { label: 'Destino', value: destination },
                 !sameArrival && arrival ? { label: 'Llegada final', value: arrival } : null,
-                { label: 'Fecha de salida', value: `${tripDate} a las ${departureTime}` },
-                tripType === 'idavuelta' ? { label: 'Regreso', value: `${returnDate} a las ${returnTime}` } : null,
+                { label: 'Fecha de salida', value: `${fmtFechaES(tripDate)} a las ${departureTime}` },
+                tripType === 'idavuelta' ? { label: 'Regreso', value: `${fmtFechaES(returnDate)} a las ${returnTime}` } : null,
                 { label: 'Pasajeros', value: String(passengers) },
                 { label: 'Tipo de servicio', value: serviceType },
                 comments ? { label: 'Comentarios', value: comments } : null,
