@@ -69,6 +69,7 @@ export default async function AnalyticsPage() {
   // Top rutas
   const rutaMap = new Map<string, number>()
   requests.forEach(r => {
+    if (!r.origin || !r.destination) return // solicitudes sin ruta no cuentan
     const key = `${r.origin.split(",")[0]} → ${r.destination.split(",")[0]}`
     rutaMap.set(key, (rutaMap.get(key) ?? 0) + 1)
   })
