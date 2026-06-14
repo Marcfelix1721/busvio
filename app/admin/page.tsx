@@ -163,13 +163,16 @@ export default function AdminPanel() {
 
     if (companiesData) setCompanies(companiesData)
 
-    // Cargar solicitudes globales (para KPIs, gráfico y actividad)
-    const { data: quotesData } = await supabase
-      .from("quote_requests")
-      .select("id, company_id, status, created_at, updated_at, requester_name, origin, destination, final_price, estimated_price")
-      .order("updated_at", { ascending: false })
-
-    if (quotesData) setQuotes(quotesData as Quote[])
+    // Cargar solicitudes globales (KPIs, gráfico y actividad) vía service role:
+    // el RLS de quote_requests acota la lectura a la empresa dueña / conductores,
+    // así que el admin las lee a través de /api/admin/quotes-overview.
+    const quotesRes = await fetch("/api/admin/quotes-overview", {
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    })
+    if (quotesRes.ok) {
+      const { quotes } = await quotesRes.json()
+      setQuotes((quotes ?? []) as Quote[])
+    }
 
     setLoading(false)
   }
