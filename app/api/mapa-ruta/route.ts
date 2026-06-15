@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 
-async function geocode(address: string, apiKey: string) {
+type Punto = { lat: number; lon: number }
+
+async function geocode(address: string, apiKey: string): Promise<Punto | null> {
   const tryAddress = async (text: string) => {
     const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(text)}&limit=1&lang=es&apiKey=${apiKey}`
     const res = await fetch(url)
@@ -30,6 +32,15 @@ export async function GET(req: NextRequest) {
   const destination = req.nextUrl.searchParams.get("destination") ?? ""
   const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_KEY ?? ""
 
+  // Paradas intermedias (JSON array de direcciones). Las que no geocodifiquen se saltan.
+  let stopsList: string[] = []
+  try {
+    const parsed = JSON.parse(req.nextUrl.searchParams.get("stops") ?? "[]")
+    if (Array.isArray(parsed)) stopsList = parsed.filter((s: unknown) => typeof s === "string" && s.trim())
+  } catch {
+    // sin paradas
+  }
+
   const [o, d] = await Promise.all([
     geocode(origin, apiKey),
     geocode(destination, apiKey),
@@ -39,19 +50,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No se pudo geocodificar" }, { status: 400 })
   }
 
-  // Línea de ruta REAL por carretera: Geoapify Routing → geometría simplificada.
-  // Geoapify static maps NO acepta polyline codificada (devuelve 400) ni la lista
-  // completa de coordenadas (una ruta de 70 km son ~1000 puntos → URL >18k chars → 400),
-  // así que muestreamos a ~60 puntos: la forma real de la carretera se mantiene en un
-  // mapa de 900×380 y la URL queda ~1,3k chars (probado, 200). Si el routing falla,
+  // Geocodificar las paradas (en paralelo); descartar las que fallen.
+  const geocodedStops = (await Promise.all(stopsList.map(s => geocode(s, apiKey))))
+    .filter((p): p is Punto => p !== null)
+
+  // Línea de ruta REAL por carretera, PASANDO POR LAS PARADAS:
+  //   waypoints = origen | parada1 | … | destino.
+  // Geoapify static maps NO acepta polyline codificada (400) ni la lista completa de
+  // coordenadas (URL >18k → 400), así que muestreamos a ~60 puntos. Si el routing falla,
   // el mapa sigue saliendo con los 2 marcadores (sin línea).
   let geometryParam = ""
-  // Puntos para el encuadre. Por defecto los 2 extremos; si hay ruta, TODA la geometría
-  // (encuadrar sobre los extremos dejaba la ruta descentrada y tocando los bordes).
-  let bboxPoints: number[][] = [[o.lon, o.lat], [d.lon, d.lat]]
+  // Puntos para el encuadre. Por defecto extremos + paradas; si hay ruta, TODA la geometría.
+  let bboxPoints: number[][] = [
+    [o.lon, o.lat],
+    ...geocodedStops.map(s => [s.lon, s.lat]),
+    [d.lon, d.lat],
+  ]
   try {
+    const waypoints = [o, ...geocodedStops, d].map(p => `${p.lat},${p.lon}`).join("|")
     const routeRes = await fetch(
-      `https://api.geoapify.com/v1/routing?waypoints=${o.lat},${o.lon}|${d.lat},${d.lon}&mode=drive&apiKey=${apiKey}`
+      `https://api.geoapify.com/v1/routing?waypoints=${waypoints}&mode=drive&apiKey=${apiKey}`
     )
     if (routeRes.ok) {
       const routeData = await routeRes.json()
@@ -73,7 +91,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Bounding box (con margen) de los puntos → Geoapify centra y hace zoom solo (area=rect)
-  // para abrazar la ruta. Margen 12% (mínimo absoluto para rutas muy cortas).
+  // para abrazar la ruta (incluidas las paradas). Margen 12% (mínimo absoluto para rutas cortas).
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity
   for (const [lon, lat] of bboxPoints) {
     if (lon < minLon) minLon = lon

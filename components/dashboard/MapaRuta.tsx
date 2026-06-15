@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from 'react'
 
-export function MapaRuta({ origin, destination }: { origin: string; destination: string }) {
+export function MapaRuta({ origin, destination, stops = [] }: { origin: string; destination: string; stops?: string[] }) {
   const [mapUrl, setMapUrl] = useState<string | null>(null)
   const [error, setError] = useState(false)
+  const stopsKey = stops.join('|')
 
   useEffect(() => {
     const load = async () => {
       try {
         const res = await fetch(
-          `/api/mapa-ruta?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`
+          `/api/mapa-ruta?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&stops=${encodeURIComponent(JSON.stringify(stops))}`
         )
         if (!res.ok) { setError(true); return }
         const data = await res.json()
@@ -20,7 +21,8 @@ export function MapaRuta({ origin, destination }: { origin: string; destination:
       }
     }
     load()
-  }, [origin, destination])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [origin, destination, stopsKey])
 
   if (error) return null
 

@@ -163,6 +163,7 @@ export default async function QuoteRequestDetailPage({
   const serviceType = extractCommentField(quote.comments, "Tipo de servicio") ?? "—"
   const tipoCliente = extractCommentField(quote.comments, "Tipo de cliente") ?? "—"
   const endTime = quote.return_time ?? "No especificada"
+  const stopsArr: string[] = (() => { try { return JSON.parse(quote.stops || "[]") } catch { return [] } })()
   const dias = diasHasta(quote.trip_date)
   const esUrgente = dias >= 0 && dias <= 7 && !["aceptado","cancelado","rechazado"].includes(quote.status)
   const sCfg = statusConfig[quote.status]
@@ -206,7 +207,7 @@ export default async function QuoteRequestDetailPage({
             </Section>
 
             <Section title="Detalles del viaje">
-              <MapaRuta origin={quote.origin} destination={quote.destination} />
+              <MapaRuta origin={quote.origin} destination={quote.destination} stops={stopsArr} />
               <div style={{ background: COLORS.surfaceAlt, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
                 <div className="flex items-start gap-4">
                   <div className="flex flex-col items-center gap-1 pt-1">
@@ -219,10 +220,10 @@ export default async function QuoteRequestDetailPage({
                       <p style={{ fontSize: 10, fontWeight: 600, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>Origen</p>
                       <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{quote.origin}</p>
                     </div>
-                    {quote.stops && (
+                    {stopsArr.length > 0 && (
                       <div>
                         <p style={{ fontSize: 10, fontWeight: 600, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>Paradas intermedias</p>
-                        <p style={{ fontSize: 14, color: COLORS.textMuted }}>{quote.stops}</p>
+                        <p style={{ fontSize: 14, color: COLORS.textMuted }}>{stopsArr.join("  →  ")}</p>
                       </div>
                     )}
                     <div>

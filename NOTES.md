@@ -62,5 +62,6 @@ static map como `&geometry=polyline:…;linecolor:#1e3a5f` (navy). Con fallback 
 el routing falla. (Geoapify static maps no acepta polyline codificada ni la lista completa de
 coordenadas → por eso se muestrea a ~60 pts.)
 
-- **Pendiente menor:** incluir las **paradas intermedias** (`quote.stops`) en los waypoints
-  del mapa — v1 hace origen→destino directo. Coste: +1 llamada a Geoapify (routing) por carga.
+- ✅ **Paradas intermedias incluidas:** la ruta del mapa pasa por las paradas
+  (`quote.stops` → waypoints `origen|parada1|…|destino`; las que no geocodifican se saltan).
+  El encuadre (bbox) cubre el desvío. Coste: +1 geocode por parada + 1 routing por carga.
