@@ -45,10 +45,17 @@ function fmt(d: string) {
 }
 
 export default async function ClienteFichaPage({ params }: { params: Promise<{ email: string }> }) {
-  // Next App Router ya decodifica los params de ruta; usar email directo (un
-  // decodeURIComponent extra petaba con URIError si el email tenía '%').
-  const { email } = await params
-  if (!email) notFound()
+  // El param [email] llega percent-encoded (@ → %40). Decode defensivo: try/catch
+  // para no petar con un '%' literal en el email, y robusto tanto si Next 16.2.4
+  // decodifica el param como si no lo hace.
+  const { email: emailParam } = await params
+  if (!emailParam) notFound()
+  let email: string
+  try {
+    email = decodeURIComponent(emailParam)
+  } catch {
+    email = emailParam
+  }
 
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
