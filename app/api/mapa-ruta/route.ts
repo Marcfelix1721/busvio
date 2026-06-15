@@ -39,13 +39,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No se pudo geocodificar" }, { status: 400 })
   }
 
-  const midLon = (o.lon + d.lon) / 2
-  const midLat = (o.lat + d.lat) / 2
-  const diffLon = Math.abs(o.lon - d.lon)
-  const diffLat = Math.abs(o.lat - d.lat)
-  const maxDiff = Math.max(diffLon, diffLat)
-  const zoom = maxDiff > 10 ? 5 : maxDiff > 5 ? 6 : maxDiff > 2 ? 7 : maxDiff > 1 ? 8 : 10
-
   // Línea de ruta REAL por carretera: Geoapify Routing → geometría simplificada.
   // Geoapify static maps NO acepta polyline codificada (devuelve 400) ni la lista
   // completa de coordenadas (una ruta de 70 km son ~1000 puntos → URL >18k chars → 400),
@@ -53,6 +46,9 @@ export async function GET(req: NextRequest) {
   // mapa de 900×380 y la URL queda ~1,3k chars (probado, 200). Si el routing falla,
   // el mapa sigue saliendo con los 2 marcadores (sin línea).
   let geometryParam = ""
+  // Puntos para el encuadre. Por defecto los 2 extremos; si hay ruta, TODA la geometría
+  // (encuadrar sobre los extremos dejaba la ruta descentrada y tocando los bordes).
+  let bboxPoints: number[][] = [[o.lon, o.lat], [d.lon, d.lat]]
   try {
     const routeRes = await fetch(
       `https://api.geoapify.com/v1/routing?waypoints=${o.lat},${o.lon}|${d.lat},${d.lon}&mode=drive&apiKey=${apiKey}`
@@ -64,6 +60,7 @@ export async function GET(req: NextRequest) {
       if (geom?.type === "LineString") coords = geom.coordinates
       else if (geom?.type === "MultiLineString") coords = geom.coordinates.flat()
       if (coords.length >= 2) {
+        bboxPoints = coords
         const MAX_PUNTOS = 60
         const step = Math.max(1, Math.ceil(coords.length / MAX_PUNTOS))
         const simplificada = coords.filter((_, i) => i % step === 0 || i === coords.length - 1)
@@ -75,7 +72,20 @@ export async function GET(req: NextRequest) {
     // Routing caído → marcadores solo, sin romper el mapa.
   }
 
-  const mapUrl = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=900&height=380&center=lonlat:${midLon},${midLat}&zoom=${zoom}&marker=lonlat:${o.lon},${o.lat};type:material;color:%23111827;size:medium|lonlat:${d.lon},${d.lat};type:material;color:%23ef4444;size:medium${geometryParam}&apiKey=${apiKey}`
+  // Bounding box (con margen) de los puntos → Geoapify centra y hace zoom solo (area=rect)
+  // para abrazar la ruta. Margen 12% (mínimo absoluto para rutas muy cortas).
+  let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity
+  for (const [lon, lat] of bboxPoints) {
+    if (lon < minLon) minLon = lon
+    if (lon > maxLon) maxLon = lon
+    if (lat < minLat) minLat = lat
+    if (lat > maxLat) maxLat = lat
+  }
+  const padLon = Math.max((maxLon - minLon) * 0.12, 0.004)
+  const padLat = Math.max((maxLat - minLat) * 0.12, 0.004)
+  const area = `area=rect:${(minLon - padLon).toFixed(5)},${(minLat - padLat).toFixed(5)},${(maxLon + padLon).toFixed(5)},${(maxLat + padLat).toFixed(5)}`
+
+  const mapUrl = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=900&height=380&${area}&marker=lonlat:${o.lon},${o.lat};type:material;color:%23111827;size:medium|lonlat:${d.lon},${d.lat};type:material;color:%23ef4444;size:medium${geometryParam}&apiKey=${apiKey}`
 
   return NextResponse.json({ mapUrl, origin: o, destination: d })
 }
