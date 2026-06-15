@@ -6,9 +6,11 @@ import { usePathname } from "next/navigation"
 import { createClient } from "@/lib/supabase"
 import { FlotaFlyLogo } from "@/components/FlotaFlyLogo"
 import {
-  Inbox, ClipboardList, Users, BarChart3, Calendar, Settings, BusFront, LogOut,
+  Inbox, ClipboardList, Users, BarChart3, Calendar, Settings,
+  BusFront, IdCard, UsersRound, LogOut,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { COLORS, RADIUS, FONT_BODY, FONT_DISPLAY } from "@/lib/dashboard-ui"
 
 const NAV: { group: string; items: { href: string; label: string; icon: LucideIcon }[] }[] = [
   {
@@ -22,15 +24,20 @@ const NAV: { group: string; items: { href: string; label: string; icon: LucideIc
     ],
   },
   {
+    group: "Recursos",
+    items: [
+      { href: "/dashboard/conductores", label: "Conductores", icon: IdCard },
+      { href: "/dashboard/staff", label: "Personal", icon: UsersRound },
+      { href: "/dashboard/vehiculos", label: "Vehículos", icon: BusFront },
+    ],
+  },
+  {
     group: "Config",
     items: [
       { href: "/dashboard/ajustes", label: "Ajustes", icon: Settings },
-      { href: "/dashboard/conductores", label: "Conductores", icon: BusFront },
     ],
   },
 ]
-
-const FONT = "'DM Sans', system-ui, sans-serif"
 
 function isActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard"
@@ -48,15 +55,15 @@ export function DashboardSidebar({ email }: { email?: string }) {
   }
 
   return (
-    <aside style={{ width: 256, flexShrink: 0, background: "#0f172a", display: "flex", flexDirection: "column", height: "100vh", padding: 16, fontFamily: FONT, boxSizing: "border-box" }}>
+    <aside style={{ width: 256, flexShrink: 0, background: COLORS.navy, display: "flex", flexDirection: "column", height: "100vh", padding: 16, fontFamily: FONT_BODY, boxSizing: "border-box" }}>
       {/* HEADER */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 8px 20px" }}>
-        <FlotaFlyLogo size={36} style={{ filter: "brightness(0) invert(1)" }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 8px 18px" }}>
+        <FlotaFlyLogo size={34} style={{ filter: "brightness(0) invert(1)" }} />
         <div style={{ minWidth: 0 }}>
-          <p style={{ fontWeight: 700, fontSize: 16, margin: 0, letterSpacing: "-0.01em", lineHeight: 1.1 }}>
-            <span style={{ color: "#fff" }}>Flota</span><span style={{ color: "#0891b2" }}>Fly</span>
+          <p style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 17, margin: 0, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+            <span style={{ color: COLORS.onDark }}>Flota</span><span style={{ color: COLORS.tealOnDark }}>Fly</span>
           </p>
-          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, margin: "2px 0 0" }}>Panel de gestión</p>
+          <p style={{ color: COLORS.onDarkMuted, fontSize: 11.5, margin: "2px 0 0" }}>Panel de gestión</p>
         </div>
       </div>
 
@@ -64,7 +71,7 @@ export function DashboardSidebar({ email }: { email?: string }) {
       <nav style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
         {NAV.map(section => (
           <div key={section.group}>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "0 8px", margin: "24px 0 12px" }}>
+            <p style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.38)", textTransform: "uppercase", letterSpacing: "0.1em", padding: "0 10px", margin: "22px 0 10px" }}>
               {section.group}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -79,10 +86,10 @@ export function DashboardSidebar({ email }: { email?: string }) {
       {/* FOOTER */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 14, marginTop: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 8px", marginBottom: 12 }}>
-          <div style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>{(email?.[0] ?? "U").toUpperCase()}</span>
+          <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>{(email?.[0] ?? "U").toUpperCase()}</span>
           </div>
-          <span title={email} style={{ fontSize: 12.5, color: "rgba(255,255,255,0.7)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+          <span title={email} style={{ fontSize: 12.5, color: COLORS.onDarkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
             {email || "—"}
           </span>
         </div>
@@ -92,9 +99,9 @@ export function DashboardSidebar({ email }: { email?: string }) {
           onMouseLeave={() => setLogoutHover(false)}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", height: 38,
-            borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)",
-            background: logoutHover ? "rgba(255,255,255,0.05)" : "transparent",
-            color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT, transition: "background 0.15s",
+            borderRadius: RADIUS.sm, border: "1px solid rgba(255,255,255,0.16)",
+            background: logoutHover ? "rgba(255,255,255,0.06)" : "transparent",
+            color: COLORS.onDark, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT_BODY, transition: "background 0.15s",
           }}
         >
           <LogOut style={{ width: 14, height: 14 }} /> Cerrar sesión
@@ -107,20 +114,21 @@ export function DashboardSidebar({ email }: { email?: string }) {
 function NavItem({ item, active }: { item: { href: string; label: string; icon: LucideIcon }; active: boolean }) {
   const [hover, setHover] = useState(false)
   const Icon = item.icon
-  const bg = active ? "rgba(255,255,255,0.1)" : hover ? "rgba(255,255,255,0.05)" : "transparent"
-  const color = active ? "#fff" : "rgba(255,255,255,0.7)"
+  const bg = active ? "rgba(255,255,255,0.11)" : hover ? "rgba(255,255,255,0.05)" : "transparent"
+  const color = active ? COLORS.onDark : "rgba(255,255,255,0.66)"
   return (
     <Link
       href={item.href}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 8,
+        display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: RADIUS.sm,
         fontSize: 13.5, fontWeight: active ? 600 : 500, textDecoration: "none",
         background: bg, color, transition: "all 0.15s",
+        boxShadow: active ? `inset 3px 0 0 ${COLORS.tealOnDark}` : "none",
       }}
     >
-      <Icon style={{ width: 17, height: 17, flexShrink: 0 }} /> {item.label}
+      <Icon style={{ width: 17, height: 17, flexShrink: 0, color: active ? COLORS.tealOnDark : "currentColor" }} /> {item.label}
     </Link>
   )
 }

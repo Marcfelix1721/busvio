@@ -1,16 +1,8 @@
-import Link from "next/link"
-import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
-import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
-import type { ReactNode } from "react"
 import { redirect } from "next/navigation"
 import { getCompanyIdServer } from "@/lib/get-company-id-server"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import {
-  BusFront, FileText, Settings, Users,
-  BarChart3, Inbox, ClipboardList,
-} from "lucide-react"
-import { LogoutButton } from "@/components/dashboard/LogoutButton"
+import { FileText } from "lucide-react"
 import { QuoteRequest } from "@/lib/types"
 
 async function createClient() {
@@ -76,14 +68,7 @@ export default async function AnalyticsPage() {
   const topRutas = Array.from(rutaMap.entries()).sort((a,b) => b[1]-a[1]).slice(0,5)
 
   return (
-    <div className="flex h-screen bg-[#f5f5f4] overflow-hidden" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-
-      {/* SIDEBAR */}
-      <DashboardSidebar email={session.user.email} />
-
-      {/* MAIN */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-5">
+    <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-5">
 
           <div>
             <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight">Analytics</h1>
@@ -191,18 +176,6 @@ export default async function AnalyticsPage() {
               )}
             </div>
           </div>
-        </div>
-      </main>
     </div>
-  )
-}
-
-function SideLink({ href, icon, label, active }: { href: string; icon: ReactNode; label: string; active?: boolean }) {
-  return (
-    <Link href={href} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${
-      active ? "bg-white/10 text-white" : "text-white/50 hover:text-white hover:bg-white/5"
-    }`}>
-      {icon} {label}
-    </Link>
   )
 }

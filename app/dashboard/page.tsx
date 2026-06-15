@@ -1,21 +1,15 @@
 import Link from "next/link"
-import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
-import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
-import type { ReactNode } from "react"
 import { redirect } from "next/navigation"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import {
-  BusFront, Clock3, FileText, Settings,
-  CircleCheck, Users, Euro, ChevronRight, AlertTriangle,
-  BarChart3, ArrowUpRight, Inbox, Calendar, TrendingUp, ClipboardList,
-} from "lucide-react"
-import { LogoutButton } from "@/components/dashboard/LogoutButton"
+import { FileText, CircleCheck, Euro, Clock3, AlertTriangle, Crown } from "lucide-react"
 import { QuoteRequest } from "@/lib/types"
 import { DashboardClient } from "@/components/dashboard/DashboardClient"
 import { ImpersonationBanner } from "@/components/dashboard/ImpersonationBanner"
 import { OnboardingWizard } from "@/components/dashboard/OnboardingWizard"
 import { ADMIN_EMAIL } from "@/lib/admin"
+import { StatCard } from "@/components/dashboard/StatCard"
+import { COLORS, RADIUS, SPACE, FONT_DISPLAY } from "@/lib/dashboard-ui"
 
 export const revalidate = 0
 
@@ -111,6 +105,7 @@ export default async function DashboardPage() {
   const clientes = new Set(requests.map(r => r.requester_email)).size
   const aceptadas = requests.filter(r => r.status === "aceptado").length
   const tasa = requests.length > 0 ? Math.round((aceptadas / requests.length) * 100) : 0
+  const enviados = requests.filter(r => r.status === "enviado").length
 
   const urgentes = requests.filter(r => {
     const d = diasHasta(r.trip_date)
@@ -128,156 +123,98 @@ export default async function DashboardPage() {
       label: "Total solicitudes",
       value: requests.length,
       sub: `${requests.filter(r => r.status === "nuevo").length} nuevas · ${requests.filter(r => r.status === "en_revision").length} en revisión`,
-      color: "#2563eb",
-      lightColor: "#eff6ff",
-      icon: "file",
+      icon: FileText,
+      tone: "default" as const,
     },
     {
       label: "Tasa de cierre",
       value: `${tasa}%`,
-      sub: `${aceptadas} aceptadas de ${requests.length}`,
-      color: "#16a34a",
-      lightColor: "#f0fdf4",
-      icon: "check",
-      up: tasa > 0,
+      sub: `${aceptadas} aceptada${aceptadas === 1 ? "" : "s"} de ${requests.length}`,
+      icon: CircleCheck,
+      tone: "positive" as const,
     },
     {
       label: "Facturado",
       value: `${facturado.toLocaleString("es-ES")} €`,
-      sub: `${clientes} clientes únicos`,
-      color: "#7c3aed",
-      lightColor: "#f5f3ff",
-      icon: "euro",
+      sub: `${clientes} cliente${clientes === 1 ? "" : "s"} único${clientes === 1 ? "" : "s"}`,
+      icon: Euro,
+      tone: "positive" as const,
     },
     {
       label: "Pendiente de cobro",
       value: `${pendiente.toLocaleString("es-ES")} €`,
-      sub: `${requests.filter(r => r.status === "enviado").length} presupuestos enviados`,
-      color: "#d97706",
-      lightColor: "#fffbeb",
-      icon: "clock",
+      sub: `${enviados} presupuesto${enviados === 1 ? "" : "s"} enviado${enviados === 1 ? "" : "s"}`,
+      icon: Clock3,
+      tone: "warning" as const,
     },
   ]
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#f5f5f4", fontFamily: "'DM Sans', system-ui, sans-serif", overflow: "hidden" }}>
+    <>
+      {/* BANNER DE IMPERSONACIÓN (superadmin) */}
+      {isImpersonating && (
+        <div style={{ background: COLORS.navy, padding: "12px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.08)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: RADIUS.sm, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Crown style={{ width: 16, height: 16, color: COLORS.tealOnDark }} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", margin: 0 }}>Modo Superadmin · Impersonando {companyName}</p>
+              <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.7)", margin: 0 }}>Estás viendo el panel como esta empresa</p>
+            </div>
+          </div>
+          <ImpersonationBanner />
+        </div>
+      )}
 
-      {/* SIDEBAR */}
-      <DashboardSidebar email={session.user.email} />
+      <div style={{ maxWidth: SPACE.pageMax, margin: "0 auto", padding: "32px 32px 48px" }}>
 
-      {/* MAIN */}
-      <main style={{ flex: 1, overflowY: "auto" }}>
-        {/* IMPERSONATION BANNER */}
-        {isImpersonating && (
-          <div style={{
-            background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-            borderBottom: "1px solid rgba(255,255,255,0.1)",
-            padding: "12px 32px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}>
-                <span style={{ fontSize: 16 }}>👑</span>
-              </div>
-              <div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", margin: 0 }}>
-                  Modo Superadmin: Impersonando {companyName}
-                </p>
-                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", margin: 0 }}>
-                  Estás viendo el dashboard como si fueras esta empresa
-                </p>
+        {/* HEADER */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: SPACE.section }}>
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 600, color: COLORS.navy, margin: 0, letterSpacing: "-0.025em" }}>{companyName}</h1>
+            <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4, textTransform: "capitalize" }}>{today}</p>
+          </div>
+          {urgentes.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: COLORS.warningSoft, border: `1px solid ${COLORS.warning}22`, borderRadius: RADIUS.pill, padding: "6px 14px", flexShrink: 0 }}>
+              <AlertTriangle style={{ width: 13, height: 13, color: COLORS.warning }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: COLORS.warning }}>
+                {urgentes.length} viaje{urgentes.length > 1 ? "s" : ""} urgente{urgentes.length > 1 ? "s" : ""}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* ALERTA URGENTES */}
+        {urgentes.length > 0 && (
+          <div style={{ background: COLORS.warningSoft, border: `1px solid ${COLORS.warning}22`, borderRadius: RADIUS.md, padding: "14px 18px", display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 24 }}>
+            <AlertTriangle style={{ width: 16, height: 16, color: COLORS.warning, marginTop: 2, flexShrink: 0 }} />
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: COLORS.warning, margin: 0 }}>
+                {urgentes.length} solicitud{urgentes.length > 1 ? "es" : ""} con viaje en menos de 7 días pendientes de gestionar
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 }}>
+                {urgentes.map(r => (
+                  <Link key={r.id} href={`/dashboard/solicitudes/${r.id}`}
+                    style={{ fontSize: 12, color: COLORS.warning, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 }}>
+                    {r.requester_name} · {new Date(r.trip_date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
+                  </Link>
+                ))}
               </div>
             </div>
-            <ImpersonationBanner />
           </div>
         )}
 
-        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "32px 32px 48px" }}>
-
-          {/* HEADER */}
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
-            <div>
-              <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", margin: 0, letterSpacing: "-0.02em" }}>{companyName}</h1>
-              <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 4, textTransform: "capitalize" }}>{today}</p>
-            </div>
-            {urgentes.length > 0 && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 20, padding: "6px 14px" }}>
-                <AlertTriangle style={{ width: 13, height: 13, color: "#d97706" }} />
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>
-                  {urgentes.length} viaje{urgentes.length > 1 ? "s" : ""} urgente{urgentes.length > 1 ? "s" : ""}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* ALERTA URGENTES */}
-          {urgentes.length > 0 && (
-            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: "14px 18px", display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 24 }}>
-              <AlertTriangle style={{ width: 16, height: 16, color: "#f59e0b", marginTop: 2, flexShrink: 0 }} />
-              <div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: "#92400e", margin: 0 }}>
-                  {urgentes.length} solicitud{urgentes.length > 1 ? "es" : ""} con viaje en menos de 7 días pendientes de gestionar
-                </p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 }}>
-                  {urgentes.map(r => (
-                    <Link key={r.id} href={`/dashboard/solicitudes/${r.id}`}
-                      style={{ fontSize: 12, color: "#b45309", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 }}>
-                      {r.requester_name} · {new Date(r.trip_date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* KPIs */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
-            {kpis.map((kpi, i) => (
-              <div key={i} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: "20px 22px", position: "relative", overflow: "hidden" }}>
-                <div style={{ position: "absolute", top: 0, left: 0, width: 4, height: "100%", background: kpi.color, borderRadius: "16px 0 0 16px" }} />
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                  <div style={{ width: 36, height: 36, background: kpi.lightColor, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {i === 0 && <FileText style={{ width: 16, height: 16, color: kpi.color }} />}
-                    {i === 1 && <CircleCheck style={{ width: 16, height: 16, color: kpi.color }} />}
-                    {i === 2 && <Euro style={{ width: 16, height: 16, color: kpi.color }} />}
-                    {i === 3 && <Clock3 style={{ width: 16, height: 16, color: kpi.color }} />}
-                  </div>
-                  {kpi.up && <TrendingUp style={{ width: 14, height: 14, color: "#16a34a" }} />}
-                </div>
-                <p style={{ fontSize: 26, fontWeight: 800, color: "#111827", margin: 0, letterSpacing: "-0.02em", lineHeight: 1 }}>{kpi.value}</p>
-                <p style={{ fontSize: 12, fontWeight: 600, color: "#374151", margin: "6px 0 2px" }}>{kpi.label}</p>
-                <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>{kpi.sub}</p>
-              </div>
-            ))}
-          </div>
-
-          <DashboardClient requests={requests} relacionMap={relacionMap} />
-
+        {/* KPIs */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(218px, 1fr))", gap: SPACE.gap, marginBottom: SPACE.section }}>
+          {kpis.map((kpi, i) => (
+            <StatCard key={i} label={kpi.label} value={kpi.value} sub={kpi.sub} icon={kpi.icon} tone={kpi.tone} />
+          ))}
         </div>
-      </main>
-    </div>
-  )
-}
 
-function SideLink({ href, icon, label, active }: { href: string; icon: ReactNode; label: string; active?: boolean }) {
-  return (
-    <Link href={href} style={{
-      display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8,
-      fontSize: 13, fontWeight: 500, textDecoration: "none", transition: "all 0.15s",
-      background: active ? "rgba(255,255,255,0.1)" : "transparent",
-      color: active ? "#fff" : "rgba(255,255,255,0.45)",
-    }}>
-      {icon} {label}
-    </Link>
+        <DashboardClient requests={requests} relacionMap={relacionMap} />
+
+      </div>
+    </>
   )
 }

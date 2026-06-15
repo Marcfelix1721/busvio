@@ -1,14 +1,12 @@
 import { redirect } from "next/navigation"
 import { getCompanyIdServer } from "@/lib/get-company-id-server"
-import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
-import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { ServiciosOperativos } from "@/components/dashboard/ServiciosOperativos"
-import Link from "next/link"
-import { BusFront, Users, BarChart3, Calendar, Inbox, Settings, ClipboardList } from "lucide-react"
+import { ClipboardList, CircleDashed, CalendarCheck, CircleCheck } from "lucide-react"
 import { DOCS_CRITICOS } from "@/lib/conflicts"
+import { StatCard } from "@/components/dashboard/StatCard"
+import { COLORS, SPACE, FONT_DISPLAY } from "@/lib/dashboard-ui"
 
 async function createClient() {
   const cookieStore = await cookies()
@@ -114,35 +112,36 @@ export default async function ServiciosPage() {
     }
   })
 
-  const sidebarLinks = [
-    { href: "/dashboard", icon: <Inbox style={{ width: 14, height: 14 }} />, label: "Solicitudes" },
-    { href: "/dashboard/servicios", icon: <ClipboardList style={{ width: 14, height: 14 }} />, label: "Servicios", active: true },
-    { href: "/dashboard/clientes", icon: <Users style={{ width: 14, height: 14 }} />, label: "Clientes" },
-    { href: "/dashboard/analytics", icon: <BarChart3 style={{ width: 14, height: 14 }} />, label: "Analytics" },
-    { href: "/dashboard/calendario", icon: <Calendar style={{ width: 14, height: 14 }} />, label: "Calendario" },
-  ]
+  const resumen = {
+    total: servicios.length,
+    sinAsignar: servicios.filter(s => s.estado === "sin_asignar").length,
+    asignados: servicios.filter(s => s.estado === "asignado" || s.estado === "en_curso").length,
+    finalizados: servicios.filter(s => s.estado === "finalizado").length,
+  }
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#f9fafb", fontFamily: "'DM Sans', system-ui, sans-serif", overflow: "hidden" }}>
-      <DashboardSidebar email={user.email} />
+    <div style={{ maxWidth: SPACE.pageMax, margin: "0 auto", padding: "32px 32px 48px" }}>
+      <div style={{ marginBottom: SPACE.section }}>
+        <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 600, color: COLORS.navy, margin: 0, letterSpacing: "-0.025em" }}>Servicios</h1>
+        <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4 }}>Planifica y asigna los servicios aceptados</p>
+      </div>
 
-      <main style={{ flex: 1, overflowY: "auto" }}>
-        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "36px 36px 56px" }}>
-          <div style={{ marginBottom: 28 }}>
-            <h1 style={{ fontSize: 25, fontWeight: 800, color: "#111827", margin: 0, letterSpacing: "-0.025em" }}>Servicios</h1>
-            <p style={{ fontSize: 14, color: "#6b7280", marginTop: 5 }}>Planifica y asigna los servicios aceptados</p>
-          </div>
-          <ServiciosOperativos
-            servicios={servicios}
-            conductores={conductores}
-            vehicles={vehicles}
-            busyDatesByStaff={busyDatesByStaff}
-            expiredDocByStaff={expiredDocByStaff}
-            vehicleBusyByDate={vehicleBusyByDate}
-            companyId={companyId}
-          />
-        </div>
-      </main>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(218px, 1fr))", gap: SPACE.gap, marginBottom: SPACE.section }}>
+        <StatCard label="Servicios aceptados" value={resumen.total} icon={ClipboardList} tone="default" />
+        <StatCard label="Sin asignar" value={resumen.sinAsignar} sub="Requieren conductor o vehículo" icon={CircleDashed} tone="warning" />
+        <StatCard label="Asignados" value={resumen.asignados} sub="Listos o en curso" icon={CalendarCheck} tone="default" />
+        <StatCard label="Finalizados" value={resumen.finalizados} icon={CircleCheck} tone="positive" />
+      </div>
+
+      <ServiciosOperativos
+        servicios={servicios}
+        conductores={conductores}
+        vehicles={vehicles}
+        busyDatesByStaff={busyDatesByStaff}
+        expiredDocByStaff={expiredDocByStaff}
+        vehicleBusyByDate={vehicleBusyByDate}
+        companyId={companyId}
+      />
     </div>
   )
 }

@@ -1,18 +1,12 @@
 import { redirect } from "next/navigation"
 import { getCompanyIdServer } from "@/lib/get-company-id-server"
-import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
-import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { SettingsForm } from "@/components/dashboard/SettingsForm"
 import CostVariablesManager from "@/components/dashboard/CostVariablesManager"
-import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import Link from "next/link"
 import type { ReactNode } from "react"
-import {
-  BusFront, Settings, Users, Bus,
-  BarChart3, Inbox, Calendar, ArrowUpRight, ChevronRight, ClipboardList
-} from "lucide-react"
+import { Users, Bus, ArrowUpRight } from "lucide-react"
 
 async function createClient() {
   const cookieStore = await cookies()
@@ -43,14 +37,7 @@ export default async function AjustesPage() {
   const totalStaff = staffData?.length ?? 0
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#f5f5f4", fontFamily: "'DM Sans', system-ui, sans-serif", overflow: "hidden" }}>
-
-      {/* SIDEBAR */}
-      <DashboardSidebar email={user.email} />
-
-      {/* MAIN */}
-      <main style={{ flex: 1, overflowY: "auto" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", padding: "36px 36px 80px" }}>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "36px 36px 80px" }}>
 
           {/* HEADER */}
           <div style={{ marginBottom: 32 }}>
@@ -101,22 +88,7 @@ export default async function AjustesPage() {
             </div>
           </SectionWrapper>
 
-        </div>
-      </main>
     </div>
-  )
-}
-
-function SideLink({ href, icon, label, active }: { href: string; icon: ReactNode; label: string; active?: boolean }) {
-  return (
-    <Link href={href} style={{
-      display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8,
-      fontSize: 13, fontWeight: 500, textDecoration: "none", transition: "all 0.15s",
-      background: active ? "rgba(255,255,255,0.1)" : "transparent",
-      color: active ? "#fff" : "rgba(255,255,255,0.45)",
-    }}>
-      {icon} {label}
-    </Link>
   )
 }
 

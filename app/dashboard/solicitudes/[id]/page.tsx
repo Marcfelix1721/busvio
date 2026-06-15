@@ -8,7 +8,6 @@ import {
   Mail, MapPin, Phone, Users, History,
   MessageSquare, TrendingUp,
 } from "lucide-react"
-import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import QuoteActions from "@/components/dashboard/QuoteActions"
 import { ClienteEstado } from "@/components/dashboard/ClienteEstado"
 import { MapaRuta } from "@/components/dashboard/MapaRuta"
@@ -168,22 +167,7 @@ export default async function QuoteRequestDetailPage({
   const sCfg = statusConfig[quote.status]
 
   return (
-    <div className="min-h-screen bg-[#f5f5f4]" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-      <div className="bg-[#111827] px-6 py-3.5 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm transition-colors">
-            <ArrowLeft className="size-3.5" /> Solicitudes
-          </Link>
-          <span className="text-white/20">/</span>
-          <span className="text-white/70 text-sm font-medium truncate max-w-[200px]">{quote.requester_name}</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-white/40 text-xs hidden md:block">#{quote.id.slice(0, 8).toUpperCase()}</span>
-          <LogoutButton />
-        </div>
-      </div>
-
-      <div className="max-w-[1300px] mx-auto px-6 py-6">
+    <div className="max-w-[1300px] mx-auto px-6 py-6">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -345,7 +329,6 @@ export default async function QuoteRequestDetailPage({
             />
           </div>
         </div>
-      </div>
     </div>
   )
 }

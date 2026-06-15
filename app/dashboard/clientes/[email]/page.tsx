@@ -1,18 +1,12 @@
 import { redirect, notFound } from "next/navigation"
 import { getCompanyIdServer } from "@/lib/get-company-id-server"
-import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
-import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import Link from "next/link"
-import type { ReactNode } from "react"
-import {
-  BusFront, Settings, Users, BarChart3,
-  Inbox, Calendar, ArrowLeft, Mail, Phone,
-  FileText, CheckCircle, XCircle, Clock, ClipboardList,
-} from "lucide-react"
-import { LogoutButton } from "@/components/dashboard/LogoutButton"
+import { ArrowLeft, Mail, Phone, FileText, CircleCheck, Euro, TrendingUp } from "lucide-react"
 import { ClienteActions } from "@/components/dashboard/ClienteActions"
+import { StatCard } from "@/components/dashboard/StatCard"
+import { COLORS, RADIUS, SHADOW, SPACE, FONT_DISPLAY } from "@/lib/dashboard-ui"
 
 async function createClient() {
   const cookieStore = await cookies()
@@ -24,20 +18,20 @@ async function createClient() {
 }
 
 const ESTADOS: Record<string, { label: string; color: string; bg: string }> = {
-  potencial:  { label: "Potencial",  color: "#d97706", bg: "#fef3c7" },
-  activo:     { label: "Activo",     color: "#16a34a", bg: "#f0fdf4" },
-  recurrente: { label: "Recurrente", color: "#2563eb", bg: "#eff6ff" },
-  inactivo:   { label: "Inactivo",   color: "#6b7280", bg: "#f3f4f6" },
-  perdido:    { label: "Perdido",    color: "#dc2626", bg: "#fef2f2" },
+  potencial:  { label: "Potencial",  color: COLORS.warning,   bg: COLORS.warningSoft },
+  activo:     { label: "Activo",     color: COLORS.teal,      bg: COLORS.tealSoft },
+  recurrente: { label: "Recurrente", color: COLORS.navy,      bg: COLORS.navySoft },
+  inactivo:   { label: "Inactivo",   color: COLORS.textMuted, bg: "#eef1f4" },
+  perdido:    { label: "Perdido",    color: COLORS.danger,    bg: COLORS.dangerSoft },
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  nuevo:       { label: "Nuevo",       color: "#6b7280", bg: "#f3f4f6" },
-  en_revision: { label: "En revisión", color: "#d97706", bg: "#fef3c7" },
-  enviado:     { label: "Enviado",     color: "#2563eb", bg: "#eff6ff" },
-  aceptado:    { label: "Aceptado",    color: "#16a34a", bg: "#f0fdf4" },
-  rechazado:   { label: "Rechazado",   color: "#dc2626", bg: "#fef2f2" },
-  cancelado:   { label: "Cancelado",   color: "#9ca3af", bg: "#f9fafb" },
+  nuevo:       { label: "Nuevo",       color: COLORS.textMuted, bg: "#eef1f4" },
+  en_revision: { label: "En revisión", color: COLORS.warning,   bg: COLORS.warningSoft },
+  enviado:     { label: "Enviado",     color: COLORS.navy,      bg: COLORS.navySoft },
+  aceptado:    { label: "Aceptado",    color: COLORS.teal,      bg: COLORS.tealSoft },
+  rechazado:   { label: "Rechazado",   color: COLORS.danger,    bg: COLORS.dangerSoft },
+  cancelado:   { label: "Cancelado",   color: COLORS.textFaint, bg: COLORS.surfaceAlt },
 }
 
 function fmt(d: string) {
@@ -95,142 +89,109 @@ export default async function ClienteFichaPage({ params }: { params: Promise<{ e
   const rel = estado ? ESTADOS[estado] : null
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#f5f5f4", fontFamily: "'DM Sans', system-ui, sans-serif", overflow: "hidden" }}>
+    <div style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 32px 64px" }}>
 
-      {/* SIDEBAR */}
-      <DashboardSidebar email={session.user.email} />
+      {/* BACK */}
+      <Link href="/dashboard/clientes" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: COLORS.textMuted, textDecoration: "none", marginBottom: 20 }}>
+        <ArrowLeft style={{ width: 14, height: 14 }} /> Volver a clientes
+      </Link>
 
-      {/* MAIN */}
-      <main style={{ flex: 1, overflowY: "auto" }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 32px 64px" }}>
-
-          {/* BACK */}
-          <Link href="/dashboard/clientes" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6b7280", textDecoration: "none", marginBottom: 24 }}>
-            <ArrowLeft style={{ width: 14, height: 14 }} /> Volver a clientes
-          </Link>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20, alignItems: "flex-start" }}>
-
-            {/* COLUMNA IZQUIERDA */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-              {/* CABECERA CLIENTE */}
-              <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: "24px" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 20 }}>
-                  <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <span style={{ fontSize: 22, fontWeight: 700, color: "#6b7280" }}>{nombre.charAt(0).toUpperCase()}</span>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" as const }}>
-                      <h1 style={{ fontSize: 20, fontWeight: 700, color: "#111827", margin: 0, letterSpacing: "-0.01em" }}>{nombre}</h1>
-                      {rel && (
-                        <span style={{ fontSize: 11, fontWeight: 700, background: rel.bg, color: rel.color, borderRadius: 6, padding: "2px 10px" }}>{rel.label}</span>
-                      )}
-                    </div>
-                    <div style={{ display: "flex", gap: 16, marginTop: 8, flexWrap: "wrap" as const }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#6b7280" }}>
-                        <Mail style={{ width: 13, height: 13 }} /> {email}
-                      </span>
-                      {telefono && (
-                        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#6b7280" }}>
-                          <Phone style={{ width: 13, height: 13 }} /> {telefono}
-                        </span>
-                      )}
-                    </div>
-                    {etiquetas.length > 0 && (
-                      <div style={{ display: "flex", gap: 5, marginTop: 10, flexWrap: "wrap" as const }}>
-                        {etiquetas.map(tag => (
-                          <span key={tag} style={{ fontSize: 11, fontWeight: 600, background: "#f3f4f6", color: "#6b7280", borderRadius: 4, padding: "2px 8px" }}>{tag}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* KPIs del cliente */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-                  {[
-                    { label: "Solicitudes", value: total, Icon: FileText, color: "#2563eb", bg: "#eff6ff" },
-                    { label: "Aceptadas", value: aceptadas, Icon: CheckCircle, color: "#16a34a", bg: "#f0fdf4" },
-                    { label: "Pendientes", value: pendientes, Icon: Clock, color: "#d97706", bg: "#fef3c7" },
-                    { label: "Tasa cierre", value: `${tasa}%`, Icon: BarChart3, color: "#7c3aed", bg: "#f5f3ff" },
-                  ].map(({ label, value, Icon, color, bg }) => (
-                    <div key={label} style={{ background: bg, borderRadius: 10, padding: "12px 14px" }}>
-                      <p style={{ fontSize: 18, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1 }}>{value}</p>
-                      <p style={{ fontSize: 11, color: "#6b7280", margin: "4px 0 0" }}>{label}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {facturado > 0 && (
-                  <div style={{ marginTop: 12, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 13, color: "#166534", fontWeight: 500 }}>Total facturado</span>
-                    <span style={{ fontSize: 18, fontWeight: 800, color: "#16a34a" }}>{facturado.toLocaleString("es-ES")} €</span>
-                  </div>
-                )}
-              </div>
-
-              {/* HISTORIAL DE SOLICITUDES */}
-              <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, overflow: "hidden" }}>
-                <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0 }}>Historial de solicitudes</p>
-                  <p style={{ fontSize: 12, color: "#9ca3af", margin: "2px 0 0" }}>{total} solicitud{total !== 1 ? "es" : ""} en total</p>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column" as const }}>
-                  {solicitudes.map((s, i) => {
-                    const st = STATUS_CONFIG[s.status] || STATUS_CONFIG.nuevo
-                    return (
-                      <Link key={s.id} href={`/dashboard/solicitudes/${s.id}`}
-                        className="hover:bg-[#fafafa]"
-                        style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 20px", borderBottom: i < solicitudes.length - 1 ? "1px solid #f9fafb" : "none", textDecoration: "none", transition: "background 0.15s" }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                            <p style={{ fontSize: 13, fontWeight: 600, color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
-                              {s.origin} → {s.destination}
-                            </p>
-                          </div>
-                          <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>
-                            {fmt(s.trip_date)} · {s.passengers} pasajero{s.passengers !== 1 ? "s" : ""}
-                          </p>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-                          {(s.final_price || s.estimated_price) && (
-                            <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>
-                              {(s.final_price ?? s.estimated_price).toLocaleString("es-ES")} €
-                            </span>
-                          )}
-                          <span style={{ fontSize: 11, fontWeight: 700, background: st.bg, color: st.color, borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" as const }}>{st.label}</span>
-                          <span style={{ fontSize: 12, color: "#9ca3af", whiteSpace: "nowrap" as const }}>{fmt(s.created_at)}</span>
-                        </div>
-                      </Link>
-                    )
-                  })}
-                </div>
-              </div>
+      {/* CABECERA CLIENTE */}
+      <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.lg, boxShadow: SHADOW.card, padding: 24, marginBottom: SPACE.gap }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: COLORS.navySoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 600, color: COLORS.navy }}>{nombre.charAt(0).toUpperCase()}</span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" as const }}>
+              <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 600, color: COLORS.navy, margin: 0, letterSpacing: "-0.02em" }}>{nombre}</h1>
+              {rel && (
+                <span style={{ fontSize: 11, fontWeight: 700, background: rel.bg, color: rel.color, borderRadius: 6, padding: "3px 10px" }}>{rel.label}</span>
+              )}
             </div>
-
-            {/* COLUMNA DERECHA — ACCIONES */}
-            <ClienteActions
-              email={email}
-              companyId={companyId}
-              clienteId={clienteData?.id ?? null}
-              nombre={nombre}
-              telefono={telefono}
-              estadoInicial={estado}
-              notasIniciales={notas}
-              etiquetasIniciales={etiquetas}
-            />
+            <div style={{ display: "flex", gap: 16, marginTop: 8, flexWrap: "wrap" as const }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: COLORS.textMuted }}>
+                <Mail style={{ width: 13, height: 13 }} /> {email}
+              </span>
+              {telefono && (
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: COLORS.textMuted }}>
+                  <Phone style={{ width: 13, height: 13 }} /> {telefono}
+                </span>
+              )}
+            </div>
+            {etiquetas.length > 0 && (
+              <div style={{ display: "flex", gap: 5, marginTop: 10, flexWrap: "wrap" as const }}>
+                {etiquetas.map(tag => (
+                  <span key={tag} style={{ fontSize: 11, fontWeight: 600, background: COLORS.navySoft, color: COLORS.navy, borderRadius: 4, padding: "2px 8px" }}>{tag}</span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      </main>
-    </div>
-  )
-}
+      </div>
 
-function SideLink({ href, icon, label, active }: { href: string; icon: ReactNode; label: string; active?: boolean }) {
-  return (
-    <Link href={href} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500, textDecoration: "none", background: active ? "rgba(255,255,255,0.1)" : "transparent", color: active ? "#fff" : "rgba(255,255,255,0.45)" }}>
-      {icon} {label}
-    </Link>
+      {/* STATCARDS */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: SPACE.gap, marginBottom: SPACE.gap }}>
+        <StatCard label="Solicitudes" value={total} sub={`${pendientes} pendiente${pendientes === 1 ? "" : "s"}`} icon={FileText} tone="default" />
+        <StatCard label="Aceptadas" value={aceptadas} sub={`${rechazadas} rechazada${rechazadas === 1 ? "" : "s"}`} icon={CircleCheck} tone="positive" />
+        <StatCard label="Facturado" value={`${facturado.toLocaleString("es-ES")} €`} icon={Euro} tone="positive" />
+        <StatCard label="Tasa de cierre" value={`${tasa}%`} icon={TrendingUp} tone="default" />
+      </div>
+
+      {/* 2 COLUMNAS: HISTORIAL + ACCIONES */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "flex-start" }}>
+
+        {/* HISTORIAL */}
+        <div style={{ flex: "1 1 440px", minWidth: 0 }}>
+          <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.lg, boxShadow: SHADOW.card, overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", borderBottom: `1px solid ${COLORS.border}` }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, margin: 0 }}>Historial de solicitudes</p>
+              <p style={{ fontSize: 12, color: COLORS.textFaint, margin: "2px 0 0" }}>{total} solicitud{total !== 1 ? "es" : ""} en total</p>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" as const }}>
+              {solicitudes.map((s, i) => {
+                const st = STATUS_CONFIG[s.status] || STATUS_CONFIG.nuevo
+                return (
+                  <Link key={s.id} href={`/dashboard/solicitudes/${s.id}`}
+                    className="hover:bg-[#fafbfc]"
+                    style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 20px", borderBottom: i < solicitudes.length - 1 ? `1px solid ${COLORS.border}` : "none", textDecoration: "none", transition: "background 0.15s" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                        {s.origin} → {s.destination}
+                      </p>
+                      <p style={{ fontSize: 12, color: COLORS.textFaint, margin: "3px 0 0" }}>
+                        {fmt(s.trip_date)} · {s.passengers} pasajero{s.passengers !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                      {(s.final_price || s.estimated_price) && (
+                        <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 600, color: COLORS.text }}>
+                          {(s.final_price ?? s.estimated_price).toLocaleString("es-ES")} €
+                        </span>
+                      )}
+                      <span style={{ fontSize: 11, fontWeight: 700, background: st.bg, color: st.color, borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" as const }}>{st.label}</span>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* ACCIONES */}
+        <div style={{ flex: "1 1 320px", minWidth: 0, maxWidth: 380 }}>
+          <ClienteActions
+            email={email}
+            companyId={companyId}
+            clienteId={clienteData?.id ?? null}
+            nombre={nombre}
+            telefono={telefono}
+            estadoInicial={estado}
+            notasIniciales={notas}
+            etiquetasIniciales={etiquetas}
+          />
+        </div>
+      </div>
+    </div>
   )
 }

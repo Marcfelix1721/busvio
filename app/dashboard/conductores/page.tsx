@@ -1,13 +1,8 @@
 import { redirect } from 'next/navigation'
 import { getCompanyIdServer } from "@/lib/get-company-id-server"
-import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
-import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { LogoutButton } from '@/components/dashboard/LogoutButton'
 import { ConductoresList } from '@/components/dashboard/ConductoresList'
-import Link from 'next/link'
-import { BusFront, Users, BarChart3, Calendar, Inbox, Settings, ClipboardList } from 'lucide-react'
 import type { Staff, ConductorStats } from '@/lib/staff'
 
 async function createClient() {
@@ -104,34 +99,18 @@ export default async function ConductoresPage() {
     }
   }
 
-  const sidebarLinks = [
-    { href: '/dashboard', icon: <Inbox style={{ width: 14, height: 14 }} />, label: 'Solicitudes' },
-    { href: '/dashboard/servicios', icon: <ClipboardList style={{ width: 14, height: 14 }} />, label: 'Servicios' },
-    { href: '/dashboard/clientes', icon: <Users style={{ width: 14, height: 14 }} />, label: 'Clientes' },
-    { href: '/dashboard/analytics', icon: <BarChart3 style={{ width: 14, height: 14 }} />, label: 'Analytics' },
-    { href: '/dashboard/calendario', icon: <Calendar style={{ width: 14, height: 14 }} />, label: 'Calendario' },
-  ]
-
   return (
-    <div style={{ display: 'flex', height: '100vh', background: '#f9fafb', fontFamily: "'DM Sans', system-ui, sans-serif", overflow: 'hidden' }}>
-      {/* SIDEBAR */}
-      <DashboardSidebar email={user.email} />
-
-      {/* MAIN */}
-      <main style={{ flex: 1, overflowY: 'auto' }}>
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '36px 36px 56px' }}>
-          <div style={{ marginBottom: 28 }}>
-            <h1 style={{ fontSize: 25, fontWeight: 800, color: '#111827', margin: 0, letterSpacing: '-0.025em' }}>Conductores</h1>
-            <p style={{ fontSize: 14, color: '#6b7280', marginTop: 5 }}>Gestiona tu equipo de conductores, su documentación y servicios</p>
-          </div>
-          <ConductoresList
-            initialConductores={conductores}
-            stats={stats}
-            expiringIds={[...expiring]}
-            companyId={companyId}
-          />
-        </div>
-      </main>
+    <div style={{ maxWidth: 1180, margin: '0 auto', padding: '36px 36px 56px' }}>
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: 25, fontWeight: 800, color: '#111827', margin: 0, letterSpacing: '-0.025em' }}>Conductores</h1>
+        <p style={{ fontSize: 14, color: '#6b7280', marginTop: 5 }}>Gestiona tu equipo de conductores, su documentación y servicios</p>
+      </div>
+      <ConductoresList
+        initialConductores={conductores}
+        stats={stats}
+        expiringIds={[...expiring]}
+        companyId={companyId}
+      />
     </div>
   )
 }

@@ -1,15 +1,8 @@
 import { redirect } from "next/navigation"
 import { getCompanyIdServer } from "@/lib/get-company-id-server"
-import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
-import { FlotaFlyLogo, FlotaFlyWordmark } from "@/components/FlotaFlyLogo"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { LogoutButton } from "@/components/dashboard/LogoutButton"
 import { CalendarioClient } from "@/components/dashboard/CalendarioClient"
-import Link from "next/link"
-import {
-  BusFront, Inbox, Users, BarChart3, Settings, Calendar, ClipboardList
-} from "lucide-react"
 
 async function createClient() {
   const cookieStore = await cookies()
@@ -61,14 +54,7 @@ export default async function CalendarioPage() {
   }))
 
   return (
-    <div className="flex h-screen bg-[#f5f5f4] overflow-hidden" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-
-      {/* SIDEBAR */}
-      <DashboardSidebar email={user.email} />
-
-      {/* MAIN */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-[1200px] mx-auto px-6 py-6">
+    <div className="max-w-[1200px] mx-auto px-6 py-6">
           <div style={{ marginBottom: "1.5rem" }}>
             <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.375rem", fontWeight: 600, color: "#111827", letterSpacing: "-0.01em", margin: 0 }}>
               Calendario de servicios
@@ -78,18 +64,6 @@ export default async function CalendarioPage() {
             </p>
           </div>
           <CalendarioClient servicios={serviciosConDatos} />
-        </div>
-      </main>
     </div>
-  )
-}
-
-function SideLink({ href, icon, label, active }: { href: string; icon: React.ReactNode; label: string; active?: boolean }) {
-  return (
-    <Link href={href} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${
-      active ? "bg-white/10 text-white" : "text-white/50 hover:text-white hover:bg-white/5"
-    }`}>
-      {icon} {label}
-    </Link>
   )
 }
