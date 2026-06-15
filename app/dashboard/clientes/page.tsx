@@ -163,9 +163,7 @@ export default async function ClientesPage() {
                     const rel = c.estado ? ESTADOS[c.estado] : null
                     const tasa = c.total > 0 ? Math.round((c.aceptadas / c.total) * 100) : 0
                     return (
-                      <tr key={c.email} style={{ borderBottom: "1px solid #f9fafb" }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "#fafafa")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                      <tr key={c.email} className="hover:bg-[#fafafa]" style={{ borderBottom: "1px solid #f9fafb" }}>
 
                         {/* Cliente */}
                         <td style={{ padding: "14px 20px" }}>

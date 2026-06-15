@@ -174,9 +174,8 @@ export default async function ClienteFichaPage({ params }: { params: Promise<{ e
                     const st = STATUS_CONFIG[s.status] || STATUS_CONFIG.nuevo
                     return (
                       <Link key={s.id} href={`/dashboard/solicitudes/${s.id}`}
-                        style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 20px", borderBottom: i < solicitudes.length - 1 ? "1px solid #f9fafb" : "none", textDecoration: "none", transition: "background 0.15s" }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "#fafafa")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                        className="hover:bg-[#fafafa]"
+                        style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 20px", borderBottom: i < solicitudes.length - 1 ? "1px solid #f9fafb" : "none", textDecoration: "none", transition: "background 0.15s" }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                             <p style={{ fontSize: 13, fontWeight: 600, color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
