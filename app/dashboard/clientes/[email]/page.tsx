@@ -45,8 +45,10 @@ function fmt(d: string) {
 }
 
 export default async function ClienteFichaPage({ params }: { params: Promise<{ email: string }> }) {
-  const { email: emailParam } = await params
-  const email = decodeURIComponent(emailParam)
+  // Next App Router ya decodifica los params de ruta; usar email directo (un
+  // decodeURIComponent extra petaba con URIError si el email tenía '%').
+  const { email } = await params
+  if (!email) notFound()
 
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
