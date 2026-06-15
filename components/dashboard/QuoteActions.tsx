@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { AlertTriangle, Info, RefreshCw, Loader2, MapPin, Calendar, Clock, Warehouse, Bus, Settings, Wallet, Check, Mail } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Loader2, MapPin, Calendar, Clock, Warehouse, Bus, Settings, Wallet, Check, Mail } from 'lucide-react'
 import { COLORS, RADIUS, FONT_BODY, FONT_DISPLAY } from '@/lib/dashboard-ui'
 
 const supabase = createBrowserClient(
@@ -183,17 +183,17 @@ export default function QuoteActions({ quote, companyId, vehicles, busyVehicleId
             <span style={{ fontSize: 12, fontWeight: 600, color: COLORS.warning }}>Este vehículo ya está asignado a otro servicio ese día</span>
           </div>
         )}
-        {vehicleId && (
-          <p style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: COLORS.textFaint, marginTop: 6 }}>
-            <Info style={{ width: 12, height: 12, flexShrink: 0 }} />
-            Selecciona el vehículo antes de calcular para usar sus costes propios
-          </p>
-        )}
       </div>
 
       {/* BOTÓN CALCULAR */}
       <div style={{ marginBottom: 14 }}>
-        <button style={s.btn} onClick={calcular} disabled={loading}>
+        {!vehicleId && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: COLORS.warningSoft, border: `1px solid ${COLORS.warning}40`, borderRadius: RADIUS.sm, padding: '8px 11px', marginBottom: 10 }}>
+            <AlertTriangle style={{ width: 14, height: 14, color: COLORS.warning, flexShrink: 0 }} />
+            <span style={{ fontSize: 12, fontWeight: 600, color: COLORS.warning }}>Asigna un vehículo para calcular el precio</span>
+          </div>
+        )}
+        <button style={{ ...s.btn, ...(loading || !vehicleId ? { opacity: 0.55, cursor: 'not-allowed' } : {}) }} onClick={calcular} disabled={loading || !vehicleId}>
           {loading
             ? (<><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Calculando...</>)
             : (<><RefreshCw style={{ width: 15, height: 15 }} /> Calcular precio</>)}
