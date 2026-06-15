@@ -46,7 +46,36 @@ export async function GET(req: NextRequest) {
   const maxDiff = Math.max(diffLon, diffLat)
   const zoom = maxDiff > 10 ? 5 : maxDiff > 5 ? 6 : maxDiff > 2 ? 7 : maxDiff > 1 ? 8 : 10
 
-  const mapUrl = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=900&height=380&center=lonlat:${midLon},${midLat}&zoom=${zoom}&marker=lonlat:${o.lon},${o.lat};type:material;color:%23111827;size:medium|lonlat:${d.lon},${d.lat};type:material;color:%23ef4444;size:medium&apiKey=${apiKey}`
+  // Línea de ruta REAL por carretera: Geoapify Routing → geometría simplificada.
+  // Geoapify static maps NO acepta polyline codificada (devuelve 400) ni la lista
+  // completa de coordenadas (una ruta de 70 km son ~1000 puntos → URL >18k chars → 400),
+  // así que muestreamos a ~60 puntos: la forma real de la carretera se mantiene en un
+  // mapa de 900×380 y la URL queda ~1,3k chars (probado, 200). Si el routing falla,
+  // el mapa sigue saliendo con los 2 marcadores (sin línea).
+  let geometryParam = ""
+  try {
+    const routeRes = await fetch(
+      `https://api.geoapify.com/v1/routing?waypoints=${o.lat},${o.lon}|${d.lat},${d.lon}&mode=drive&apiKey=${apiKey}`
+    )
+    if (routeRes.ok) {
+      const routeData = await routeRes.json()
+      const geom = routeData.features?.[0]?.geometry
+      let coords: number[][] = []
+      if (geom?.type === "LineString") coords = geom.coordinates
+      else if (geom?.type === "MultiLineString") coords = geom.coordinates.flat()
+      if (coords.length >= 2) {
+        const MAX_PUNTOS = 60
+        const step = Math.max(1, Math.ceil(coords.length / MAX_PUNTOS))
+        const simplificada = coords.filter((_, i) => i % step === 0 || i === coords.length - 1)
+        const lista = simplificada.map(c => `${c[0].toFixed(5)},${c[1].toFixed(5)}`).join(",")
+        geometryParam = `&geometry=polyline:${lista};linecolor:%231e3a5f;linewidth:4;lineopacity:0.85`
+      }
+    }
+  } catch {
+    // Routing caído → marcadores solo, sin romper el mapa.
+  }
+
+  const mapUrl = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=900&height=380&center=lonlat:${midLon},${midLat}&zoom=${zoom}&marker=lonlat:${o.lon},${o.lat};type:material;color:%23111827;size:medium|lonlat:${d.lon},${d.lat};type:material;color:%23ef4444;size:medium${geometryParam}&apiKey=${apiKey}`
 
   return NextResponse.json({ mapUrl, origin: o, destination: d })
 }
