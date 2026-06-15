@@ -54,14 +54,13 @@ fija "Coste por km" que se duplicaba.
 
 ---
 
-## 4. Mapa de la ficha de solicitud: no dibuja la línea de ruta
+## 4. Mapa de la ficha de solicitud: línea de ruta — ✅ HECHO (v1, commit 4d8865f)
 
-`components/dashboard/MapaRuta.tsx` es una `<img>` estática de Geoapify; muestra el área +
-2 marcadores (origen/destino) pero **no la línea de ruta**, porque
-`app/api/mapa-ruta/route.ts` solo **geocodifica** los puntos y no incluye el parámetro
-`&geometry=` ni llama a la API de routing.
+`app/api/mapa-ruta/route.ts` ya dibuja la **línea real por carretera**: tras geocodificar,
+llama a Geoapify Routing (`mode=drive`), simplifica la geometría a ~60 puntos y la añade al
+static map como `&geometry=polyline:…;linecolor:#1e3a5f` (navy). Con fallback a marcadores si
+el routing falla. (Geoapify static maps no acepta polyline codificada ni la lista completa de
+coordenadas → por eso se muestrea a ~60 pts.)
 
-- **Pendiente (tanda propia, server-side):** en `mapa-ruta`, llamar a Geoapify Routing
-  (origen→destino, `mode=drive`), obtener la geometría (polyline codificada) y añadir
-  `&geometry=polyline:…;linecolor:…;linewidth:…` a la URL del static map. Esfuerzo moderado;
-  cuidar la longitud de la URL. El `<img>` no cambia.
+- **Pendiente menor:** incluir las **paradas intermedias** (`quote.stops`) en los waypoints
+  del mapa — v1 hace origen→destino directo. Coste: +1 llamada a Geoapify (routing) por carga.
