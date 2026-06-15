@@ -26,6 +26,8 @@ export type QuoteRequest = {
   stops?: string
   trip_date: string
   departure_time: string
+  return_date?: string | null
+  return_time?: string | null
   passengers: number
   vehicle_type: "minibus" | "autobus" | "autocar"
   comments?: string

@@ -162,7 +162,7 @@ export default async function QuoteRequestDetailPage({
 
   const serviceType = extractCommentField(quote.comments, "Tipo de servicio") ?? "—"
   const tipoCliente = extractCommentField(quote.comments, "Tipo de cliente") ?? "—"
-  const endTime = extractCommentField(quote.comments, "Hora de regreso/finalizacion") ?? "No especificada"
+  const endTime = quote.return_time ?? "No especificada"
   const dias = diasHasta(quote.trip_date)
   const esUrgente = dias >= 0 && dias <= 7 && !["aceptado","cancelado","rechazado"].includes(quote.status)
   const sCfg = statusConfig[quote.status]
@@ -235,10 +235,10 @@ export default async function QuoteRequestDetailPage({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <InfoTile icon={<Calendar style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Fecha viaje" value={fmt(quote.trip_date)} />
                 <InfoTile icon={<Users style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Pasajeros" value={String(quote.passengers)} />
-                <InfoTile icon={<Bus style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Vehículo" value={quote.vehicle_type} />
+                <InfoTile icon={<Bus style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Vehículo" value={vehiculoNombre ?? "Sin asignar"} />
                 <InfoTile icon={<FileText style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Tipo servicio" value={serviceType} />
                 <InfoTile icon={<Clock style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Hora salida" value={quote.departure_time} />
-                <InfoTile icon={<Clock style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Hora llegada" value={endTime} />
+                <InfoTile icon={<Clock style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Hora regreso" value={endTime} />
                 {quote.estimated_km && (
                   <InfoTile icon={<MapPin style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Distancia" value={`${quote.estimated_km} km`} />
                 )}
