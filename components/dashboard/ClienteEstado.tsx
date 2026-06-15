@@ -2,13 +2,15 @@
 
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import { Circle } from 'lucide-react'
+import { COLORS, RADIUS, SHADOW, FONT_BODY } from '@/lib/dashboard-ui'
 
 const estados = [
-  { value: 'potencial', label: '🟡 Potencial', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-  { value: 'activo', label: '🟢 Activo', color: 'bg-green-50 text-green-700 border-green-200' },
-  { value: 'recurrente', label: '🔵 Recurrente', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  { value: 'inactivo', label: '⚫ Inactivo', color: 'bg-gray-50 text-gray-600 border-gray-200' },
-  { value: 'perdido', label: '🔴 Perdido', color: 'bg-red-50 text-red-700 border-red-200' },
+  { value: 'potencial',  label: 'Potencial',  color: COLORS.warning,   bg: COLORS.warningSoft },
+  { value: 'activo',     label: 'Activo',     color: COLORS.teal,      bg: COLORS.tealSoft },
+  { value: 'recurrente', label: 'Recurrente', color: COLORS.navy,      bg: COLORS.navySoft },
+  { value: 'inactivo',   label: 'Inactivo',   color: COLORS.textMuted, bg: '#eef1f4' },
+  { value: 'perdido',    label: 'Perdido',    color: COLORS.danger,    bg: COLORS.dangerSoft },
 ]
 
 type Props = {
@@ -59,36 +61,48 @@ export function ClienteEstado({ companyId, email, nombre, telefono, estadoInicia
   const estadoActual = estados.find(e => e.value === estado)
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+    <div style={{ background: COLORS.surface, borderRadius: RADIUS.lg, border: `1px solid ${COLORS.border}`, boxShadow: SHADOW.card, padding: 24, fontFamily: FONT_BODY }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
           Relación comercial
         </h2>
         {mensaje && (
-          <span className="text-xs text-green-600 font-medium">{mensaje}</span>
+          <span style={{ fontSize: 12, color: COLORS.teal, fontWeight: 600 }}>{mensaje}</span>
         )}
       </div>
 
-      <div className={`inline-flex items-center border px-3 py-1.5 rounded-full text-sm font-semibold mb-4 ${estadoActual?.color}`}>
-        {estadoActual?.label}
-      </div>
+      {estadoActual && (
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: `1px solid ${estadoActual.color}33`, background: estadoActual.bg, padding: '5px 12px', borderRadius: RADIUS.pill, fontSize: 13, fontWeight: 600, color: estadoActual.color, marginBottom: 16 }}>
+          <Circle style={{ width: 9, height: 9, fill: estadoActual.color, color: estadoActual.color }} />
+          {estadoActual.label}
+        </div>
+      )}
 
-      <p className="text-xs text-gray-400 mb-3">Cambiar estado:</p>
-      <div className="grid grid-cols-2 gap-2">
-        {estados.map((e) => (
-          <button
-            key={e.value}
-            onClick={() => cambiarEstado(e.value)}
-            disabled={guardando || e.value === estado}
-            className={`text-xs px-3 py-2 rounded-lg border font-medium transition-all
-              ${e.value === estado
-                ? `${e.color} border opacity-60 cursor-default`
-                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
-          >
-            {e.label}
-          </button>
-        ))}
+      <p style={{ fontSize: 12, color: COLORS.textFaint, marginBottom: 12 }}>Cambiar estado:</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {estados.map((e) => {
+          const activo = e.value === estado
+          return (
+            <button
+              key={e.value}
+              onClick={() => cambiarEstado(e.value)}
+              disabled={guardando || activo}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 600,
+                padding: '8px 12px', borderRadius: RADIUS.sm, fontFamily: FONT_BODY,
+                transition: 'all 0.15s', textAlign: 'left',
+                border: `1px solid ${activo ? `${e.color}33` : COLORS.border}`,
+                background: activo ? e.bg : COLORS.surface,
+                color: activo ? e.color : COLORS.textMuted,
+                opacity: activo ? 0.6 : 1,
+                cursor: activo ? 'default' : 'pointer',
+              }}
+            >
+              <Circle style={{ width: 9, height: 9, fill: e.color, color: e.color, flexShrink: 0 }} />
+              {e.label}
+            </button>
+          )
+        })}
       </div>
     </div>
   )

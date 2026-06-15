@@ -3,6 +3,7 @@ import { getCompanyIdServer } from "@/lib/get-company-id-server"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { CalendarioClient } from "@/components/dashboard/CalendarioClient"
+import { COLORS, SPACE, FONT_DISPLAY } from "@/lib/dashboard-ui"
 
 async function createClient() {
   const cookieStore = await cookies()
@@ -54,16 +55,19 @@ export default async function CalendarioPage() {
   }))
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-6">
-          <div style={{ marginBottom: "1.5rem" }}>
-            <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.375rem", fontWeight: 600, color: "#111827", letterSpacing: "-0.01em", margin: 0 }}>
-              Calendario de servicios
-            </h1>
-            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#6b7280", marginTop: "4px" }}>
-              Servicios confirmados con vehículo y personal asignado
-            </p>
-          </div>
-          <CalendarioClient servicios={serviciosConDatos} />
+    <div style={{ maxWidth: SPACE.pageMax, margin: "0 auto", padding: "32px 32px 64px" }}>
+
+      {/* HEADER */}
+      <div style={{ marginBottom: SPACE.section }}>
+        <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 600, color: COLORS.navy, margin: 0, letterSpacing: "-0.025em" }}>
+          Calendario de servicios
+        </h1>
+        <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4 }}>
+          Servicios confirmados con vehículo y personal asignado
+        </p>
+      </div>
+
+      <CalendarioClient servicios={serviciosConDatos} />
     </div>
   )
 }

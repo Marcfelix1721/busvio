@@ -132,7 +132,7 @@ export function ServiciosOperativos({ servicios: initial, conductores, vehicles,
       <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ position: "relative" }}>
           <Search style={{ width: 15, height: 15, color: "#9ca3af", position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)" }} />
-          <input placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} style={{ ...inputStyle, paddingLeft: 34, width: 200, cursor: "text" }} />
+          <input type="text" name="servicios-busqueda" autoComplete="off" data-1p-ignore data-lpignore="true" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} style={{ ...inputStyle, paddingLeft: 34, width: 200, cursor: "text" }} />
         </div>
         <select value={fEstado} onChange={e => setFEstado(e.target.value)} style={inputStyle}>
           <option value="todos">Todos los estados</option>
@@ -307,7 +307,7 @@ function AsignacionModal({ servicio, conductores, vehicles, busyDatesByStaff, ex
     setError("")
     if (conductorId) {
       const c = conductorConflictFor(conductores.find(x => x.id === conductorId)!)
-      if (c.level === "block") { setError("❌ No se puede asignar este conductor: " + c.text); return }
+      if (c.level === "block") { setError("No se puede asignar este conductor: " + c.text); return }
       if (c.level === "warn") { setConfirm(c); return }
     }
     doAssign()
@@ -360,13 +360,13 @@ function AsignacionModal({ servicio, conductores, vehicles, busyDatesByStaff, ex
             <select value={vehicleId} onChange={e => setVehicleId(e.target.value)} style={{ ...inputStyle, width: "100%" }}>
               <option value="">Sin asignar</option>
               {vehicles.map(v => (
-                <option key={v.id} value={v.id}>{v.marca_modelo} ({v.matricula}){vehicleBusy(v.id) ? "  ⚠️ ocupado ese día" : ""}</option>
+                <option key={v.id} value={v.id}>{v.marca_modelo} ({v.matricula}){vehicleBusy(v.id) ? "  (ocupado ese día)" : ""}</option>
               ))}
             </select>
           </div>
         </div>
 
-        {error && <p style={{ fontSize: 13, color: "#dc2626", margin: "14px 0 0" }}>{error.replace("❌ ", "")}</p>}
+        {error && <p style={{ fontSize: 13, color: "#dc2626", margin: "14px 0 0", display: "flex", alignItems: "center", gap: 6 }}><AlertTriangle style={{ width: 14, height: 14, flexShrink: 0 }} /> {error}</p>}
 
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 22 }}>
           <button onClick={onClose} style={{ height: 40, padding: "0 16px", borderRadius: 9, border: "1px solid #e5e7eb", background: "#fff", fontSize: 13, fontWeight: 600, color: "#374151", cursor: "pointer", fontFamily: FONT }}>Cancelar</button>

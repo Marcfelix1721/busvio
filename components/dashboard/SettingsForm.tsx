@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, type CSSProperties, type FocusEvent } from
 import { createClient } from "@/lib/supabase"
 import { AddressAutocomplete } from "@/components/AddressAutocomplete"
 import { Building2, MapPin, TrendingUp, Save, Upload, Check, Bell, Shield, Lock } from "lucide-react"
+import { COLORS, RADIUS, SHADOW, FONT_BODY } from "@/lib/dashboard-ui"
 
 type Company = {
   id: string; name: string; slug: string; email: string; phone: string
@@ -16,20 +17,20 @@ type Settings = Record<string, number>
 // Estilo y foco compartidos para los inputs de dirección con autocompletado
 // (mismo aspecto que TextField).
 const ADDR_STYLE: CSSProperties = {
-  height: 38, width: "100%", borderRadius: 9, border: "1.5px solid #e5e7eb",
-  background: "#fafafa", padding: "0 12px", fontSize: 13, color: "#111827", outline: "none",
-  fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: "border-box", transition: "all 0.15s",
+  height: 38, width: "100%", borderRadius: RADIUS.sm, border: `1.5px solid ${COLORS.borderStrong}`,
+  background: COLORS.surfaceAlt, padding: "0 12px", fontSize: 13, color: COLORS.text, outline: "none",
+  fontFamily: FONT_BODY, boxSizing: "border-box", transition: "all 0.15s",
 }
 const addrFocus = (e: FocusEvent<HTMLInputElement>) => {
-  e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.07)"
+  e.target.style.borderColor = COLORS.navy; e.target.style.background = COLORS.surface; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.07)"
 }
 const addrBlur = (e: FocusEvent<HTMLInputElement>) => {
-  e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none"
+  e.target.style.borderColor = COLORS.borderStrong; e.target.style.background = COLORS.surfaceAlt; e.target.style.boxShadow = "none"
 }
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase" as const, color: "#9ca3af", margin: "0 0 14px", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase" as const, color: COLORS.textMuted, margin: "0 0 14px", fontFamily: FONT_BODY }}>
       {children}
     </p>
   )
@@ -41,11 +42,11 @@ function TextField({ label, id, value, onChange, placeholder, span = false }: {
 }) {
   return (
     <div style={{ gridColumn: span ? "1 / -1" : undefined, display: "flex", flexDirection: "column" as const, gap: 5 }}>
-      <label htmlFor={id} style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>{label}</label>
+      <label htmlFor={id} style={{ fontSize: 12, fontWeight: 500, color: COLORS.textMuted, fontFamily: FONT_BODY }}>{label}</label>
       <input id={id} type="text" value={value} onChange={e => onChange(id, e.target.value)} placeholder={placeholder}
-        style={{ height: 38, width: "100%", borderRadius: 9, border: "1.5px solid #e5e7eb", background: "#fafafa", padding: "0 12px", fontSize: 13, color: "#111827", outline: "none", fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: "border-box" as const, transition: "all 0.15s" }}
-        onFocus={e => { e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.07)" }}
-        onBlur={e => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" }}
+        style={{ height: 38, width: "100%", borderRadius: RADIUS.sm, border: `1.5px solid ${COLORS.borderStrong}`, background: COLORS.surfaceAlt, padding: "0 12px", fontSize: 13, color: COLORS.text, outline: "none", fontFamily: FONT_BODY, boxSizing: "border-box" as const, transition: "all 0.15s" }}
+        onFocus={e => { e.target.style.borderColor = COLORS.navy; e.target.style.background = COLORS.surface; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.07)" }}
+        onBlur={e => { e.target.style.borderColor = COLORS.borderStrong; e.target.style.background = COLORS.surfaceAlt; e.target.style.boxShadow = "none" }}
       />
     </div>
   )
@@ -57,19 +58,19 @@ function NumberField({ label, id, value, onChange, unit, span = false }: {
 }) {
   return (
     <div style={{ gridColumn: span ? "1 / -1" : undefined, display: "flex", flexDirection: "column" as const, gap: 5 }}>
-      <label htmlFor={id} style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-        {label}{unit && <span style={{ color: "#d1d5db", fontWeight: 400, marginLeft: 6 }}>·</span>}
-        {unit && <span style={{ color: "#9ca3af", fontWeight: 400, marginLeft: 4 }}>{unit}</span>}
+      <label htmlFor={id} style={{ fontSize: 12, fontWeight: 500, color: COLORS.textMuted, fontFamily: FONT_BODY }}>
+        {label}{unit && <span style={{ color: COLORS.borderStrong, fontWeight: 400, marginLeft: 6 }}>·</span>}
+        {unit && <span style={{ color: COLORS.textFaint, fontWeight: 400, marginLeft: 4 }}>{unit}</span>}
       </label>
       <div style={{ position: "relative" as const }}>
         <input id={id} type="number" min={0} step="0.01" value={value}
           onChange={e => onChange(id, parseFloat(e.target.value) || 0)}
-          style={{ height: 38, width: "100%", borderRadius: 9, border: "1.5px solid #e5e7eb", background: "#fafafa", padding: unit ? "0 36px 0 12px" : "0 12px", fontSize: 13, color: "#111827", outline: "none", fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: "border-box" as const, transition: "all 0.15s" }}
-          onFocus={e => { e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.07)" }}
-          onBlur={e => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" }}
+          style={{ height: 38, width: "100%", borderRadius: RADIUS.sm, border: `1.5px solid ${COLORS.borderStrong}`, background: COLORS.surfaceAlt, padding: unit ? "0 36px 0 12px" : "0 12px", fontSize: 13, color: COLORS.text, outline: "none", fontFamily: FONT_BODY, boxSizing: "border-box" as const, transition: "all 0.15s" }}
+          onFocus={e => { e.target.style.borderColor = COLORS.navy; e.target.style.background = COLORS.surface; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.07)" }}
+          onBlur={e => { e.target.style.borderColor = COLORS.borderStrong; e.target.style.background = COLORS.surfaceAlt; e.target.style.boxShadow = "none" }}
         />
         {unit && (
-          <span style={{ position: "absolute" as const, right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#9ca3af", pointerEvents: "none", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+          <span style={{ position: "absolute" as const, right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: COLORS.textFaint, pointerEvents: "none", fontFamily: FONT_BODY }}>
             {unit}
           </span>
         )}
@@ -84,13 +85,13 @@ function PasswordField({ label, id, value, onChange, error, placeholder }: {
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
-      <label htmlFor={id} style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>{label}</label>
+      <label htmlFor={id} style={{ fontSize: 12, fontWeight: 500, color: COLORS.textMuted, fontFamily: FONT_BODY }}>{label}</label>
       <input id={id} type="password" value={value} onChange={e => onChange(id, e.target.value)} placeholder={placeholder} autoComplete="new-password"
-        style={{ height: 38, width: "100%", borderRadius: 9, border: `1.5px solid ${error ? "#fca5a5" : "#e5e7eb"}`, background: "#fafafa", padding: "0 12px", fontSize: 13, color: "#111827", outline: "none", fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: "border-box" as const, transition: "all 0.15s" }}
-        onFocus={e => { e.target.style.borderColor = error ? "#ef4444" : "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = `0 0 0 3px ${error ? "rgba(239,68,68,0.08)" : "rgba(30,58,95,0.07)"}` }}
-        onBlur={e => { e.target.style.borderColor = error ? "#fca5a5" : "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" }}
+        style={{ height: 38, width: "100%", borderRadius: RADIUS.sm, border: `1.5px solid ${error ? "#fca5a5" : COLORS.borderStrong}`, background: COLORS.surfaceAlt, padding: "0 12px", fontSize: 13, color: COLORS.text, outline: "none", fontFamily: FONT_BODY, boxSizing: "border-box" as const, transition: "all 0.15s" }}
+        onFocus={e => { e.target.style.borderColor = error ? COLORS.danger : COLORS.navy; e.target.style.background = COLORS.surface; e.target.style.boxShadow = `0 0 0 3px ${error ? "rgba(220,38,38,0.08)" : "rgba(30,58,95,0.07)"}` }}
+        onBlur={e => { e.target.style.borderColor = error ? "#fca5a5" : COLORS.borderStrong; e.target.style.background = COLORS.surfaceAlt; e.target.style.boxShadow = "none" }}
       />
-      {error && <p style={{ fontSize: 11.5, color: "#dc2626", margin: "1px 0 0", fontFamily: "'DM Sans', system-ui, sans-serif" }}>{error}</p>}
+      {error && <p style={{ fontSize: 11.5, color: COLORS.danger, margin: "1px 0 0", fontFamily: FONT_BODY }}>{error}</p>}
     </div>
   )
 }
@@ -105,11 +106,11 @@ function SectionBlock({ icon: Icon, color, title, desc, children }: {
           <Icon style={{ width: 17, height: 17, color: "#fff" }} />
         </div>
         <div>
-          <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>{title}</p>
-          <p style={{ fontSize: 12, color: "#9ca3af", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>{desc}</p>
+          <p style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, margin: 0, fontFamily: FONT_BODY }}>{title}</p>
+          <p style={{ fontSize: 12, color: COLORS.textMuted, margin: 0, fontFamily: FONT_BODY }}>{desc}</p>
         </div>
       </div>
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.lg, boxShadow: SHADOW.card, overflow: "hidden" }}>
         {children}
       </div>
     </div>
@@ -126,7 +127,7 @@ function Grid({ children, cols = 2 }: { children: React.ReactNode; cols?: number
 
 function Pad({ children, top = false }: { children: React.ReactNode; top?: boolean }) {
   return (
-    <div style={{ padding: "20px 24px", borderTop: top ? "1px solid #f3f4f6" : undefined }}>
+    <div style={{ padding: "20px 24px", borderTop: top ? `1px solid ${COLORS.border}` : undefined }}>
       {children}
     </div>
   )
@@ -283,10 +284,10 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
   }
 
   return (
-    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div style={{ fontFamily: FONT_BODY }}>
 
       {/* EMPRESA */}
-      <SectionBlock icon={Building2} color="#1e3a5f" title="Datos de la empresa" desc="Información legal y de contacto">
+      <SectionBlock icon={Building2} color={COLORS.navy} title="Datos de la empresa" desc="Información legal y de contacto">
         <Pad>
           <Grid>
             <TextField id="name" label="Nombre de la empresa" value={companyValues.name} onChange={handleCompanyChange} placeholder="Autocares García S.L." />
@@ -301,39 +302,39 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
           <Label>Identidad visual</Label>
           <Grid>
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
-              <label style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>Color corporativo</label>
+              <label style={{ fontSize: 12, fontWeight: 500, color: COLORS.textMuted, fontFamily: FONT_BODY }}>Color corporativo</label>
               <div style={{ display: "flex", alignItems: "center", gap: 10, height: 38 }}>
-                <div style={{ position: "relative" as const, width: 38, height: 38, borderRadius: 9, border: "1.5px solid #e5e7eb", overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
+                <div style={{ position: "relative" as const, width: 38, height: 38, borderRadius: RADIUS.sm, border: `1.5px solid ${COLORS.borderStrong}`, overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
                   <input type="color" value={companyValues.color_primario}
                     onChange={e => handleCompanyChange("color_primario", e.target.value)}
                     style={{ position: "absolute" as const, inset: 0, width: "100%", height: "100%", border: "none", cursor: "pointer", opacity: 0 }} />
                   <div style={{ width: "100%", height: "100%", background: companyValues.color_primario }} />
                 </div>
-                <span style={{ fontFamily: "monospace", fontSize: 12, color: "#374151", background: "#f3f4f6", padding: "4px 10px", borderRadius: 6 }}>
+                <span style={{ fontFamily: "monospace", fontSize: 12, color: COLORS.text, background: COLORS.navySoft, padding: "4px 10px", borderRadius: 6 }}>
                   {companyValues.color_primario}
                 </span>
-                <div style={{ height: 30, padding: "0 14px", borderRadius: 7, background: companyValues.color_primario, display: "flex", alignItems: "center", fontSize: 12, fontWeight: 600, color: "#fff", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                <div style={{ height: 30, padding: "0 14px", borderRadius: 7, background: companyValues.color_primario, display: "flex", alignItems: "center", fontSize: 12, fontWeight: 600, color: "#fff", fontFamily: FONT_BODY }}>
                   {company?.name?.split(" ")[0] ?? "Preview"}
                 </div>
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
-              <label style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>Logo de la empresa</label>
+              <label style={{ fontSize: 12, fontWeight: 500, color: COLORS.textMuted, fontFamily: FONT_BODY }}>Logo de la empresa</label>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 52, height: 52, flexShrink: 0, borderRadius: 10, border: "1.5px solid #e5e7eb", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                <div style={{ width: 52, height: 52, flexShrink: 0, borderRadius: RADIUS.sm, border: `1.5px solid ${COLORS.borderStrong}`, background: COLORS.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                   {logoUrl
                     ? <img src={logoUrl} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }} />
-                    : <span style={{ fontSize: 10, color: "#d1d5db", textAlign: "center" as const, fontFamily: "'DM Sans', system-ui, sans-serif" }}>Sin logo</span>
+                    : <span style={{ fontSize: 10, color: COLORS.textFaint, textAlign: "center" as const, fontFamily: FONT_BODY }}>Sin logo</span>
                   }
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
                   <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" style={{ display: "none" }} onChange={handleLogoUpload} />
                   <button type="button" disabled={uploadingLogo} onClick={() => fileInputRef.current?.click()}
-                    style={{ display: "flex", alignItems: "center", gap: 7, height: 34, padding: "0 14px", borderRadius: 8, border: "1.5px solid #e5e7eb", background: "#fff", fontSize: 12, fontWeight: 600, color: "#374151", cursor: "pointer", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                    style={{ display: "flex", alignItems: "center", gap: 7, height: 34, padding: "0 14px", borderRadius: RADIUS.sm, border: `1.5px solid ${COLORS.borderStrong}`, background: COLORS.surface, fontSize: 12, fontWeight: 600, color: COLORS.text, cursor: "pointer", fontFamily: FONT_BODY }}>
                     <Upload style={{ width: 13, height: 13 }} />
                     {uploadingLogo ? "Subiendo..." : logoUrl ? "Cambiar logo" : "Subir logo"}
                   </button>
-                  <p style={{ fontSize: 11, color: "#9ca3af", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>PNG, JPG o WebP · Fondo transparente</p>
+                  <p style={{ fontSize: 11, color: COLORS.textFaint, margin: 0, fontFamily: FONT_BODY }}>PNG, JPG o WebP · Fondo transparente</p>
                 </div>
               </div>
             </div>
@@ -342,16 +343,16 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
       </SectionBlock>
 
       {/* BASE DE OPERACIONES */}
-      <SectionBlock icon={MapPin} color="#0f766e" title="Base de operaciones" desc="Garaje, parking y precio combustible">
+      <SectionBlock icon={MapPin} color={COLORS.teal} title="Base de operaciones" desc="Garaje, parking y precio combustible">
         <Pad>
-          <div style={{ background: "#f0fdf9", border: "1px solid #bbf7d0", borderRadius: 10, padding: "11px 14px", marginBottom: 18 }}>
-            <p style={{ fontSize: 12, color: "#166534", margin: 0, lineHeight: 1.6, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+          <div style={{ background: COLORS.tealSoft, border: `1px solid ${COLORS.tealSoft}`, borderRadius: RADIUS.sm, padding: "11px 14px", marginBottom: 18 }}>
+            <p style={{ fontSize: 12, color: COLORS.tealDeep, margin: 0, lineHeight: 1.6, fontFamily: FONT_BODY }}>
               Estas direcciones se usan para calcular los <strong>km en vacío</strong> que recorre el bus desde el garaje hasta el inicio del servicio.
             </p>
           </div>
           <Grid>
             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              <label htmlFor="garage_address" style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>Dirección del garaje</label>
+              <label htmlFor="garage_address" style={{ fontSize: 12, fontWeight: 500, color: COLORS.textMuted, fontFamily: FONT_BODY }}>Dirección del garaje</label>
               <AddressAutocomplete
                 id="garage_address"
                 value={locationValues.garage_address}
@@ -361,7 +362,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
               />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              <label htmlFor="parking_address" style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>Parking habitual</label>
+              <label htmlFor="parking_address" style={{ fontSize: 12, fontWeight: 500, color: COLORS.textMuted, fontFamily: FONT_BODY }}>Parking habitual</label>
               <AddressAutocomplete
                 id="parking_address"
                 value={locationValues.parking_address}
@@ -374,8 +375,8 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
         </Pad>
         <Pad top>
           <Label>Precio combustible global</Label>
-          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "11px 14px", marginBottom: 14 }}>
-            <p style={{ fontSize: 12, color: "#92400e", margin: 0, lineHeight: 1.6, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+          <div style={{ background: COLORS.warningSoft, border: `1px solid ${COLORS.warningSoft}`, borderRadius: RADIUS.sm, padding: "11px 14px", marginBottom: 14 }}>
+            <p style={{ fontSize: 12, color: COLORS.warning, margin: 0, lineHeight: 1.6, fontFamily: FONT_BODY }}>
               Este precio se aplica a <strong>todos los vehículos</strong> para calcular el coste de combustible. Actualízalo regularmente según el precio del mercado.
             </p>
           </div>
@@ -390,10 +391,10 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
       </SectionBlock>
 
       {/* NOTIFICACIONES */}
-      <SectionBlock icon={Bell} color="#7c3aed" title="Emails de notificación" desc="Gestiona quién recibe avisos de nuevas solicitudes">
+      <SectionBlock icon={Bell} color={COLORS.navy} title="Emails de notificación" desc="Gestiona quién recibe avisos de nuevas solicitudes">
         <Pad>
-          <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 10, padding: "11px 14px", marginBottom: 18 }}>
-            <p style={{ fontSize: 12, color: "#6b21a8", margin: 0, lineHeight: 1.6, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+          <div style={{ background: COLORS.navySoft, border: `1px solid ${COLORS.navySoft}`, borderRadius: RADIUS.sm, padding: "11px 14px", marginBottom: 18 }}>
+            <p style={{ fontSize: 12, color: COLORS.navy, margin: 0, lineHeight: 1.6, fontFamily: FONT_BODY }}>
               Estos emails recibirán un aviso cada vez que llegue una nueva solicitud de presupuesto. Puedes añadir varios emails.
             </p>
           </div>
@@ -407,11 +408,11 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
                   alignItems: "center",
                   justifyContent: "space-between",
                   padding: "10px 14px",
-                  background: "#f9fafb",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 9
+                  background: COLORS.surfaceAlt,
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: RADIUS.sm
                 }}>
-                  <span style={{ fontSize: 13, color: "#374151", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                  <span style={{ fontSize: 13, color: COLORS.text, fontFamily: FONT_BODY }}>
                     {email}
                   </span>
                   <button
@@ -421,12 +422,12 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
                       padding: "4px 10px",
                       fontSize: 11,
                       fontWeight: 600,
-                      color: "#dc2626",
-                      background: "#fef2f2",
-                      border: "1px solid #fecaca",
+                      color: COLORS.danger,
+                      background: COLORS.dangerSoft,
+                      border: `1px solid ${COLORS.dangerSoft}`,
                       borderRadius: 6,
                       cursor: "pointer",
-                      fontFamily: "'DM Sans', system-ui, sans-serif"
+                      fontFamily: FONT_BODY
                     }}
                   >
                     Eliminar
@@ -439,7 +440,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
           {/* Input para añadir nuevo email */}
           <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
             <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, gap: 5 }}>
-              <label style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+              <label style={{ fontSize: 12, fontWeight: 500, color: COLORS.textMuted, fontFamily: FONT_BODY }}>
                 Añadir nuevo email
               </label>
               <input
@@ -450,25 +451,25 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
                 style={{
                   height: 38,
                   width: "100%",
-                  borderRadius: 9,
-                  border: "1.5px solid #e5e7eb",
-                  background: "#fafafa",
+                  borderRadius: RADIUS.sm,
+                  border: `1.5px solid ${COLORS.borderStrong}`,
+                  background: COLORS.surfaceAlt,
                   padding: "0 12px",
                   fontSize: 13,
-                  color: "#111827",
+                  color: COLORS.text,
                   outline: "none",
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  fontFamily: FONT_BODY,
                   boxSizing: "border-box" as const,
                   transition: "all 0.15s"
                 }}
                 onFocus={e => {
-                  e.target.style.borderColor = "#7c3aed"
-                  e.target.style.background = "#fff"
-                  e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.07)"
+                  e.target.style.borderColor = COLORS.navy
+                  e.target.style.background = COLORS.surface
+                  e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.07)"
                 }}
                 onBlur={e => {
-                  e.target.style.borderColor = "#e5e7eb"
-                  e.target.style.background = "#fafafa"
+                  e.target.style.borderColor = COLORS.borderStrong
+                  e.target.style.background = COLORS.surfaceAlt
                   e.target.style.boxShadow = "none"
                 }}
                 onKeyDown={e => {
@@ -493,22 +494,22 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
               style={{
                 height: 38,
                 padding: "0 18px",
-                borderRadius: 9,
+                borderRadius: RADIUS.md,
                 border: "none",
-                background: "#7c3aed",
+                background: COLORS.navy,
                 color: "#fff",
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: "pointer",
-                fontFamily: "'DM Sans', system-ui, sans-serif",
+                fontFamily: FONT_BODY,
                 flexShrink: 0,
                 transition: "all 0.15s"
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.background = "#6d28d9"
+                e.currentTarget.style.background = COLORS.navyDeep
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.background = "#7c3aed"
+                e.currentTarget.style.background = COLORS.navy
               }}
             >
               Añadir
@@ -516,7 +517,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
           </div>
 
           {notificationEmails.length === 0 && (
-            <p style={{ fontSize: 12, color: "#9ca3af", margin: "12px 0 0", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+            <p style={{ fontSize: 12, color: COLORS.textFaint, margin: "12px 0 0", fontFamily: FONT_BODY }}>
               Si no añades ningún email, se usará el email de contacto de la empresa ({companyValues.email}) como fallback.
             </p>
           )}
@@ -524,7 +525,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
       </SectionBlock>
 
       {/* MARGEN E IVA */}
-      <SectionBlock icon={TrendingUp} color="#0369a1" title="Margen comercial e IVA" desc="Se aplican a todos los presupuestos generados">
+      <SectionBlock icon={TrendingUp} color={COLORS.navy} title="Margen comercial e IVA" desc="Se aplican a todos los presupuestos generados">
         <Pad>
           <Grid>
             <NumberField id="margen_beneficio" label="Margen de beneficio" value={values.margen_beneficio} onChange={handleChange} unit="%" />
@@ -542,24 +543,24 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
       </SectionBlock>
 
       {/* GUARDAR */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, overflow: "hidden", marginBottom: 28 }}>
-        <div style={{ padding: "14px 24px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: saved ? "#10b981" : "#e5e7eb", flexShrink: 0, transition: "background 0.3s" }} />
-          <p style={{ fontSize: 12, color: "#9ca3af", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+      <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.lg, boxShadow: SHADOW.card, overflow: "hidden", marginBottom: 28 }}>
+        <div style={{ padding: "14px 24px", borderBottom: `1px solid ${COLORS.border}`, display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: saved ? COLORS.teal : COLORS.border, flexShrink: 0, transition: "background 0.3s" }} />
+          <p style={{ fontSize: 12, color: COLORS.textFaint, margin: 0, fontFamily: FONT_BODY }}>
             {message
-              ? <span style={{ color: "#dc2626" }}>{message}</span>
+              ? <span style={{ color: COLORS.danger }}>{message}</span>
               : saved
-              ? <span style={{ color: "#10b981", fontWeight: 600 }}>Cambios guardados correctamente</span>
+              ? <span style={{ color: COLORS.teal, fontWeight: 600 }}>Cambios guardados correctamente</span>
               : "Datos de empresa, operaciones y margen"
             }
           </p>
         </div>
         <div style={{ padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <p style={{ fontSize: 12, color: "#9ca3af", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+          <p style={{ fontSize: 12, color: COLORS.textFaint, margin: 0, fontFamily: FONT_BODY }}>
             Las variables de coste se guardan automáticamente al crearlas o editarlas
           </p>
           <button onClick={handleSave} disabled={saving}
-            style={{ display: "flex", alignItems: "center", gap: 8, height: 38, padding: "0 20px", borderRadius: 9, border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "'DM Sans', system-ui, sans-serif", background: saved ? "#10b981" : "#111827", color: "#fff", transition: "all 0.2s", flexShrink: 0 }}>
+            style={{ display: "flex", alignItems: "center", gap: 8, height: 38, padding: "0 20px", borderRadius: RADIUS.md, border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: FONT_BODY, background: saved ? COLORS.teal : COLORS.navy, color: "#fff", transition: "all 0.2s", flexShrink: 0 }}>
             {saved ? <><Check style={{ width: 14, height: 14 }} /> Guardado</> : saving ? "Guardando..." : <><Save style={{ width: 14, height: 14 }} /> Guardar ajustes</>}
           </button>
         </div>
@@ -567,14 +568,14 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
 
       {/* SEGURIDAD */}
       {isImpersonating ? (
-        <div style={{ marginBottom: 20, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: "16px 20px", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 16 }}>🔒</span>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+        <div style={{ marginBottom: 20, background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.lg, boxShadow: SHADOW.card, padding: "16px 20px", display: "flex", alignItems: "center", gap: 10 }}>
+          <Lock style={{ width: 16, height: 16, color: COLORS.textMuted, flexShrink: 0 }} />
+          <p style={{ fontSize: 13, color: COLORS.textMuted, margin: 0, fontFamily: FONT_BODY }}>
             La gestión de contraseña no está disponible en modo impersonación
           </p>
         </div>
       ) : (
-      <SectionBlock icon={Shield} color="#0f766e" title="Seguridad" desc="Gestiona tu contraseña y acceso a la cuenta">
+      <SectionBlock icon={Shield} color={COLORS.teal} title="Seguridad" desc="Gestiona tu contraseña y acceso a la cuenta">
         <Pad>
           <div style={{ display: "flex", flexDirection: "column" as const, gap: 16, maxWidth: 440 }}>
             <PasswordField id="current" label="Contraseña actual" value={pwd.current} onChange={handlePwdChange} error={pwdErrors.current} placeholder="••••••••" />
@@ -584,12 +585,12 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
 
           {pwdMessage && (
             <div style={{
-              marginTop: 16, borderRadius: 10, padding: "11px 14px",
-              background: pwdMessage.type === "success" ? "#f0fdf4" : "#fef2f2",
-              border: `1px solid ${pwdMessage.type === "success" ? "#bbf7d0" : "#fecaca"}`,
+              marginTop: 16, borderRadius: RADIUS.sm, padding: "11px 14px",
+              background: pwdMessage.type === "success" ? COLORS.tealSoft : COLORS.dangerSoft,
+              border: `1px solid ${pwdMessage.type === "success" ? COLORS.tealSoft : COLORS.dangerSoft}`,
               maxWidth: 440,
             }}>
-              <p style={{ fontSize: 12.5, margin: 0, fontWeight: 600, color: pwdMessage.type === "success" ? "#15803d" : "#dc2626", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+              <p style={{ fontSize: 12.5, margin: 0, fontWeight: 600, color: pwdMessage.type === "success" ? COLORS.tealDeep : COLORS.danger, fontFamily: FONT_BODY }}>
                 {pwdMessage.text}
               </p>
             </div>
@@ -597,7 +598,7 @@ export function SettingsForm({ settings, companyId, company, pricingSettings }: 
 
           <div style={{ marginTop: 18 }}>
             <button onClick={handleChangePassword} disabled={pwdSaving}
-              style={{ display: "flex", alignItems: "center", gap: 8, height: 38, padding: "0 20px", borderRadius: 9, border: "none", fontSize: 13, fontWeight: 600, cursor: pwdSaving ? "not-allowed" : "pointer", fontFamily: "'DM Sans', system-ui, sans-serif", background: "#111827", color: "#fff", opacity: pwdSaving ? 0.7 : 1, transition: "all 0.2s" }}>
+              style={{ display: "flex", alignItems: "center", gap: 8, height: 38, padding: "0 20px", borderRadius: RADIUS.md, border: "none", fontSize: 13, fontWeight: 600, cursor: pwdSaving ? "not-allowed" : "pointer", fontFamily: FONT_BODY, background: COLORS.navy, color: "#fff", opacity: pwdSaving ? 0.7 : 1, transition: "all 0.2s" }}>
               <Lock style={{ width: 14, height: 14 }} />
               {pwdSaving ? "Cambiando..." : "Cambiar contraseña"}
             </button>

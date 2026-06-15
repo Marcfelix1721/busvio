@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, MapPin, Users, Bus, User } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin, Bus } from "lucide-react"
+import { COLORS, RADIUS, SHADOW, FONT_DISPLAY, FONT_BODY } from "@/lib/dashboard-ui"
 
 type Servicio = {
   id: string
@@ -18,10 +19,10 @@ type Servicio = {
 }
 
 const rolColor: Record<string, string> = {
-  conductor_principal: "#1e40af",
-  conductor_relevo: "#0369a1",
-  guia: "#0f766e",
-  monitor: "#6d28d9",
+  conductor_principal: COLORS.navy,
+  conductor_relevo: COLORS.teal,
+  guia: COLORS.warning,
+  monitor: COLORS.danger,
 }
 
 const rolLabel: Record<string, string> = {
@@ -72,24 +73,24 @@ export function CalendarioClient({ servicios }: { servicios: Servicio[] }) {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "1.5rem", alignItems: "start" }}>
 
       {/* CALENDARIO */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "16px", overflow: "hidden" }}>
+      <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.lg, boxShadow: SHADOW.card, overflow: "hidden" }}>
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem 1.25rem", borderBottom: "1px solid #f3f4f6" }}>
-          <button onClick={prevMes} style={{ width: "32px", height: "32px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <ChevronLeft style={{ width: "16px", height: "16px", color: "#6b7280" }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem 1.25rem", borderBottom: `1px solid ${COLORS.border}` }}>
+          <button onClick={prevMes} style={{ width: "32px", height: "32px", borderRadius: RADIUS.sm, border: `1px solid ${COLORS.border}`, background: COLORS.surface, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <ChevronLeft style={{ width: "16px", height: "16px", color: COLORS.textMuted }} />
           </button>
-          <h2 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1rem", fontWeight: 600, color: "#111827", margin: 0 }}>
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "1rem", fontWeight: 600, color: COLORS.navy, margin: 0 }}>
             {MESES[mes]} {año}
           </h2>
-          <button onClick={nextMes} style={{ width: "32px", height: "32px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <ChevronRight style={{ width: "16px", height: "16px", color: "#6b7280" }} />
+          <button onClick={nextMes} style={{ width: "32px", height: "32px", borderRadius: RADIUS.sm, border: `1px solid ${COLORS.border}`, background: COLORS.surface, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <ChevronRight style={{ width: "16px", height: "16px", color: COLORS.textMuted }} />
           </button>
         </div>
 
         {/* Días semana */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid #f3f4f6" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: `1px solid ${COLORS.border}` }}>
           {DIAS.map(d => (
-            <div key={d} style={{ padding: "8px 4px", textAlign: "center", fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <div key={d} style={{ padding: "8px 4px", textAlign: "center", fontFamily: FONT_BODY, fontSize: "0.7rem", fontWeight: 600, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>
               {d}
             </div>
           ))}
@@ -98,7 +99,7 @@ export function CalendarioClient({ servicios }: { servicios: Servicio[] }) {
         {/* Celdas */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
           {celdas.map((dia, i) => {
-            if (!dia) return <div key={i} style={{ minHeight: "80px", borderBottom: "1px solid #f9fafb", borderRight: i % 7 !== 6 ? "1px solid #f9fafb" : "none" }} />
+            if (!dia) return <div key={i} style={{ minHeight: "80px", borderBottom: `1px solid ${COLORS.border}`, borderRight: i % 7 !== 6 ? `1px solid ${COLORS.border}` : "none" }} />
             const svs = serviciosPorDia(dia)
             const fecha = `${año}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`
             const isSelected = selectedDate === fecha
@@ -109,30 +110,30 @@ export function CalendarioClient({ servicios }: { servicios: Servicio[] }) {
                 onClick={() => setSelectedDate(isSelected ? null : fecha)}
                 style={{
                   minHeight: "80px", padding: "6px", cursor: "pointer",
-                  borderBottom: "1px solid #f9fafb",
-                  borderRight: i % 7 !== 6 ? "1px solid #f9fafb" : "none",
-                  background: isSelected ? "#f0f7ff" : svs.length > 0 ? "#fafffe" : "#fff",
+                  borderBottom: `1px solid ${COLORS.border}`,
+                  borderRight: i % 7 !== 6 ? `1px solid ${COLORS.border}` : "none",
+                  background: isSelected ? COLORS.tealSoft : svs.length > 0 ? COLORS.surfaceAlt : COLORS.surface,
                   transition: "background 0.1s",
                 }}
               >
                 <div style={{
                   width: "26px", height: "26px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "4px",
-                  background: isToday ? "#111827" : "transparent",
-                  fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: isToday ? 700 : 500,
-                  color: isToday ? "#fff" : "#374151",
+                  background: isToday ? COLORS.navy : "transparent",
+                  fontFamily: FONT_DISPLAY, fontSize: "0.8125rem", fontWeight: isToday ? 700 : 500,
+                  color: isToday ? COLORS.onDark : COLORS.text,
                 }}>
                   {dia}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   {svs.slice(0, 2).map(s => (
-                    <div key={s.id} style={{ background: "#1e3a5f", borderRadius: "4px", padding: "2px 5px" }}>
-                      <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.6rem", fontWeight: 600, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div key={s.id} style={{ background: COLORS.navy, borderRadius: "4px", padding: "2px 5px" }}>
+                      <p style={{ fontFamily: FONT_BODY, fontSize: "0.6rem", fontWeight: 600, color: COLORS.onDark, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {s.origin.split(",")[0]} → {s.destination.split(",")[0]}
                       </p>
                     </div>
                   ))}
                   {svs.length > 2 && (
-                    <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.6rem", color: "#9ca3af", margin: 0, paddingLeft: "2px" }}>+{svs.length - 2} más</p>
+                    <p style={{ fontFamily: FONT_BODY, fontSize: "0.6rem", color: COLORS.textFaint, margin: 0, paddingLeft: "2px" }}>+{svs.length - 2} más</p>
                   )}
                 </div>
               </div>
@@ -144,18 +145,18 @@ export function CalendarioClient({ servicios }: { servicios: Servicio[] }) {
       {/* PANEL LATERAL */}
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
         {/* Resumen del mes */}
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", padding: "1rem 1.25rem" }}>
-          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9ca3af", marginBottom: "0.75rem" }}>
+        <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.md, boxShadow: SHADOW.card, padding: "1rem 1.25rem" }}>
+          <p style={{ fontFamily: FONT_BODY, fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: COLORS.textFaint, marginBottom: "0.75rem" }}>
             Este mes
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
             {[
-              { label: "Servicios", value: servicios.filter(s => s.trip_date.slice(0, 7) === `${año}-${String(mes + 1).padStart(2, "0")}`).length, color: "#1e3a5f" },
-              { label: "Facturado", value: servicios.filter(s => s.trip_date.slice(0, 7) === `${año}-${String(mes + 1).padStart(2, "0")}`).reduce((sum, s) => sum + (s.final_price ?? s.estimated_price ?? 0), 0).toLocaleString("es-ES") + " €", color: "#059669" },
+              { label: "Servicios", value: servicios.filter(s => s.trip_date.slice(0, 7) === `${año}-${String(mes + 1).padStart(2, "0")}`).length, color: COLORS.navy },
+              { label: "Facturado", value: servicios.filter(s => s.trip_date.slice(0, 7) === `${año}-${String(mes + 1).padStart(2, "0")}`).reduce((sum, s) => sum + (s.final_price ?? s.estimated_price ?? 0), 0).toLocaleString("es-ES") + " €", color: COLORS.teal },
             ].map(item => (
-              <div key={item.label} style={{ background: "#f9fafb", borderRadius: "10px", padding: "10px 12px" }}>
-                <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.125rem", fontWeight: 700, color: item.color, margin: 0 }}>{item.value}</p>
-                <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", color: "#9ca3af", margin: "2px 0 0" }}>{item.label}</p>
+              <div key={item.label} style={{ background: COLORS.surfaceAlt, borderRadius: RADIUS.sm, padding: "10px 12px" }}>
+                <p style={{ fontFamily: FONT_DISPLAY, fontSize: "1.125rem", fontWeight: 700, color: item.color, margin: 0 }}>{item.value}</p>
+                <p style={{ fontFamily: FONT_BODY, fontSize: "0.7rem", color: COLORS.textFaint, margin: "2px 0 0" }}>{item.label}</p>
               </div>
             ))}
           </div>
@@ -163,37 +164,37 @@ export function CalendarioClient({ servicios }: { servicios: Servicio[] }) {
 
         {/* Servicios del día seleccionado */}
         {selectedDate ? (
-          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", overflow: "hidden" }}>
-            <div style={{ padding: "12px 16px", borderBottom: "1px solid #f3f4f6" }}>
-              <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9ca3af", margin: 0 }}>
+          <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.md, boxShadow: SHADOW.card, overflow: "hidden" }}>
+            <div style={{ padding: "12px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
+              <p style={{ fontFamily: FONT_BODY, fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: COLORS.textFaint, margin: 0 }}>
                 {new Date(selectedDate + "T12:00:00").toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}
               </p>
             </div>
             {serviciosDelDia.length === 0 ? (
               <div style={{ padding: "1.5rem", textAlign: "center" }}>
-                <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#9ca3af" }}>Sin servicios este día</p>
+                <p style={{ fontFamily: FONT_BODY, fontSize: "0.8125rem", color: COLORS.textFaint }}>Sin servicios este día</p>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {serviciosDelDia.map((s, i) => (
-                  <Link key={s.id} href={`/dashboard/solicitudes/${s.id}`} style={{ textDecoration: "none", display: "block", padding: "12px 16px", borderBottom: i < serviciosDelDia.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                  <Link key={s.id} href={`/dashboard/solicitudes/${s.id}`} style={{ textDecoration: "none", display: "block", padding: "12px 16px", borderBottom: i < serviciosDelDia.length - 1 ? `1px solid ${COLORS.border}` : "none" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-                      <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#f0f4ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <MapPin style={{ width: "14px", height: "14px", color: "#1e3a5f" }} />
+                      <div style={{ width: "32px", height: "32px", borderRadius: RADIUS.sm, background: COLORS.navySoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <MapPin style={{ width: "14px", height: "14px", color: COLORS.navy }} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#111827", margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <p style={{ fontFamily: FONT_BODY, fontSize: "0.8125rem", fontWeight: 600, color: COLORS.text, margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {s.origin.split(",")[0]} → {s.destination.split(",")[0]}
                         </p>
-                        <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#6b7280", margin: "0 0 6px" }}>
+                        <p style={{ fontFamily: FONT_BODY, fontSize: "0.75rem", color: COLORS.textMuted, margin: "0 0 6px" }}>
                           {s.requester_name} · {s.passengers} pax
                         </p>
 
                         {/* Vehículo */}
                         {s.vehicle && (
                           <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "4px" }}>
-                            <Bus style={{ width: "11px", height: "11px", color: "#6b7280" }} />
-                            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", color: "#6b7280" }}>
+                            <Bus style={{ width: "11px", height: "11px", color: COLORS.textMuted }} />
+                            <span style={{ fontFamily: FONT_BODY, fontSize: "0.7rem", color: COLORS.textMuted }}>
                               {s.vehicle.matricula} · {s.vehicle.marca_modelo}
                             </span>
                           </div>
@@ -203,7 +204,7 @@ export function CalendarioClient({ servicios }: { servicios: Servicio[] }) {
                         {s.assignments.length > 0 && (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "4px" }}>
                             {s.assignments.map((a, j) => (
-                              <span key={j} style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.65rem", fontWeight: 600, padding: "2px 6px", borderRadius: "999px", background: rolColor[a.rol_en_servicio] + "15", color: rolColor[a.rol_en_servicio] }}>
+                              <span key={j} style={{ fontFamily: FONT_BODY, fontSize: "0.65rem", fontWeight: 600, padding: "2px 6px", borderRadius: RADIUS.pill, background: rolColor[a.rol_en_servicio] + "15", color: rolColor[a.rol_en_servicio] }}>
                                 {rolLabel[a.rol_en_servicio]}: {a.staff.nombre.split(" ")[0]}
                               </span>
                             ))}
@@ -211,7 +212,7 @@ export function CalendarioClient({ servicios }: { servicios: Servicio[] }) {
                         )}
 
                         {(s.final_price ?? s.estimated_price) && (
-                          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 700, color: "#059669", margin: "6px 0 0" }}>
+                          <p style={{ fontFamily: FONT_DISPLAY, fontSize: "0.75rem", fontWeight: 700, color: COLORS.teal, margin: "6px 0 0" }}>
                             {(s.final_price ?? s.estimated_price)?.toLocaleString("es-ES")} €
                           </p>
                         )}
@@ -223,8 +224,8 @@ export function CalendarioClient({ servicios }: { servicios: Servicio[] }) {
             )}
           </div>
         ) : (
-          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", padding: "1.5rem", textAlign: "center" }}>
-            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#9ca3af" }}>Selecciona un día para ver los servicios</p>
+          <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.md, boxShadow: SHADOW.card, padding: "1.5rem", textAlign: "center" }}>
+            <p style={{ fontFamily: FONT_BODY, fontSize: "0.8125rem", color: COLORS.textFaint }}>Selecciona un día para ver los servicios</p>
           </div>
         )}
       </div>

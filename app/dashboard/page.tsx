@@ -113,7 +113,9 @@ export default async function DashboardPage() {
   })
 
   const companyName = companyData?.name ?? "Dashboard"
-  const today = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })
+  // Capitalizar SOLO la primera letra ("Lunes, 15 de junio"), no cada palabra.
+  const todayRaw = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })
+  const today = todayRaw.charAt(0).toUpperCase() + todayRaw.slice(1)
 
   // Verificar si está impersonando para mostrar el banner
   const isImpersonating = session.user.email === adminEmail && companyId !== session.user.id
@@ -173,7 +175,7 @@ export default async function DashboardPage() {
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: SPACE.section }}>
           <div style={{ minWidth: 0 }}>
             <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 600, color: COLORS.navy, margin: 0, letterSpacing: "-0.025em" }}>{companyName}</h1>
-            <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4, textTransform: "capitalize" }}>{today}</p>
+            <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4 }}>{today}</p>
           </div>
           {urgentes.length > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, background: COLORS.warningSoft, border: `1px solid ${COLORS.warning}22`, borderRadius: RADIUS.pill, padding: "6px 14px", flexShrink: 0 }}>

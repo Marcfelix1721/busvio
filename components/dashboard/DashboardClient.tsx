@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Search, Inbox, ChevronRight } from 'lucide-react'
+import { Search, Inbox, ChevronRight, Zap } from 'lucide-react'
 import { QuoteRequest } from '@/lib/types'
 
 const statusConfig: Record<QuoteRequest["status"], { label: string; color: string; bg: string; dot: string }> = {
@@ -74,6 +74,10 @@ export function DashboardClient({ requests, relacionMap }: Props) {
           <Search style={{ width: 14, height: 14, color: '#9ca3af', flexShrink: 0 }} />
           <input
             type="text"
+            name="dashboard-busqueda"
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
             value={q}
             onChange={e => setQ(e.target.value)}
             placeholder="Buscar cliente, ciudad, email..."
@@ -165,7 +169,7 @@ export function DashboardClient({ requests, relacionMap }: Props) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{r.requester_name}</span>
                         {urgente && (
-                          <span style={{ fontSize: 10, fontWeight: 700, background: '#fef3c7', color: '#b45309', borderRadius: 4, padding: '1px 5px' }}>⚡ {dias}d</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 700, background: '#fef3c7', color: '#b45309', borderRadius: 4, padding: '1px 5px' }}><Zap style={{ width: 10, height: 10 }} /> {dias}d</span>
                         )}
                       </div>
                       <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>{r.requester_email}</p>

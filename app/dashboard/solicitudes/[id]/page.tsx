@@ -6,7 +6,7 @@ import { cookies } from "next/headers"
 import {
   ArrowLeft, Bus, Calendar, Clock, FileText,
   Mail, MapPin, Phone, Users, History,
-  MessageSquare, TrendingUp,
+  MessageSquare, TrendingUp, Zap, Star,
 } from "lucide-react"
 import QuoteActions from "@/components/dashboard/QuoteActions"
 import { ClienteEstado } from "@/components/dashboard/ClienteEstado"
@@ -14,6 +14,7 @@ import { MapaRuta } from "@/components/dashboard/MapaRuta"
 import { ServiceAssignments } from "@/components/dashboard/ServiceAssignments"
 import { QuoteRequest } from "@/lib/types"
 import { conductorConflict, DOCS_CRITICOS, type Conflict } from "@/lib/conflicts"
+import { COLORS, RADIUS, SHADOW, FONT_DISPLAY, FONT_BODY } from "@/lib/dashboard-ui"
 
 export const revalidate = 0
 
@@ -26,22 +27,22 @@ async function createClient() {
   )
 }
 
-const statusConfig: Record<QuoteRequest["status"], { label: string; bg: string; text: string; ring: string; dot: string }> = {
-  nuevo:       { label: "Nuevo",       bg: "bg-sky-50",     text: "text-sky-700",     ring: "ring-sky-200",     dot: "bg-sky-500" },
-  en_revision: { label: "En revisión", bg: "bg-amber-50",   text: "text-amber-700",   ring: "ring-amber-200",   dot: "bg-amber-400" },
-  enviado:     { label: "Enviado",     bg: "bg-violet-50",  text: "text-violet-700",  ring: "ring-violet-200",  dot: "bg-violet-500" },
-  aceptado:    { label: "Aceptado",    bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200", dot: "bg-emerald-500" },
-  rechazado:   { label: "Rechazado",   bg: "bg-rose-50",    text: "text-rose-600",    ring: "ring-rose-200",    dot: "bg-rose-400" },
-  cancelado:   { label: "Cancelado",   bg: "bg-zinc-50",    text: "text-zinc-500",    ring: "ring-zinc-200",    dot: "bg-zinc-400" },
+const statusConfig: Record<QuoteRequest["status"], { label: string; color: string; bg: string }> = {
+  nuevo:       { label: "Nuevo",       color: COLORS.textMuted, bg: "#eef1f4" },
+  en_revision: { label: "En revisión", color: COLORS.warning,   bg: COLORS.warningSoft },
+  enviado:     { label: "Enviado",     color: COLORS.navy,      bg: COLORS.navySoft },
+  aceptado:    { label: "Aceptado",    color: COLORS.teal,      bg: COLORS.tealSoft },
+  rechazado:   { label: "Rechazado",   color: COLORS.danger,    bg: COLORS.dangerSoft },
+  cancelado:   { label: "Cancelado",   color: COLORS.textFaint, bg: COLORS.surfaceAlt },
 }
 
-const historialStatusConfig: Record<QuoteRequest["status"], { label: string; class: string }> = {
-  nuevo:       { label: "Nuevo",       class: "bg-sky-50 text-sky-700" },
-  en_revision: { label: "En revisión", class: "bg-amber-50 text-amber-700" },
-  enviado:     { label: "Enviado",     class: "bg-violet-50 text-violet-700" },
-  aceptado:    { label: "Aceptado",    class: "bg-emerald-50 text-emerald-700" },
-  rechazado:   { label: "Rechazado",   class: "bg-rose-50 text-rose-600" },
-  cancelado:   { label: "Cancelado",   class: "bg-zinc-50 text-zinc-500" },
+const historialStatusConfig: Record<QuoteRequest["status"], { label: string; color: string; bg: string }> = {
+  nuevo:       { label: "Nuevo",       color: COLORS.textMuted, bg: "#eef1f4" },
+  en_revision: { label: "En revisión", color: COLORS.warning,   bg: COLORS.warningSoft },
+  enviado:     { label: "Enviado",     color: COLORS.navy,      bg: COLORS.navySoft },
+  aceptado:    { label: "Aceptado",    color: COLORS.teal,      bg: COLORS.tealSoft },
+  rechazado:   { label: "Rechazado",   color: COLORS.danger,    bg: COLORS.dangerSoft },
+  cancelado:   { label: "Cancelado",   color: COLORS.textFaint, bg: COLORS.surfaceAlt },
 }
 
 function extractCommentField(comments: string | undefined, key: string) {
@@ -167,29 +168,29 @@ export default async function QuoteRequestDetailPage({
   const sCfg = statusConfig[quote.status]
 
   return (
-    <div className="max-w-[1300px] mx-auto px-6 py-6">
+    <div style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 32px 64px" }}>
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2 flex-wrap">
-              <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ring-1 ${sCfg.bg} ${sCfg.text} ${sCfg.ring}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${sCfg.dot}`}></span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: RADIUS.pill, background: sCfg.bg, color: sCfg.color }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: sCfg.color }}></span>
                 {sCfg.label}
               </span>
               {esUrgente && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full">
-                  ⚡ Viaje en {dias} día{dias !== 1 ? "s" : ""}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, background: COLORS.warningSoft, color: COLORS.warning, padding: "4px 10px", borderRadius: RADIUS.pill }}>
+                  <Zap style={{ width: 12, height: 12 }} /> Viaje en {dias} día{dias !== 1 ? "s" : ""}
                 </span>
               )}
               {historial.length > 0 && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full">
-                  <TrendingUp className="size-3" /> Cliente recurrente
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, background: COLORS.navySoft, color: COLORS.navy, padding: "4px 10px", borderRadius: RADIUS.pill }}>
+                  <TrendingUp style={{ width: 12, height: 12 }} /> Cliente recurrente
                 </span>
               )}
             </div>
-            <h1 className="text-2xl font-bold text-[#111827] tracking-tight">{quote.requester_name}</h1>
-            <p className="text-sm text-[#9ca3af] mt-1">
+            <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 600, color: COLORS.navy, letterSpacing: "-0.02em", margin: 0 }}>{quote.requester_name}</h1>
+            <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4 }}>
               Solicitud recibida el {fmt(quote.created_at)}
-              {quote.final_price && <span className="ml-3 font-semibold text-[#374151]">· {quote.final_price.toLocaleString("es-ES")} € final</span>}
+              {quote.final_price && <span style={{ marginLeft: 12, fontWeight: 600, color: COLORS.text }}>· {quote.final_price.toLocaleString("es-ES")} € final</span>}
             </p>
           </div>
         </div>
@@ -198,56 +199,56 @@ export default async function QuoteRequestDetailPage({
           <div className="space-y-4">
             <Section title="Datos del solicitante">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <InfoTile icon={<Mail className="size-3.5 text-[#6b7280]" />} label="Email" value={quote.requester_email} />
-                <InfoTile icon={<Phone className="size-3.5 text-[#6b7280]" />} label="Teléfono" value={quote.requester_phone ?? "—"} />
-                <InfoTile icon={<Users className="size-3.5 text-[#6b7280]" />} label="Tipo de cliente" value={tipoCliente} />
+                <InfoTile icon={<Mail style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Email" value={quote.requester_email} />
+                <InfoTile icon={<Phone style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Teléfono" value={quote.requester_phone ?? "—"} />
+                <InfoTile icon={<Users style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Tipo de cliente" value={tipoCliente} />
               </div>
             </Section>
 
             <Section title="Detalles del viaje">
               <MapaRuta origin={quote.origin} destination={quote.destination} />
-              <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-4 mb-4">
+              <div style={{ background: COLORS.surfaceAlt, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
                 <div className="flex items-start gap-4">
                   <div className="flex flex-col items-center gap-1 pt-1">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#111827]"></div>
-                    <div className="w-px h-8 bg-[#d1d5db]"></div>
-                    <div className="w-2.5 h-2.5 rounded-full border-2 border-rose-500"></div>
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: COLORS.navy }}></div>
+                    <div style={{ width: 1, height: 32, background: COLORS.borderStrong }}></div>
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", border: `2px solid ${COLORS.teal}` }}></div>
                   </div>
                   <div className="flex-1 space-y-3">
                     <div>
-                      <p className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-0.5">Origen</p>
-                      <p className="text-sm font-semibold text-[#111827]">{quote.origin}</p>
+                      <p style={{ fontSize: 10, fontWeight: 600, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>Origen</p>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{quote.origin}</p>
                     </div>
                     {quote.stops && (
                       <div>
-                        <p className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-0.5">Paradas intermedias</p>
-                        <p className="text-sm text-[#374151]">{quote.stops}</p>
+                        <p style={{ fontSize: 10, fontWeight: 600, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>Paradas intermedias</p>
+                        <p style={{ fontSize: 14, color: COLORS.textMuted }}>{quote.stops}</p>
                       </div>
                     )}
                     <div>
-                      <p className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-0.5">Destino</p>
-                      <p className="text-sm font-semibold text-[#111827]">{quote.destination}</p>
+                      <p style={{ fontSize: 10, fontWeight: 600, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>Destino</p>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{quote.destination}</p>
                     </div>
                   </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <InfoTile icon={<Calendar className="size-3.5 text-[#6b7280]" />} label="Fecha viaje" value={fmt(quote.trip_date)} />
-                <InfoTile icon={<Users className="size-3.5 text-[#6b7280]" />} label="Pasajeros" value={String(quote.passengers)} />
-                <InfoTile icon={<Bus className="size-3.5 text-[#6b7280]" />} label="Vehículo" value={quote.vehicle_type} />
-                <InfoTile icon={<FileText className="size-3.5 text-[#6b7280]" />} label="Tipo servicio" value={serviceType} />
-                <InfoTile icon={<Clock className="size-3.5 text-[#6b7280]" />} label="Hora salida" value={quote.departure_time} />
-                <InfoTile icon={<Clock className="size-3.5 text-[#6b7280]" />} label="Hora llegada" value={endTime} />
+                <InfoTile icon={<Calendar style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Fecha viaje" value={fmt(quote.trip_date)} />
+                <InfoTile icon={<Users style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Pasajeros" value={String(quote.passengers)} />
+                <InfoTile icon={<Bus style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Vehículo" value={quote.vehicle_type} />
+                <InfoTile icon={<FileText style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Tipo servicio" value={serviceType} />
+                <InfoTile icon={<Clock style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Hora salida" value={quote.departure_time} />
+                <InfoTile icon={<Clock style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Hora llegada" value={endTime} />
                 {quote.estimated_km && (
-                  <InfoTile icon={<MapPin className="size-3.5 text-[#6b7280]" />} label="Distancia" value={`${quote.estimated_km} km`} />
+                  <InfoTile icon={<MapPin style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Distancia" value={`${quote.estimated_km} km`} />
                 )}
                 {quote.estimated_price && (
-                  <InfoTile icon={<FileText className="size-3.5 text-[#6b7280]" />} label="Precio sugerido" value={`${quote.estimated_price} €`} />
+                  <InfoTile icon={<FileText style={{ width: 14, height: 14, color: COLORS.textMuted }} />} label="Precio sugerido" value={`${quote.estimated_price} €`} />
                 )}
               </div>
             </Section>
 
-            <Section title="Personal asignado" icon={<Users className="size-3.5 text-[#6b7280]" />}>
+            <Section title="Personal asignado" icon={<Users style={{ width: 14, height: 14, color: COLORS.textMuted }} />}>
               <ServiceAssignments
                 quoteId={quote.id}
                 tripDate={quote.trip_date}
@@ -267,9 +268,9 @@ export default async function QuoteRequestDetailPage({
             </Section>
 
             {quote.comments && (
-              <Section title="Comentarios del cliente" icon={<MessageSquare className="size-3.5 text-[#6b7280]" />}>
-                <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-4">
-                  <p className="text-sm text-[#374151] leading-relaxed whitespace-pre-line">{quote.comments}</p>
+              <Section title="Comentarios del cliente" icon={<MessageSquare style={{ width: 14, height: 14, color: COLORS.textMuted }} />}>
+                <div style={{ background: COLORS.surfaceAlt, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.md, padding: 16 }}>
+                  <p style={{ fontSize: 14, color: COLORS.textMuted, lineHeight: 1.6, whiteSpace: "pre-line" }}>{quote.comments}</p>
                 </div>
               </Section>
             )}
@@ -284,13 +285,15 @@ export default async function QuoteRequestDetailPage({
 
             <Section
               title="Historial del cliente"
-              icon={<History className="size-3.5 text-[#6b7280]" />}
+              icon={<History style={{ width: 14, height: 14, color: COLORS.textMuted }} />}
               badge={historial.length === 0 ? "Primera solicitud" : `${historial.length} anterior${historial.length > 1 ? "es" : ""}`}
             >
               {historial.length === 0 ? (
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center">
-                  <p className="text-sm font-semibold text-blue-700">⭐ Cliente nuevo</p>
-                  <p className="text-xs text-blue-400 mt-1">Es la primera vez que contacta con tu empresa</p>
+                <div style={{ background: COLORS.navySoft, border: `1px solid ${COLORS.navy}1a`, borderRadius: RADIUS.md, padding: 16, textAlign: "center" }}>
+                  <p style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 14, fontWeight: 600, color: COLORS.navy, margin: 0 }}>
+                    <Star style={{ width: 15, height: 15 }} /> Cliente nuevo
+                  </p>
+                  <p style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>Es la primera vez que contacta con tu empresa</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -298,20 +301,21 @@ export default async function QuoteRequestDetailPage({
                     const hCfg = historialStatusConfig[item.status]
                     return (
                       <Link key={item.id} href={`/dashboard/solicitudes/${item.id}`}
-                        className="flex items-center gap-4 bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-3.5 hover:bg-white hover:border-[#d1d5db] transition-all group">
+                        className="flex items-center gap-4 group hover:bg-white"
+                        style={{ background: COLORS.surfaceAlt, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.md, padding: "14px", transition: "all 0.15s" }}>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-[#111827] truncate">
+                          <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {item.origin.split(",")[0]} → {item.destination.split(",")[0]}
                           </p>
-                          <p className="text-xs text-[#9ca3af] mt-0.5">
+                          <p style={{ fontSize: 12, color: COLORS.textFaint, marginTop: 2 }}>
                             Viaje: {fmtShort(item.trip_date)} · Recibida: {fmtShort(item.created_at)}
                             {(item.final_price ?? item.estimated_price) && ` · ${(item.final_price ?? item.estimated_price)?.toLocaleString("es-ES")} €`}
                           </p>
                         </div>
-                        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${hCfg.class}`}>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: RADIUS.pill, flexShrink: 0, background: hCfg.bg, color: hCfg.color }}>
                           {hCfg.label}
                         </span>
-                        <ArrowLeft className="size-3.5 text-[#9ca3af] rotate-180 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                        <ArrowLeft className="rotate-180 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" style={{ width: 14, height: 14, color: COLORS.textFaint }} />
                       </Link>
                     )
                   })}
@@ -337,27 +341,27 @@ function Section({ title, icon, badge, children }: {
   title: string; icon?: ReactNode; badge?: string; children: ReactNode
 }) {
   return (
-    <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#f3f4f6]">
+    <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.lg, boxShadow: SHADOW.card, overflow: "hidden", fontFamily: FONT_BODY }}>
+      <div className="flex items-center justify-between" style={{ padding: "14px 20px", borderBottom: `1px solid ${COLORS.border}` }}>
         <div className="flex items-center gap-2">
           {icon}
-          <p className="text-[12px] font-semibold text-[#6b7280] uppercase tracking-wider">{title}</p>
+          <p style={{ fontSize: 12, fontWeight: 600, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>{title}</p>
         </div>
-        {badge && <span className="text-[11px] text-[#9ca3af] font-medium">{badge}</span>}
+        {badge && <span style={{ fontSize: 11, color: COLORS.textFaint, fontWeight: 500 }}>{badge}</span>}
       </div>
-      <div className="p-5">{children}</div>
+      <div style={{ padding: 20 }}>{children}</div>
     </div>
   )
 }
 
 function InfoTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-3.5">
-      <div className="flex items-center gap-1.5 mb-1.5">
+    <div style={{ background: COLORS.surfaceAlt, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.md, padding: 14 }}>
+      <div className="flex items-center gap-1.5" style={{ marginBottom: 6 }}>
         {icon}
-        <p className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider">{label}</p>
+        <p style={{ fontSize: 10, fontWeight: 600, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>{label}</p>
       </div>
-      <p className="text-[13px] font-semibold text-[#111827] leading-snug">{value}</p>
+      <p style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, lineHeight: 1.4 }}>{value}</p>
     </div>
   )
 }

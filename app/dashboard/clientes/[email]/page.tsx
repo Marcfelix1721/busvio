@@ -132,10 +132,10 @@ export default async function ClienteFichaPage({ params }: { params: Promise<{ e
 
       {/* STATCARDS */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: SPACE.gap, marginBottom: SPACE.gap }}>
-        <StatCard label="Solicitudes" value={total} sub={`${pendientes} pendiente${pendientes === 1 ? "" : "s"}`} icon={FileText} tone="default" />
-        <StatCard label="Aceptadas" value={aceptadas} sub={`${rechazadas} rechazada${rechazadas === 1 ? "" : "s"}`} icon={CircleCheck} tone="positive" />
-        <StatCard label="Facturado" value={`${facturado.toLocaleString("es-ES")} €`} icon={Euro} tone="positive" />
-        <StatCard label="Tasa de cierre" value={`${tasa}%`} icon={TrendingUp} tone="default" />
+        <StatCard compact label="Solicitudes" value={total} sub={`${pendientes} pendiente${pendientes === 1 ? "" : "s"}`} icon={FileText} tone="default" />
+        <StatCard compact label="Aceptadas" value={aceptadas} sub={`${rechazadas} rechazada${rechazadas === 1 ? "" : "s"}`} icon={CircleCheck} tone="positive" />
+        <StatCard compact label="Facturado" value={`${facturado.toLocaleString("es-ES")} €`} icon={Euro} tone="positive" />
+        <StatCard compact label="Tasa de cierre" value={`${tasa}%`} icon={TrendingUp} tone="default" />
       </div>
 
       {/* 2 COLUMNAS: HISTORIAL + ACCIONES */}

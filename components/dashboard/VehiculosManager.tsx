@@ -1,8 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Pencil, Trash2, X, Check, Bus } from "lucide-react"
+import { Plus, Pencil, Trash2, X, Check, Bus, Wrench, CircleCheck, AlertCircle, Info } from "lucide-react"
 import { createClient } from "@/lib/supabase"
+import { COLORS, RADIUS, SHADOW, SPACE, FONT_DISPLAY, FONT_BODY } from "@/lib/dashboard-ui"
+import { StatCard } from "@/components/dashboard/StatCard"
 
 type Vehicle = {
   id: string
@@ -28,15 +30,21 @@ const tipoLabel: Record<string, string> = {
 }
 
 const estadoConfig: Record<string, { label: string; bg: string; text: string }> = {
-  activo:     { label: "Activo",        bg: "#f0fdf4", text: "#15803d" },
-  reparacion: { label: "En reparación", bg: "#fffbeb", text: "#b45309" },
-  baja:       { label: "De baja",       bg: "#fef2f2", text: "#dc2626" },
+  activo:     { label: "Activo",        bg: COLORS.tealSoft,    text: COLORS.teal },
+  reparacion: { label: "En reparación", bg: COLORS.warningSoft, text: COLORS.warning },
+  baja:       { label: "De baja",       bg: COLORS.dangerSoft,  text: COLORS.danger },
 }
 
 const tipoIconColor: Record<string, string> = {
-  minibus: "#1e40af",
-  autobus: "#0f766e",
-  autocar: "#6d28d9",
+  minibus: COLORS.navy,
+  autobus: COLORS.teal,
+  autocar: COLORS.warning,
+}
+
+const tipoIconBg: Record<string, string> = {
+  minibus: COLORS.navySoft,
+  autobus: COLORS.tealSoft,
+  autocar: COLORS.warningSoft,
 }
 
 const emptyForm = {
@@ -95,11 +103,11 @@ export function VehiculosManager({ companyId, initialVehiculos }: {
     }
     if (editingId) {
       const { data, error } = await supabase.from("vehicles").update(payload).eq("id", editingId).select().single()
-      if (error) { setMessage("❌ " + error.message); setSaving(false); return }
+      if (error) { setMessage(error.message); setSaving(false); return }
       setVehiculos(prev => prev.map(v => v.id === editingId ? data : v))
     } else {
       const { data, error } = await supabase.from("vehicles").insert(payload).select().single()
-      if (error) { setMessage("❌ " + error.message); setSaving(false); return }
+      if (error) { setMessage(error.message); setSaving(false); return }
       setVehiculos(prev => [data, ...prev])
     }
     setSaving(false); closeForm()
@@ -119,58 +127,71 @@ export function VehiculosManager({ companyId, initialVehiculos }: {
   }
 
   const inputStyle: React.CSSProperties = {
-    fontFamily: "'DM Sans', system-ui, sans-serif",
-    height: "36px", width: "100%", borderRadius: "8px",
-    border: "1px solid #e5e7eb", background: "#fafafa",
-    padding: "0 10px", fontSize: "0.8125rem", color: "#111827", outline: "none",
+    fontFamily: FONT_BODY,
+    height: "36px", width: "100%", borderRadius: RADIUS.sm,
+    border: `1px solid ${COLORS.border}`, background: COLORS.surfaceAlt,
+    padding: "0 10px", fontSize: "0.8125rem", color: COLORS.text, outline: "none",
   }
   const focusHandlers = {
-    onFocus: (e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = "#1e3a5f"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.08)" },
-    onBlur: (e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none" },
+    onFocus: (e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = COLORS.navy; e.target.style.background = COLORS.surface; e.target.style.boxShadow = "0 0 0 3px rgba(30,58,95,0.08)" },
+    onBlur: (e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = COLORS.border; e.target.style.background = COLORS.surfaceAlt; e.target.style.boxShadow = "none" },
   }
   const labelStyle: React.CSSProperties = {
-    fontFamily: "'DM Sans', system-ui, sans-serif",
-    fontSize: "0.75rem", fontWeight: 500, color: "#6b7280", marginBottom: "5px", display: "block",
+    fontFamily: FONT_BODY,
+    fontSize: "0.75rem", fontWeight: 500, color: COLORS.textMuted, marginBottom: "5px", display: "block",
   }
   const sectionLabel: React.CSSProperties = {
-    fontFamily: "'DM Sans', system-ui, sans-serif",
+    fontFamily: FONT_BODY,
     fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.08em",
-    textTransform: "uppercase" as const, color: "#9ca3af",
+    textTransform: "uppercase" as const, color: COLORS.textFaint,
     margin: "1rem 0 0.75rem", display: "block",
   }
 
+  const activos = vehiculos.filter(v => v.estado === "activo").length
+  const enReparacion = vehiculos.filter(v => v.estado === "reparacion").length
+
   return (
-    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div style={{ fontFamily: FONT_BODY }}>
+
+      {/* KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(218px, 1fr))", gap: SPACE.gap, marginBottom: SPACE.section }}>
+        <StatCard label="Total vehículos" value={vehiculos.length} icon={Bus} tone="default" />
+        <StatCard label="Activos" value={activos} icon={CircleCheck} tone="positive" />
+        <StatCard label="En reparación" value={enReparacion} icon={Wrench} tone="warning" />
+      </div>
 
       {/* CABECERA */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1rem", fontWeight: 600, color: "#111827", margin: 0 }}>
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "1rem", fontWeight: 600, color: COLORS.navy, margin: 0 }}>
             Flota de vehículos
           </h2>
-          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#6b7280", marginTop: "3px" }}>
+          <p style={{ fontFamily: FONT_BODY, fontSize: "0.8125rem", color: COLORS.textMuted, marginTop: "3px" }}>
             {vehiculos.length} vehículo{vehiculos.length !== 1 ? "s" : ""} registrado{vehiculos.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <button onClick={openNew} style={{
-          fontFamily: "'DM Sans', system-ui, sans-serif",
-          display: "flex", alignItems: "center", gap: "6px",
-          height: "36px", padding: "0 14px", borderRadius: "9px",
-          background: "#111827", color: "#fff", border: "none",
-          fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer",
-        }}>
+        <button onClick={openNew}
+          onMouseEnter={e => { e.currentTarget.style.background = COLORS.teal }}
+          onMouseLeave={e => { e.currentTarget.style.background = COLORS.navy }}
+          style={{
+            fontFamily: FONT_BODY,
+            display: "flex", alignItems: "center", gap: "6px",
+            height: "36px", padding: "0 14px", borderRadius: RADIUS.md,
+            background: COLORS.navy, color: COLORS.onDark, border: "none",
+            fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer", transition: "background 0.15s",
+          }}>
           <Plus style={{ width: "14px", height: "14px" }} /> Añadir vehículo
         </button>
       </div>
 
       {/* FORMULARIO */}
       {showForm && (
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "16px", padding: "1.5rem", marginBottom: "1.5rem", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+        <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.lg, padding: "1.5rem", marginBottom: "1.5rem", boxShadow: SHADOW.card }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
-            <h3 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.9375rem", fontWeight: 600, color: "#111827", margin: 0 }}>
+            <h3 style={{ fontFamily: FONT_DISPLAY, fontSize: "0.9375rem", fontWeight: 600, color: COLORS.navy, margin: 0 }}>
               {editingId ? "Editar vehículo" : "Nuevo vehículo"}
             </h3>
-            <button onClick={closeForm} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}>
+            <button onClick={closeForm} style={{ background: "none", border: "none", cursor: "pointer", color: COLORS.textFaint }}>
               <X style={{ width: "18px", height: "18px" }} />
             </button>
           </div>
@@ -214,37 +235,45 @@ export function VehiculosManager({ companyId, initialVehiculos }: {
 
           {/* COSTES PROPIOS */}
           <span style={sectionLabel}>Costes operativos del vehículo</span>
-          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "11px 14px", marginBottom: "1rem" }}>
-            <p style={{ fontSize: 12, color: "#92400e", margin: 0, lineHeight: 1.6, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+          <div style={{ background: COLORS.warningSoft, border: `1px solid ${COLORS.warningSoft}`, borderRadius: RADIUS.md, padding: "11px 14px", marginBottom: "1rem", display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <Info style={{ width: 15, height: 15, color: COLORS.warning, flexShrink: 0, marginTop: 1 }} />
+            <p style={{ fontSize: 12, color: COLORS.warning, margin: 0, lineHeight: 1.6, fontFamily: FONT_BODY }}>
               El <strong>precio del combustible</strong> se configura globalmente en Ajustes y se aplica a todos los vehículos.
             </p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
-              <label style={labelStyle}>Consumo <span style={{ color: "#9ca3af", fontWeight: 400 }}>· L/100km</span></label>
+              <label style={labelStyle}>Consumo <span style={{ color: COLORS.textFaint, fontWeight: 400 }}>· L/100km</span></label>
               <input type="number" step="0.1" value={form.consumo} onChange={e => handleField("consumo", e.target.value)} placeholder="Ej: 28" style={inputStyle} {...focusHandlers} />
             </div>
             <div>
-              <label style={labelStyle}>Amortización <span style={{ color: "#9ca3af", fontWeight: 400 }}>· €/km</span></label>
+              <label style={labelStyle}>Amortización <span style={{ color: COLORS.textFaint, fontWeight: 400 }}>· €/km</span></label>
               <input type="number" step="0.01" value={form.amortizacion_km} onChange={e => handleField("amortizacion_km", e.target.value)} placeholder="Ej: 0.15" style={inputStyle} {...focusHandlers} />
             </div>
             <div>
-              <label style={labelStyle}>Mantenimiento <span style={{ color: "#9ca3af", fontWeight: 400 }}>· €/km</span></label>
+              <label style={labelStyle}>Mantenimiento <span style={{ color: COLORS.textFaint, fontWeight: 400 }}>· €/km</span></label>
               <input type="number" step="0.01" value={form.mantenimiento_km} onChange={e => handleField("mantenimiento_km", e.target.value)} placeholder="Ej: 0.08" style={inputStyle} {...focusHandlers} />
             </div>
             <div>
-              <label style={labelStyle}>Seguro <span style={{ color: "#9ca3af", fontWeight: 400 }}>· €/día</span></label>
+              <label style={labelStyle}>Seguro <span style={{ color: COLORS.textFaint, fontWeight: 400 }}>· €/día</span></label>
               <input type="number" step="0.01" value={form.seguro_dia} onChange={e => handleField("seguro_dia", e.target.value)} placeholder="Ej: 35" style={inputStyle} {...focusHandlers} />
             </div>
           </div>
 
-          {message && <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8rem", color: "#dc2626", margin: "0.75rem 0 0" }}>{message}</p>}
+          {message && (
+            <p style={{ fontFamily: FONT_BODY, fontSize: "0.8rem", color: COLORS.danger, margin: "0.75rem 0 0", display: "flex", alignItems: "center", gap: 6 }}>
+              <AlertCircle style={{ width: 14, height: 14, flexShrink: 0 }} /> {message}
+            </p>
+          )}
 
           <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "1.25rem" }}>
-            <button onClick={closeForm} style={{ fontFamily: "'DM Sans', system-ui, sans-serif", height: "36px", padding: "0 14px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", fontSize: "0.8125rem", fontWeight: 500, color: "#374151", cursor: "pointer" }}>
+            <button onClick={closeForm} style={{ fontFamily: FONT_BODY, height: "36px", padding: "0 14px", borderRadius: RADIUS.sm, border: `1px solid ${COLORS.border}`, background: COLORS.surface, fontSize: "0.8125rem", fontWeight: 500, color: COLORS.text, cursor: "pointer" }}>
               Cancelar
             </button>
-            <button onClick={handleSave} disabled={saving} style={{ fontFamily: "'DM Sans', system-ui, sans-serif", display: "flex", alignItems: "center", gap: "6px", height: "36px", padding: "0 14px", borderRadius: "8px", background: "#111827", color: "#fff", border: "none", fontSize: "0.8125rem", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer" }}>
+            <button onClick={handleSave} disabled={saving}
+              onMouseEnter={e => { if (!saving) e.currentTarget.style.background = COLORS.teal }}
+              onMouseLeave={e => { e.currentTarget.style.background = COLORS.navy }}
+              style={{ fontFamily: FONT_BODY, display: "flex", alignItems: "center", gap: "6px", height: "36px", padding: "0 14px", borderRadius: RADIUS.md, background: COLORS.navy, color: COLORS.onDark, border: "none", fontSize: "0.8125rem", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", transition: "background 0.15s" }}>
               <Check style={{ width: "14px", height: "14px" }} />
               {saving ? "Guardando..." : editingId ? "Guardar cambios" : "Añadir vehículo"}
             </button>
@@ -254,41 +283,42 @@ export function VehiculosManager({ companyId, initialVehiculos }: {
 
       {/* LISTA */}
       {vehiculos.length === 0 ? (
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "16px", padding: "3rem", textAlign: "center" }}>
-          <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem" }}>
-            <Bus style={{ width: "22px", height: "22px", color: "#9ca3af" }} />
+        <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.lg, boxShadow: SHADOW.card, padding: "3rem", textAlign: "center" }}>
+          <div style={{ width: "48px", height: "48px", borderRadius: RADIUS.md, background: COLORS.navySoft, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem" }}>
+            <Bus style={{ width: "22px", height: "22px", color: COLORS.navy }} />
           </div>
-          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.9375rem", fontWeight: 600, color: "#374151", margin: "0 0 4px" }}>Sin vehículos registrados</p>
-          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#9ca3af" }}>Añade tu primer vehículo para empezar a asignarlo a solicitudes</p>
+          <p style={{ fontFamily: FONT_BODY, fontSize: "0.9375rem", fontWeight: 600, color: COLORS.text, margin: "0 0 4px" }}>Sin vehículos registrados</p>
+          <p style={{ fontFamily: FONT_BODY, fontSize: "0.8125rem", color: COLORS.textFaint }}>Añade tu primer vehículo para empezar a asignarlo a solicitudes</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {vehiculos.map(v => {
             const eCfg = estadoConfig[v.estado]
             const color = tipoIconColor[v.tipo]
+            const iconBg = tipoIconBg[v.tipo]
             const tieneCostePropios = v.consumo || v.amortizacion_km || v.mantenimiento_km || v.seguro_dia
             return (
-              <div key={v.id} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", padding: "1rem 1.25rem", display: "flex", alignItems: "center", gap: "1rem" }}>
-                <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: color + "15", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Bus style={{ width: "20px", height: "20px", color }} />
+              <div key={v.id} style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.lg, boxShadow: SHADOW.card, padding: "1rem 1.25rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+                <div style={{ width: "42px", height: "42px", borderRadius: RADIUS.md, background: iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Bus style={{ width: "20px", height: "20px", color }} strokeWidth={2} />
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                    <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.9375rem", fontWeight: 700, color: "#111827", letterSpacing: "0.02em" }}>{v.matricula}</span>
-                    <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#374151", fontWeight: 500 }}>{v.marca_modelo}</span>
-                    {v.anio && <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#9ca3af" }}>{v.anio}</span>}
+                    <span style={{ fontFamily: FONT_DISPLAY, fontSize: "0.9375rem", fontWeight: 700, color: COLORS.navy, letterSpacing: "0.02em" }}>{v.matricula}</span>
+                    <span style={{ fontFamily: FONT_BODY, fontSize: "0.8125rem", color: COLORS.text, fontWeight: 500 }}>{v.marca_modelo}</span>
+                    {v.anio && <span style={{ fontFamily: FONT_BODY, fontSize: "0.75rem", color: COLORS.textFaint }}>{v.anio}</span>}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px", flexWrap: "wrap" }}>
-                    <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#6b7280" }}>{tipoLabel[v.tipo]}</span>
-                    <span style={{ color: "#d1d5db", fontSize: "0.75rem" }}>·</span>
-                    <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", color: "#6b7280" }}>{v.plazas} plazas</span>
+                    <span style={{ fontFamily: FONT_BODY, fontSize: "0.75rem", color: COLORS.textMuted }}>{tipoLabel[v.tipo]}</span>
+                    <span style={{ color: COLORS.borderStrong, fontSize: "0.75rem" }}>·</span>
+                    <span style={{ fontFamily: FONT_BODY, fontSize: "0.75rem", color: COLORS.textMuted }}>{v.plazas} plazas</span>
                     {tieneCostePropios ? (
-                      <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", fontWeight: 600, padding: "1px 7px", borderRadius: "999px", background: "#f0fdf4", color: "#15803d" }}>
+                      <span style={{ fontFamily: FONT_BODY, fontSize: "0.7rem", fontWeight: 600, padding: "1px 7px", borderRadius: RADIUS.pill, background: COLORS.tealSoft, color: COLORS.teal }}>
                         Costes propios
                       </span>
                     ) : (
-                      <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.7rem", padding: "1px 7px", borderRadius: "999px", background: "#f3f4f6", color: "#9ca3af" }}>
+                      <span style={{ fontFamily: FONT_BODY, fontSize: "0.7rem", padding: "1px 7px", borderRadius: RADIUS.pill, background: COLORS.navySoft, color: COLORS.textFaint }}>
                         Costes globales
                       </span>
                     )}
@@ -298,7 +328,7 @@ export function VehiculosManager({ companyId, initialVehiculos }: {
                 <select
                   value={v.estado}
                   onChange={e => handleEstado(v.id, e.target.value as Vehicle["estado"])}
-                  style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.75rem", fontWeight: 600, padding: "4px 10px", borderRadius: "999px", border: "none", cursor: "pointer", outline: "none", background: eCfg.bg, color: eCfg.text }}
+                  style={{ fontFamily: FONT_BODY, fontSize: "0.75rem", fontWeight: 600, padding: "4px 10px", borderRadius: RADIUS.pill, border: "none", cursor: "pointer", outline: "none", background: eCfg.bg, color: eCfg.text }}
                 >
                   <option value="activo">Activo</option>
                   <option value="reparacion">En reparación</option>
@@ -306,10 +336,10 @@ export function VehiculosManager({ companyId, initialVehiculos }: {
                 </select>
 
                 <div style={{ display: "flex", gap: "4px" }}>
-                  <button onClick={() => openEdit(v)} style={{ width: "32px", height: "32px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#6b7280" }}>
+                  <button onClick={() => openEdit(v)} style={{ width: "32px", height: "32px", borderRadius: RADIUS.sm, border: `1px solid ${COLORS.border}`, background: COLORS.surface, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: COLORS.textMuted }}>
                     <Pencil style={{ width: "13px", height: "13px" }} />
                   </button>
-                  <button onClick={() => handleDelete(v.id)} disabled={deletingId === v.id} style={{ width: "32px", height: "32px", borderRadius: "8px", border: "1px solid #fee2e2", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#ef4444" }}>
+                  <button onClick={() => handleDelete(v.id)} disabled={deletingId === v.id} style={{ width: "32px", height: "32px", borderRadius: RADIUS.sm, border: `1px solid ${COLORS.dangerSoft}`, background: COLORS.surface, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: COLORS.danger }}>
                     <Trash2 style={{ width: "13px", height: "13px" }} />
                   </button>
                 </div>

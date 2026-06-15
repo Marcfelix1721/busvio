@@ -5,6 +5,7 @@ import { cookies } from "next/headers"
 import { StaffManager } from "@/components/dashboard/StaffManager"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+import { COLORS, SPACE, FONT_DISPLAY, FONT_BODY } from "@/lib/dashboard-ui"
 
 async function createClient() {
   const cookieStore = await cookies()
@@ -29,15 +30,15 @@ export default async function StaffPage() {
     .order("rol").order("nombre")
 
   return (
-    <div style={{ maxWidth: "900px", margin: "0 auto", padding: "2rem 1.5rem" }}>
-      <Link href="/dashboard/ajustes" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#6b7280", display: "inline-flex", alignItems: "center", gap: "5px", marginBottom: "1.75rem", textDecoration: "none" }}>
-        <ArrowLeft style={{ width: "14px", height: "14px" }} /> Volver a Ajustes
+    <div style={{ maxWidth: SPACE.pageMax, margin: "0 auto", padding: "32px 32px 64px" }}>
+      <Link href="/dashboard/ajustes" style={{ fontFamily: FONT_BODY, fontSize: 13, color: COLORS.textMuted, display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 20, textDecoration: "none" }}>
+        <ArrowLeft style={{ width: 14, height: 14 }} /> Volver a Ajustes
       </Link>
-      <div style={{ marginBottom: "2rem" }}>
-        <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "1.375rem", fontWeight: 600, color: "#111827", letterSpacing: "-0.01em", margin: 0 }}>
+      <div style={{ marginBottom: SPACE.section }}>
+        <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 600, color: COLORS.navy, letterSpacing: "-0.025em", margin: 0 }}>
           Personal
         </h1>
-        <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: "0.8125rem", color: "#6b7280", marginTop: "4px" }}>
+        <p style={{ fontFamily: FONT_BODY, fontSize: 13, color: COLORS.textMuted, marginTop: 4 }}>
           Gestiona conductores, guías y monitores de tu empresa
         </p>
       </div>

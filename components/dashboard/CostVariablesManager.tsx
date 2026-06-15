@@ -1,28 +1,30 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, createElement } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import type { LucideIcon } from 'lucide-react'
+import { MapPin, Calendar, Clock, Wrench, Pin, Percent, CircleCheck, Hourglass, Ruler, CalendarDays, Settings, Wallet, ClipboardList, Layers } from 'lucide-react'
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const TIPOS_CALCULO = [
-  { value: 'per_km', label: 'Por km', ejemplo: 'ej: 2.20€ × km', icon: '📍' },
-  { value: 'per_day', label: 'Por día', ejemplo: 'ej: 18€ × días', icon: '📅' },
-  { value: 'per_hour', label: 'Por hora', ejemplo: 'ej: 12€ × horas', icon: '⏱' },
-  { value: 'per_x_km', label: 'Cada X km', ejemplo: 'ej: 800€ cada 10.000 km', icon: '🔧' },
-  { value: 'fixed', label: 'Importe fijo', ejemplo: 'ej: 50€ siempre', icon: '📌' },
-  { value: 'percent', label: '% sobre subtotal', ejemplo: 'ej: +15% sobre el total', icon: '💹' },
+const TIPOS_CALCULO: { value: string; label: string; ejemplo: string; icon: LucideIcon }[] = [
+  { value: 'per_km', label: 'Por km', ejemplo: 'ej: 2.20€ × km', icon: MapPin },
+  { value: 'per_day', label: 'Por día', ejemplo: 'ej: 18€ × días', icon: Calendar },
+  { value: 'per_hour', label: 'Por hora', ejemplo: 'ej: 12€ × horas', icon: Clock },
+  { value: 'per_x_km', label: 'Cada X km', ejemplo: 'ej: 800€ cada 10.000 km', icon: Wrench },
+  { value: 'fixed', label: 'Importe fijo', ejemplo: 'ej: 50€ siempre', icon: Pin },
+  { value: 'percent', label: '% sobre subtotal', ejemplo: 'ej: +15% sobre el total', icon: Percent },
 ]
 
-const CONDICION_TIPOS = [
-  { value: 'siempre', label: 'Siempre', desc: 'Se aplica en todos los servicios', icon: '✅' },
-  { value: 'franja', label: 'Franja horaria', desc: 'Si el servicio toca ese intervalo de horas', icon: '🕐' },
-  { value: 'umbral_horas', label: 'Jornada mínima', desc: 'Si el servicio supera X horas', icon: '⏳' },
-  { value: 'umbral_km', label: 'Km mínimos', desc: 'Si el servicio supera X km', icon: '📏' },
-  { value: 'dia_especial', label: 'Día especial', desc: 'Si el servicio cae en un día concreto', icon: '📆' },
+const CONDICION_TIPOS: { value: string; label: string; desc: string; icon: LucideIcon }[] = [
+  { value: 'siempre', label: 'Siempre', desc: 'Se aplica en todos los servicios', icon: CircleCheck },
+  { value: 'franja', label: 'Franja horaria', desc: 'Si el servicio toca ese intervalo de horas', icon: Clock },
+  { value: 'umbral_horas', label: 'Jornada mínima', desc: 'Si el servicio supera X horas', icon: Hourglass },
+  { value: 'umbral_km', label: 'Km mínimos', desc: 'Si el servicio supera X km', icon: Ruler },
+  { value: 'dia_especial', label: 'Día especial', desc: 'Si el servicio cae en un día concreto', icon: CalendarDays },
 ]
 
 const DIAS_ESPECIALES = [
@@ -282,7 +284,7 @@ export default function CostVariablesManager({ companyId }: Props) {
           {showForm && (
             <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 14, padding: 22, marginBottom: 20 }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 18px' }}>
-                {editingId ? '✏️ Editar variable' : '➕ Nueva variable'}
+                {editingId ? 'Editar variable' : 'Nueva variable'}
               </p>
 
               {/* Nombre */}
@@ -298,8 +300,8 @@ export default function CostVariablesManager({ companyId }: Props) {
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
                   {TIPOS_CALCULO.map(t => (
                     <button key={t.value} type="button" onClick={() => setForm(f => ({ ...f, tipo: t.value }))}
-                      style={{ padding: '7px 12px', borderRadius: 9, border: `2px solid ${form.tipo === t.value ? '#1e3a5f' : '#e5e7eb'}`, background: form.tipo === t.value ? '#1e3a5f' : '#fff', color: form.tipo === t.value ? '#fff' : '#374151', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', gap: 5 }}>
-                      {t.icon} {t.label}
+                      style={{ padding: '7px 12px', borderRadius: 9, border: `2px solid ${form.tipo === t.value ? '#1e3a5f' : '#e5e7eb'}`, background: form.tipo === t.value ? '#1e3a5f' : '#fff', color: form.tipo === t.value ? '#fff' : '#374151', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {createElement(t.icon, { style: { width: 14, height: 14 } })} {t.label}
                     </button>
                   ))}
                 </div>
@@ -329,7 +331,7 @@ export default function CostVariablesManager({ companyId }: Props) {
                   {CONDICION_TIPOS.map(c => (
                     <button key={c.value} type="button" onClick={() => setForm(f => ({ ...f, condicion_tipo: c.value }))}
                       style={{ padding: '10px 14px', borderRadius: 9, border: `2px solid ${form.condicion_tipo === c.value ? '#1e3a5f' : '#e5e7eb'}`, background: form.condicion_tipo === c.value ? '#f0f4ff' : '#fff', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", textAlign: 'left' as const, display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 16 }}>{c.icon}</span>
+                      {createElement(c.icon, { style: { width: 18, height: 18, color: form.condicion_tipo === c.value ? '#1e3a5f' : '#6b7280', flexShrink: 0 } })}
                       <div>
                         <p style={{ fontSize: 13, fontWeight: 700, color: form.condicion_tipo === c.value ? '#1e3a5f' : '#374151', margin: 0 }}>{c.label}</p>
                         <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>{c.desc}</p>
@@ -416,7 +418,7 @@ export default function CostVariablesManager({ companyId }: Props) {
               <div style={{ marginBottom: 18 }}>
                 <label style={s.label}>¿El gestor puede desactivarla?</label>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  {[{ value: false, label: '✅ Sí, puede desactivarla', sub: 'Opcional por presupuesto' }, { value: true, label: '🔒 No, siempre aplica', sub: 'Si la condición se cumple, no se puede quitar' }].map(opt => (
+                  {[{ value: false, label: 'Sí, puede desactivarla', sub: 'Opcional por presupuesto' }, { value: true, label: 'No, siempre aplica', sub: 'Si la condición se cumple, no se puede quitar' }].map(opt => (
                     <button key={String(opt.value)} type="button" onClick={() => setForm(f => ({ ...f, obligatoria: opt.value }))}
                       style={{ flex: 1, padding: '10px 12px', borderRadius: 9, border: `2px solid ${form.obligatoria === opt.value ? '#1e3a5f' : '#e5e7eb'}`, background: form.obligatoria === opt.value ? '#f0f4ff' : '#fff', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", textAlign: 'left' as const }}>
                       <p style={{ fontSize: 12, fontWeight: 700, color: form.obligatoria === opt.value ? '#1e3a5f' : '#374151', margin: 0 }}>{opt.label}</p>
@@ -446,7 +448,7 @@ export default function CostVariablesManager({ companyId }: Props) {
             <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
               {variables.length === 0 && !showForm ? (
                 <div style={{ textAlign: 'center' as const, padding: '40px 20px' }}>
-                  <p style={{ fontSize: 32, margin: '0 0 8px' }}>⚙️</p>
+                  <Settings style={{ width: 30, height: 30, color: '#9ca3af', margin: '0 auto 8px', display: 'block' }} />
                   <p style={{ fontSize: 14, fontWeight: 600, color: '#374151', margin: 0 }}>Sin variables aún</p>
                   <p style={{ fontSize: 13, color: '#9ca3af', margin: '4px 0 0' }}>Crea la primera variable de coste</p>
                 </div>
@@ -461,8 +463,8 @@ export default function CostVariablesManager({ companyId }: Props) {
                         {grupo && <span style={{ fontSize: 9, fontWeight: 700, background: '#f5f3ff', color: '#7c3aed', borderRadius: 4, padding: '1px 5px' }}>G: {grupo.nombre}</span>}
                       </div>
                       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const }}>
-                        <span style={{ fontSize: 12, color: '#6b7280' }}>💰 {formatCalculo(v)}</span>
-                        <span style={{ fontSize: 12, color: '#6b7280' }}>📋 {formatCondicion(v)}</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}><Wallet style={{ width: 12, height: 12 }} /> {formatCalculo(v)}</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}><ClipboardList style={{ width: 12, height: 12 }} /> {formatCondicion(v)}</span>
                       </div>
                     </div>
 
@@ -494,7 +496,7 @@ export default function CostVariablesManager({ companyId }: Props) {
           {showGroupForm && (
             <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 14, padding: 22, marginBottom: 20 }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 16px' }}>
-                {editingGroupId ? '✏️ Editar grupo' : '➕ Nuevo grupo de exclusión'}
+                {editingGroupId ? 'Editar grupo' : 'Nuevo grupo de exclusión'}
               </p>
               <div style={{ marginBottom: 14 }}>
                 <label style={s.label}>Nombre del grupo</label>
@@ -505,8 +507,8 @@ export default function CostVariablesManager({ companyId }: Props) {
                 <label style={s.label}>¿Cómo se comportan las variables del grupo?</label>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {[
-                    { value: 'max', label: '🏆 Solo el mayor', sub: 'Si aplican varias, solo se cobra la de mayor importe' },
-                    { value: 'sum', label: '➕ Se acumulan', sub: 'Todas las que aplican se suman entre sí' },
+                    { value: 'max', label: 'Solo el mayor', sub: 'Si aplican varias, solo se cobra la de mayor importe' },
+                    { value: 'sum', label: 'Se acumulan', sub: 'Todas las que aplican se suman entre sí' },
                   ].map(opt => (
                     <button key={opt.value} type="button" onClick={() => setGroupForm(f => ({ ...f, modo: opt.value as any }))}
                       style={{ flex: 1, padding: '12px 14px', borderRadius: 9, border: `2px solid ${groupForm.modo === opt.value ? '#1e3a5f' : '#e5e7eb'}`, background: groupForm.modo === opt.value ? '#f0f4ff' : '#fff', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", textAlign: 'left' as const }}>
@@ -532,7 +534,7 @@ export default function CostVariablesManager({ companyId }: Props) {
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
             {groups.length === 0 && !showGroupForm ? (
               <div style={{ textAlign: 'center' as const, padding: '40px 20px' }}>
-                <p style={{ fontSize: 32, margin: '0 0 8px' }}>🔗</p>
+                <Layers style={{ width: 30, height: 30, color: '#9ca3af', margin: '0 auto 8px', display: 'block' }} />
                 <p style={{ fontSize: 14, fontWeight: 600, color: '#374151', margin: 0 }}>Sin grupos aún</p>
                 <p style={{ fontSize: 13, color: '#9ca3af', margin: '4px 0 0' }}>Los grupos definen qué variables son incompatibles entre sí</p>
               </div>

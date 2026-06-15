@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { ConductoresList } from '@/components/dashboard/ConductoresList'
 import type { Staff, ConductorStats } from '@/lib/staff'
+import { COLORS, SPACE, FONT_DISPLAY } from '@/lib/dashboard-ui'
 
 async function createClient() {
   const cookieStore = await cookies()
@@ -100,10 +101,10 @@ export default async function ConductoresPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1180, margin: '0 auto', padding: '36px 36px 56px' }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 25, fontWeight: 800, color: '#111827', margin: 0, letterSpacing: '-0.025em' }}>Conductores</h1>
-        <p style={{ fontSize: 14, color: '#6b7280', marginTop: 5 }}>Gestiona tu equipo de conductores, su documentación y servicios</p>
+    <div style={{ maxWidth: SPACE.pageMax, margin: '0 auto', padding: '32px 32px 64px' }}>
+      <div style={{ marginBottom: SPACE.section }}>
+        <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 600, color: COLORS.navy, margin: 0, letterSpacing: '-0.025em' }}>Conductores</h1>
+        <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4 }}>Gestiona tu equipo de conductores, su documentación y servicios</p>
       </div>
       <ConductoresList
         initialConductores={conductores}

@@ -2,8 +2,10 @@ import { redirect } from "next/navigation"
 import { getCompanyIdServer } from "@/lib/get-company-id-server"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { FileText } from "lucide-react"
+import { FileText, BarChart3, CircleCheck, TrendingUp } from "lucide-react"
 import { QuoteRequest } from "@/lib/types"
+import { StatCard } from "@/components/dashboard/StatCard"
+import { COLORS, RADIUS, SHADOW, SPACE, FONT_DISPLAY, FONT_BODY } from "@/lib/dashboard-ui"
 
 async function createClient() {
   const cookieStore = await cookies()
@@ -15,12 +17,12 @@ async function createClient() {
 }
 
 const statusConfig: Record<QuoteRequest["status"], { label: string; bar: string }> = {
-  nuevo:       { label: "Nuevo",       bar: "bg-sky-500" },
-  en_revision: { label: "En revisión", bar: "bg-amber-400" },
-  enviado:     { label: "Enviado",     bar: "bg-violet-500" },
-  aceptado:    { label: "Aceptado",   bar: "bg-emerald-500" },
-  rechazado:   { label: "Rechazado",  bar: "bg-rose-400" },
-  cancelado:   { label: "Cancelado",  bar: "bg-zinc-300" },
+  nuevo:       { label: "Nuevo",       bar: COLORS.teal },
+  en_revision: { label: "En revisión", bar: COLORS.warning },
+  enviado:     { label: "Enviado",     bar: COLORS.navy },
+  aceptado:    { label: "Aceptado",   bar: COLORS.teal },
+  rechazado:   { label: "Rechazado",  bar: COLORS.danger },
+  cancelado:   { label: "Cancelado",  bar: COLORS.borderStrong },
 }
 
 export default async function AnalyticsPage() {
@@ -57,6 +59,9 @@ export default async function AnalyticsPage() {
 
   const aceptadas = requests.filter(r => r.status === "aceptado").length
   const tasa = requests.length > 0 ? Math.round((aceptadas / requests.length) * 100) : 0
+  const facturadoTotal = requests
+    .filter(r => r.status === "aceptado")
+    .reduce((s, r) => s + (r.final_price ?? r.estimated_price ?? 0), 0)
 
   // Top rutas
   const rutaMap = new Map<string, number>()
@@ -67,115 +72,130 @@ export default async function AnalyticsPage() {
   })
   const topRutas = Array.from(rutaMap.entries()).sort((a,b) => b[1]-a[1]).slice(0,5)
 
+  const cardStyle = {
+    background: COLORS.surface,
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: RADIUS.lg,
+    boxShadow: SHADOW.card,
+    padding: 24,
+  } as const
+
   return (
-    <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-5">
+    <div style={{ maxWidth: SPACE.pageMax, margin: "0 auto", padding: "32px 32px 64px" }}>
 
-          <div>
-            <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight">Analytics</h1>
-            <p className="text-[13px] text-[#9ca3af] mt-0.5">Rendimiento histórico de tu negocio</p>
-          </div>
+      {/* HEADER */}
+      <div style={{ marginBottom: SPACE.section }}>
+        <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 600, color: COLORS.navy, margin: 0, letterSpacing: "-0.025em" }}>Analytics</h1>
+        <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4 }}>Rendimiento histórico de tu negocio</p>
+      </div>
 
-          {/* GRÁFICA SOLICITUDES */}
-          <div className="bg-white border border-[#e5e7eb] rounded-xl p-6">
-            <p className="text-sm font-semibold text-[#111827] mb-1">Solicitudes por mes</p>
-            <p className="text-xs text-[#9ca3af] mb-6">Últimos 6 meses</p>
-            <div className="flex items-end gap-4 h-40">
-              {meses.map(mes => (
-                <div key={mes.key} className="flex-1 flex flex-col items-center gap-2">
-                  <span className="text-[12px] font-semibold text-[#6b7280]">{mes.count > 0 ? mes.count : ""}</span>
-                  <div className="w-full rounded-sm bg-[#f3f4f6] relative" style={{height:"100px"}}>
-                    <div className="absolute bottom-0 w-full bg-[#111827] rounded-sm transition-all duration-700"
-                      style={{height:`${Math.max((mes.count/maxCount)*100, mes.count>0?6:0)}%`}} />
-                  </div>
-                  <span className="text-[11px] text-[#9ca3af] capitalize text-center">{mes.label}</span>
-                </div>
-              ))}
+      {/* KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(218px, 1fr))", gap: SPACE.gap, marginBottom: SPACE.section }}>
+        <StatCard label="Total solicitudes" value={requests.length} icon={FileText} tone="default" />
+        <StatCard label="Aceptadas" value={aceptadas} icon={CircleCheck} tone="positive" />
+        <StatCard label="Tasa de cierre" value={`${tasa}%`} icon={TrendingUp} tone="positive" />
+        <StatCard label="Facturado" value={`${facturadoTotal.toLocaleString("es-ES")} €`} icon={BarChart3} tone="positive" />
+      </div>
+
+      {/* GRÁFICA SOLICITUDES */}
+      <div style={{ ...cardStyle, marginBottom: SPACE.gap }}>
+        <p style={{ fontFamily: FONT_BODY, fontSize: 14, fontWeight: 700, color: COLORS.text, margin: 0 }}>Solicitudes por mes</p>
+        <p style={{ fontSize: 12, color: COLORS.textFaint, margin: "2px 0 24px" }}>Últimos 6 meses</p>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 16, height: 160 }}>
+          {meses.map(mes => (
+            <div key={mes.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <span style={{ fontFamily: FONT_DISPLAY, fontSize: 12, fontWeight: 600, color: COLORS.navy }}>{mes.count > 0 ? mes.count : ""}</span>
+              <div style={{ width: "100%", borderRadius: RADIUS.sm, background: COLORS.surfaceAlt, position: "relative", height: 100 }}>
+                <div style={{ position: "absolute", bottom: 0, width: "100%", background: COLORS.navy, borderRadius: RADIUS.sm, transition: "all 0.7s", height: `${Math.max((mes.count/maxCount)*100, mes.count>0?6:0)}%` }} />
+              </div>
+              <span style={{ fontSize: 11, color: COLORS.textFaint, textTransform: "capitalize", textAlign: "center" }}>{mes.label}</span>
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
 
-          {/* GRÁFICA FACTURADO */}
-          <div className="bg-white border border-[#e5e7eb] rounded-xl p-6">
-            <p className="text-sm font-semibold text-[#111827] mb-1">Facturado por mes</p>
-            <p className="text-xs text-[#9ca3af] mb-6">Solo servicios aceptados · últimos 6 meses</p>
-            <div className="flex items-end gap-4 h-40">
-              {meses.map(mes => (
-                <div key={mes.key} className="flex-1 flex flex-col items-center gap-2">
-                  <span className="text-[12px] font-semibold text-[#6b7280]">
-                    {mes.facturado > 0 ? `${mes.facturado.toLocaleString("es-ES")}€` : ""}
-                  </span>
-                  <div className="w-full rounded-sm bg-[#f3f4f6] relative" style={{height:"100px"}}>
-                    <div className="absolute bottom-0 w-full bg-emerald-500 rounded-sm transition-all duration-700"
-                      style={{height:`${Math.max((mes.facturado/maxFacturado)*100, mes.facturado>0?6:0)}%`}} />
-                  </div>
-                  <span className="text-[11px] text-[#9ca3af] capitalize text-center">{mes.label}</span>
-                </div>
-              ))}
+      {/* GRÁFICA FACTURADO */}
+      <div style={{ ...cardStyle, marginBottom: SPACE.gap }}>
+        <p style={{ fontFamily: FONT_BODY, fontSize: 14, fontWeight: 700, color: COLORS.text, margin: 0 }}>Facturado por mes</p>
+        <p style={{ fontSize: 12, color: COLORS.textFaint, margin: "2px 0 24px" }}>Solo servicios aceptados · últimos 6 meses</p>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 16, height: 160 }}>
+          {meses.map(mes => (
+            <div key={mes.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <span style={{ fontFamily: FONT_DISPLAY, fontSize: 12, fontWeight: 600, color: COLORS.teal }}>
+                {mes.facturado > 0 ? `${mes.facturado.toLocaleString("es-ES")}€` : ""}
+              </span>
+              <div style={{ width: "100%", borderRadius: RADIUS.sm, background: COLORS.surfaceAlt, position: "relative", height: 100 }}>
+                <div style={{ position: "absolute", bottom: 0, width: "100%", background: COLORS.teal, borderRadius: RADIUS.sm, transition: "all 0.7s", height: `${Math.max((mes.facturado/maxFacturado)*100, mes.facturado>0?6:0)}%` }} />
+              </div>
+              <span style={{ fontSize: 11, color: COLORS.textFaint, textTransform: "capitalize", textAlign: "center" }}>{mes.label}</span>
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {/* PIPELINE */}
-            <div className="bg-white border border-[#e5e7eb] rounded-xl p-6">
-              <p className="text-sm font-semibold text-[#111827] mb-1">Pipeline de estados</p>
-              <p className="text-xs text-[#9ca3af] mb-5">Distribución actual de solicitudes</p>
-              <div className="space-y-4">
-                {Object.entries(statusConfig).map(([key, cfg]) => {
-                  const count = requests.filter(r => r.status === key).length
-                  const pct = requests.length > 0 ? (count / requests.length) * 100 : 0
-                  return (
-                    <div key={key}>
-                      <div className="flex justify-between mb-1.5">
-                        <span className="text-[13px] text-[#374151]">{cfg.label}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[12px] text-[#9ca3af]">{Math.round(pct)}%</span>
-                          <span className="text-[13px] font-semibold text-[#111827] w-4 text-right">{count}</span>
-                        </div>
-                      </div>
-                      <div className="h-2 bg-[#f3f4f6] rounded-full overflow-hidden">
-                        <div className={`h-full ${cfg.bar} rounded-full transition-all duration-500`} style={{width:`${pct}%`}} />
-                      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: SPACE.gap }}>
+        {/* PIPELINE */}
+        <div style={cardStyle}>
+          <p style={{ fontFamily: FONT_BODY, fontSize: 14, fontWeight: 700, color: COLORS.text, margin: 0 }}>Pipeline de estados</p>
+          <p style={{ fontSize: 12, color: COLORS.textFaint, margin: "2px 0 20px" }}>Distribución actual de solicitudes</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {Object.entries(statusConfig).map(([key, cfg]) => {
+              const count = requests.filter(r => r.status === key).length
+              const pct = requests.length > 0 ? (count / requests.length) * 100 : 0
+              return (
+                <div key={key}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, color: COLORS.textMuted }}>{cfg.label}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 12, color: COLORS.textFaint }}>{Math.round(pct)}%</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, width: 16, textAlign: "right" }}>{count}</span>
                     </div>
-                  )
-                })}
-              </div>
-              <div className="mt-5 pt-4 border-t border-[#f3f4f6] flex justify-between">
-                <span className="text-xs text-[#9ca3af]">Tasa de cierre</span>
-                <span className="text-sm font-bold text-emerald-600">{tasa}%</span>
-              </div>
-            </div>
-
-            {/* TOP RUTAS */}
-            <div className="bg-white border border-[#e5e7eb] rounded-xl p-6">
-              <p className="text-sm font-semibold text-[#111827] mb-1">Rutas más solicitadas</p>
-              <p className="text-xs text-[#9ca3af] mb-5">Top 5 trayectos</p>
-              {topRutas.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-32 gap-2">
-                  <FileText className="size-6 text-[#e5e7eb]" />
-                  <p className="text-xs text-[#9ca3af]">Sin datos suficientes</p>
+                  </div>
+                  <div style={{ height: 8, background: COLORS.surfaceAlt, borderRadius: RADIUS.pill, overflow: "hidden" }}>
+                    <div style={{ height: "100%", background: cfg.bar, borderRadius: RADIUS.pill, transition: "all 0.5s", width: `${pct}%` }} />
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {topRutas.map(([ruta, count], i) => {
-                    const pct = (count / (topRutas[0][1])) * 100
-                    return (
-                      <div key={ruta}>
-                        <div className="flex justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-[#9ca3af] w-4">{i+1}</span>
-                            <span className="text-[13px] text-[#374151] truncate max-w-[200px]">{ruta}</span>
-                          </div>
-                          <span className="text-[13px] font-semibold text-[#111827]">{count}</span>
-                        </div>
-                        <div className="h-1.5 bg-[#f3f4f6] rounded-full overflow-hidden ml-6">
-                          <div className="h-full bg-[#111827] rounded-full" style={{width:`${pct}%`}} />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
+              )
+            })}
           </div>
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${COLORS.border}`, display: "flex", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 12, color: COLORS.textFaint }}>Tasa de cierre</span>
+            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 14, fontWeight: 600, color: COLORS.teal }}>{tasa}%</span>
+          </div>
+        </div>
+
+        {/* TOP RUTAS */}
+        <div style={cardStyle}>
+          <p style={{ fontFamily: FONT_BODY, fontSize: 14, fontWeight: 700, color: COLORS.text, margin: 0 }}>Rutas más solicitadas</p>
+          <p style={{ fontSize: 12, color: COLORS.textFaint, margin: "2px 0 20px" }}>Top 5 trayectos</p>
+          {topRutas.length === 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 128, gap: 8 }}>
+              <FileText style={{ width: 24, height: 24, color: COLORS.border }} />
+              <p style={{ fontSize: 12, color: COLORS.textFaint, margin: 0 }}>Sin datos suficientes</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {topRutas.map(([ruta, count], i) => {
+                const pct = (count / (topRutas[0][1])) * 100
+                return (
+                  <div key={ruta}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                        <span style={{ fontFamily: FONT_DISPLAY, fontSize: 10, fontWeight: 700, color: COLORS.textFaint, width: 16 }}>{i+1}</span>
+                        <span style={{ fontSize: 13, color: COLORS.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>{ruta}</span>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>{count}</span>
+                    </div>
+                    <div style={{ height: 6, background: COLORS.surfaceAlt, borderRadius: RADIUS.pill, overflow: "hidden", marginLeft: 24 }}>
+                      <div style={{ height: "100%", background: COLORS.navy, borderRadius: RADIUS.pill, width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

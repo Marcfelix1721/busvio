@@ -6,6 +6,8 @@ import { COLORS, RADIUS, SHADOW, FONT_DISPLAY, FONT_BODY, TONE, type Tone } from
  * Clientes y la ficha de cliente. El número es el héroe (Space Grotesk, navy);
  * la etiqueta va debajo y el icono es discreto. El `tone` solo tiñe el icono
  * (acción/positivo = teal, atención = cálido), nunca el número → coherencia.
+ *
+ * `compact` reduce el aire vertical (para filas densas como la ficha).
  */
 export function StatCard({
   label,
@@ -13,14 +15,17 @@ export function StatCard({
   sub,
   icon: Icon,
   tone = "default",
+  compact = false,
 }: {
   label: string
   value: string | number
   sub?: string
   icon: LucideIcon
   tone?: Tone
+  compact?: boolean
 }) {
   const t = TONE[tone]
+  const tile = compact ? 30 : 34
   return (
     <div
       style={{
@@ -29,17 +34,17 @@ export function StatCard({
         border: `1px solid ${COLORS.border}`,
         borderRadius: RADIUS.lg,
         boxShadow: SHADOW.card,
-        padding: "20px 20px 18px",
+        padding: compact ? "15px 16px 13px" : "20px 20px 18px",
         minWidth: 0,
       }}
     >
       <span
         style={{
           position: "absolute",
-          top: 18,
-          right: 18,
-          width: 34,
-          height: 34,
+          top: compact ? 14 : 18,
+          right: compact ? 14 : 18,
+          width: tile,
+          height: tile,
           borderRadius: RADIUS.sm,
           background: t.bg,
           display: "flex",
@@ -47,19 +52,19 @@ export function StatCard({
           justifyContent: "center",
         }}
       >
-        <Icon style={{ width: 16, height: 16, color: t.fg }} strokeWidth={2} />
+        <Icon style={{ width: compact ? 15 : 16, height: compact ? 15 : 16, color: t.fg }} strokeWidth={2} />
       </span>
 
       <div
         style={{
           fontFamily: FONT_DISPLAY,
-          fontSize: 32,
+          fontSize: compact ? 26 : 32,
           fontWeight: 600,
           color: COLORS.navy,
           letterSpacing: "-0.02em",
           lineHeight: 1,
-          marginBottom: 9,
-          paddingRight: 42,
+          marginBottom: compact ? 6 : 9,
+          paddingRight: compact ? 36 : 42,
         }}
       >
         {value}
