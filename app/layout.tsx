@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Space_Grotesk, Inter } from "next/font/google";
+import { Geist, Geist_Mono, Space_Grotesk, Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,6 +26,16 @@ const fontBody = Inter({
   display: "swap",
 });
 
+// Sistema visual v2: serif elegante (banca privada / factura premium) para
+// títulos y números importantes. Cuerpo sigue en Inter.
+const fontSerif = Fraunces({
+  variable: "--font-serif",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  style: ["normal"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "FlotaFly — Presupuestos de autocar automáticos en segundos",
   description:
@@ -48,7 +58,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} ${fontDisplay.variable} ${fontBody.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fontDisplay.variable} ${fontBody.variable} ${fontSerif.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
