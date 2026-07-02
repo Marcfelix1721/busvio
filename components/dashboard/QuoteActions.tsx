@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react'
+import { createPortal } from 'react-dom'
 import { createBrowserClient } from '@supabase/ssr'
-import { AlertTriangle, RefreshCw, Loader2, MapPin, Calendar, Clock, Warehouse, Bus, Settings, Wallet, Check, Mail } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Loader2, MapPin, Calendar, Clock, Warehouse, Bus, Settings, Wallet, Check, Mail, Eye, X, FileText } from 'lucide-react'
 import { COLORS, RADIUS, FONT_BODY, FONT_DISPLAY } from '@/lib/dashboard-ui'
 
 const supabase = createBrowserClient(
@@ -81,7 +82,7 @@ async function generarPresupuestoPdf(params: {
   iva: number
   baseImponible: number
   importeIva: number
-}): Promise<string> {
+}): Promise<{ base64: string; blob: Blob }> {
   const { numeroPresupuesto, companyName, quote, calc, precioFinal, iva, baseImponible, importeIva } = params
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
@@ -200,7 +201,11 @@ async function generarPresupuestoPdf(params: {
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...MUTED)
   doc.text(`${companyName} — Presupuesto con validez de 30 días`, M, H - 40)
 
-  return doc.output('datauristring').split(',')[1]
+  // base64 (lo que se ENVÍA al endpoint) y blob (lo que se MUESTRA en la preview)
+  // salen del MISMO doc → garantiza que lo previsualizado === lo entregado.
+  const base64 = doc.output('datauristring').split(',')[1]
+  const blob = doc.output('blob')
+  return { base64, blob }
 }
 
 export default function QuoteActions({ quote, companyId, vehicles, busyVehicleIds = [], companyName }: Props) {
@@ -214,6 +219,23 @@ export default function QuoteActions({ quote, companyId, vehicles, busyVehicleId
   const [saved, setSaved] = useState(false)
   const [sending, setSending] = useState(false)
   const [nota, setNota] = useState(quote.internal_notes || '')
+  // Vista previa del PDF: payload CONGELADO en el momento de generar, para que lo
+  // que se envía sea exactamente lo previsualizado (mismo base64).
+  const [preview, setPreview] = useState<{ base64: string; blobUrl: string; payload: Record<string, any> } | null>(null)
+  const [generatingPreview, setGeneratingPreview] = useState(false)
+  const modalRef = useRef<HTMLDivElement>(null)
+  // Viewport estrecho (móvil) leído con useSyncExternalStore: sin useState ni
+  // useEffect, así NO hay ningún setState en el montaje que pudiera encadenar
+  // re-renders. getServerSnapshot devuelve false (en SSR asumimos desktop).
+  const isNarrow = useSyncExternalStore(
+    onChange => {
+      const mq = window.matchMedia('(max-width: 640px)')
+      mq.addEventListener('change', onChange)
+      return () => mq.removeEventListener('change', onChange)
+    },
+    () => window.matchMedia('(max-width: 640px)').matches,
+    () => false,
+  )
 
   const f = (n: number) => n.toFixed(2) + '€'
 
@@ -221,6 +243,24 @@ export default function QuoteActions({ quote, companyId, vehicles, busyVehicleId
   // En el futuro será un correlativo secuencial por empresa (columna en BD +
   // contador). Único punto a reemplazar cuando llegue esa tarea.
   const numeroPresupuesto = String(quote.id).slice(0, 8).toUpperCase()
+
+  // Al abrir la preview: mover el foco al modal y cerrar con Escape (salvo mientras
+  // se está enviando, igual que el botón Cancelar).
+  useEffect(() => {
+    if (!preview) return
+    modalRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !sending) setPreview(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [preview, sending])
+
+  // Revoca el blob URL cuando la preview cambia o el componente se desmonta.
+  useEffect(() => {
+    const url = preview?.blobUrl
+    return () => { if (url) URL.revokeObjectURL(url) }
+  }, [preview])
 
   const s = {
     card: { background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.lg, padding: 20, marginBottom: 14, fontFamily: FONT_BODY },
@@ -275,7 +315,8 @@ export default function QuoteActions({ quote, companyId, vehicles, busyVehicleId
     setTimeout(() => setSaved(false), 2000)
   }
 
-  async function handleEnviarPresupuesto() {
+  // Paso 1: genera el PDF y ABRE la vista previa (no envía nada todavía).
+  async function handleAbrirPreview() {
     // Guards previos: sin cálculo no se puede generar un PDF completo.
     if (!calcResult) return alert('Calcula el precio antes de enviar el presupuesto')
     if (!precioFinal) return alert('Primero calcula o introduce el precio final')
@@ -291,9 +332,9 @@ export default function QuoteActions({ quote, companyId, vehicles, busyVehicleId
     const baseImponible = precioNum / (1 + ivaPct / 100)
     const importeIva = precioNum - baseImponible
 
-    setSending(true)
+    setGeneratingPreview(true)
     try {
-      const pdfBase64 = await generarPresupuestoPdf({
+      const { base64, blob } = await generarPresupuestoPdf({
         numeroPresupuesto,
         companyName,
         quote,
@@ -308,42 +349,65 @@ export default function QuoteActions({ quote, companyId, vehicles, busyVehicleId
         ? new Date(quote.trip_date).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
         : ''
 
+      // Payload CONGELADO en este momento: al confirmar se envía tal cual, con el
+      // mismo pdfBase64 que se está previsualizando. Sin regenerar → sin discrepancia.
+      const payload = {
+        to: quote.requester_email,
+        nombre: quote.requester_name,
+        pdfBase64: base64,
+        numeroPresupuesto,
+        origen: quote.origin,
+        destino: quote.destination,
+        fecha,
+        precio: precioNum.toFixed(2),
+        empresaNombre: companyName,
+        iva: ivaPct,
+        baseImponible: baseImponible.toFixed(2),
+        importeIva: importeIva.toFixed(2),
+      }
+
+      setPreview({ base64, blobUrl: URL.createObjectURL(blob), payload })
+    } catch (e) {
+      console.error(e)
+      alert('No se pudo generar la vista previa.')
+    } finally {
+      setGeneratingPreview(false)
+    }
+  }
+
+  // Paso 2: envía EXACTAMENTE el PDF previsualizado (reutiliza preview.payload).
+  async function handleConfirmarEnvio() {
+    if (!preview) return
+    setSending(true)
+    try {
       const res = await fetch('/api/enviar-presupuesto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: quote.requester_email,
-          nombre: quote.requester_name,
-          pdfBase64,
-          numeroPresupuesto,
-          origen: quote.origin,
-          destino: quote.destination,
-          fecha,
-          precio: precioNum.toFixed(2),
-          empresaNombre: companyName,
-          iva: ivaPct,
-          baseImponible: baseImponible.toFixed(2),
-          importeIva: importeIva.toFixed(2),
-        }),
+        body: JSON.stringify(preview.payload),
       })
 
       if (!res.ok) {
         const body = await res.text().catch(() => '')
         console.error('Envío de presupuesto falló:', res.status, body)
         alert('No se pudo enviar el presupuesto. Inténtalo de nuevo.')
-        return // NO marcar 'enviado' si el email falló
+        return // deja el modal abierto para reintentar; NO marca 'enviado'
       }
 
-      // Solo si el email salió bien: persistir el estado 'enviado'.
+      // Solo si el email salió bien: persistir el estado 'enviado' y cerrar.
       setEstado('enviado')
       const { error } = await supabase.from('quote_requests').update({ status: 'enviado' }).eq('id', quote.id)
       if (error) console.error('No se pudo persistir el estado enviado:', error)
+      cerrarPreview()
     } catch (e) {
       console.error(e)
-      alert('No se pudo generar o enviar el presupuesto.')
+      alert('No se pudo enviar el presupuesto.')
     } finally {
       setSending(false)
     }
+  }
+
+  function cerrarPreview() {
+    setPreview(null) // el blob URL se revoca en el useEffect de cleanup
   }
 
   const estadoActual = ESTADOS.find(e => e.value === estado)
@@ -557,15 +621,89 @@ export default function QuoteActions({ quote, companyId, vehicles, busyVehicleId
           {saved ? (<><Check style={{ width: 15, height: 15 }} /> Guardado</>) : saving ? 'Guardando...' : 'Guardar cambios'}
         </button>
         <button
-          style={{ ...s.btn, ...(sending || !calcResult ? { opacity: 0.55, cursor: 'not-allowed' } : {}) }}
-          onClick={handleEnviarPresupuesto}
-          disabled={sending || !calcResult}
+          style={{ ...s.btn, ...(generatingPreview || !calcResult ? { opacity: 0.55, cursor: 'not-allowed' } : {}) }}
+          onClick={handleAbrirPreview}
+          disabled={generatingPreview || !calcResult}
         >
-          {sending
-            ? (<><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Enviando...</>)
-            : (<><Mail style={{ width: 15, height: 15 }} /> Enviar presupuesto por email</>)}
+          {generatingPreview
+            ? (<><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Generando vista previa...</>)
+            : (<><Eye style={{ width: 15, height: 15 }} /> Vista previa y enviar</>)}
         </button>
       </div>
+
+      {/* MODAL DE VISTA PREVIA DEL PDF (portal a body) */}
+      {preview && createPortal(
+        <div
+          onMouseDown={e => { if (e.target === e.currentTarget && !sending) cerrarPreview() }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, fontFamily: FONT_BODY }}
+        >
+          <div
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Vista previa del presupuesto"
+            tabIndex={-1}
+            style={{ width: 'min(920px, 100%)', height: '90vh', background: COLORS.surface, borderRadius: RADIUS.lg, overflow: 'hidden', display: 'flex', flexDirection: 'column' as const, outline: 'none' }}
+          >
+            {/* Cabecera */}
+            <div style={{ background: COLORS.navy, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div>
+                <p style={{ margin: 0, color: COLORS.onDark, fontFamily: FONT_DISPLAY, fontSize: 16, fontWeight: 700 }}>Vista previa del presupuesto</p>
+                <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>Nº {numeroPresupuesto} · {quote.requester_name}</p>
+              </div>
+              <button
+                onClick={() => { if (!sending) cerrarPreview() }}
+                disabled={sending}
+                aria-label="Cerrar vista previa"
+                style={{ background: 'transparent', border: 'none', color: COLORS.onDark, cursor: sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.5 : 1, padding: 6, display: 'flex' }}
+              >
+                <X style={{ width: 18, height: 18 }} />
+              </button>
+            </div>
+
+            {/* Cuerpo: iframe (desktop) o botón "Ver PDF" (móvil) + enlace fallback */}
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' as const, background: COLORS.surfaceAlt }}>
+              {isNarrow ? (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 24, textAlign: 'center' as const }}>
+                  <FileText style={{ width: 40, height: 40, color: COLORS.navy }} />
+                  <p style={{ margin: 0, fontSize: 13, color: COLORS.textMuted }}>Abre el PDF para revisarlo antes de enviarlo.</p>
+                  <a href={preview.blobUrl} target="_blank" rel="noopener noreferrer" style={{ ...s.btn, width: 'auto', padding: '0 20px', textDecoration: 'none' }}>
+                    <Eye style={{ width: 15, height: 15 }} /> Ver PDF
+                  </a>
+                </div>
+              ) : (
+                <iframe src={preview.blobUrl} title="Vista previa del presupuesto en PDF" style={{ flex: 1, width: '100%', border: 'none' }} />
+              )}
+              <div style={{ padding: '8px 16px', borderTop: `1px solid ${COLORS.border}`, textAlign: 'center' as const }}>
+                <a href={preview.blobUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: COLORS.teal, fontWeight: 600, textDecoration: 'none' }}>
+                  Abrir en pestaña nueva
+                </a>
+              </div>
+            </div>
+
+            {/* Pie: acciones */}
+            <div style={{ display: 'flex', gap: 10, padding: 16, borderTop: `1px solid ${COLORS.border}` }}>
+              <button
+                onClick={cerrarPreview}
+                disabled={sending}
+                style={{ ...s.btnSecondary, ...(sending ? { opacity: 0.55, cursor: 'not-allowed' } : {}) }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmarEnvio}
+                disabled={sending}
+                style={{ ...s.btn, ...(sending ? { opacity: 0.55, cursor: 'not-allowed' } : {}) }}
+              >
+                {sending
+                  ? (<><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Enviando...</>)
+                  : (<><Mail style={{ width: 15, height: 15 }} /> Confirmar y enviar</>)}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }
