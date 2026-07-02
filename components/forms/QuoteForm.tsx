@@ -850,9 +850,11 @@ export function QuoteForm({ slug }: QuoteFormProps) {
 
     if (error) { alert('No se pudo enviar la solicitud'); setIsSubmitting(false); return }
 
-    // Enviar notificación por email a la empresa (silencioso, no bloquea el flujo)
+    // Enviar notificación por email a la empresa. Es un aviso INTERNO: si falla,
+    // NO se muestra error al cliente ni se bloquea su flujo — la solicitud ya está
+    // guardada y recibe igualmente su confirmación de "en revisión". Solo se loguea.
     try {
-      await fetch('/api/enviar-notificacion-empresa', {
+      const notifRes = await fetch('/api/enviar-notificacion-empresa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -866,6 +868,10 @@ export function QuoteForm({ slug }: QuoteFormProps) {
           service_type: serviceType,
         }),
       })
+      if (!notifRes.ok) {
+        const body = await notifRes.text().catch(() => '')
+        console.error('Aviso de notificación falló:', notifRes.status, body)
+      }
     } catch (err) {
       // Error silencioso - no bloquea el envío del formulario
       console.error('Error al enviar notificación:', err)

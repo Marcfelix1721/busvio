@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { Resend } from "resend"
 import { ADMIN_EMAIL } from "@/lib/admin"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { RESEND_FROM, getResendClient } from "@/lib/resend"
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,8 +12,14 @@ export async function POST(req: NextRequest) {
 
     const adminEmail = ADMIN_EMAIL
 
+    const resend = getResendClient()
+    if (!resend) {
+      console.error("RESEND_API_KEY ausente — solicitud de demo no enviada")
+      return NextResponse.json({ error: "Servicio de email no configurado" }, { status: 500 })
+    }
+
     const { error } = await resend.emails.send({
-      from: "FlotaFly Demo <onboarding@resend.dev>",
+      from: RESEND_FROM,
       to: [adminEmail],
       subject: `Nueva solicitud de demo — ${nombre}`,
       html: `

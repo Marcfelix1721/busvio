@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { Resend } from "resend"
 import { createClient as createServerClient } from "@supabase/supabase-js"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { RESEND_FROM, getResendClient } from "@/lib/resend"
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,8 +49,14 @@ export async function POST(req: NextRequest) {
 
     const color = company.color_primario || "#1e3a5f"
 
+    const resend = getResendClient()
+    if (!resend) {
+      console.error("RESEND_API_KEY ausente — notificación no enviada")
+      return NextResponse.json({ error: "Servicio de email no configurado" }, { status: 500 })
+    }
+
     const { error } = await resend.emails.send({
-      from: `FlotaFly <onboarding@resend.dev>`,
+      from: RESEND_FROM,
       to: recipientEmails,
       subject: `Nueva solicitud de presupuesto — ${requester_name}`,
       html: `

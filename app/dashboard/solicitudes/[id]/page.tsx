@@ -331,6 +331,7 @@ export default async function QuoteRequestDetailPage({
               companyId={quote.company_id}
               vehicles={vehicles}
               busyVehicleIds={busyVehicleIds}
+              companyName={company?.name ?? null}
             />
           </div>
         </div>

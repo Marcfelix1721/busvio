@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { Resend } from "resend"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { resendFrom, getResendClient } from "@/lib/resend"
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,8 +9,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Faltan datos obligatorios" }, { status: 400 })
     }
 
+    const resend = getResendClient()
+    if (!resend) {
+      console.error("RESEND_API_KEY ausente — presupuesto no enviado")
+      return NextResponse.json({ error: "Servicio de email no configurado" }, { status: 500 })
+    }
+
     const { error } = await resend.emails.send({
-      from: `${empresaNombre} <onboarding@resend.dev>`,
+      from: resendFrom(empresaNombre),
       to: [to],
       subject: `Tu presupuesto de transporte Nº ${numeroPresupuesto}`,
       html: `

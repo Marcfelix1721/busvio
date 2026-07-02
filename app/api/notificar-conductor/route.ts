@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { Resend } from "resend"
 import { createClient as createServerClient } from "@supabase/supabase-js"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { resendFrom, getResendClient } from "@/lib/resend"
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,8 +45,14 @@ export async function POST(req: NextRequest) {
         <td style="padding: 8px 0; font-size: 14px; color: #111827; font-weight: 500; text-align: right;">${value}</td>
       </tr>`
 
+    const resend = getResendClient()
+    if (!resend) {
+      console.error("RESEND_API_KEY ausente — notificación a conductor no enviada")
+      return NextResponse.json({ error: "Servicio de email no configurado" }, { status: 500 })
+    }
+
     const { error } = await resend.emails.send({
-      from: `${empresaNombre} <onboarding@resend.dev>`,
+      from: resendFrom(empresaNombre),
       to: [conductor_email],
       subject: `Nuevo servicio asignado para el ${fechaFmt}`,
       html: `

@@ -55,6 +55,7 @@ type Props = {
   companyId: string
   vehicles: any[]
   busyVehicleIds?: string[]
+  companyName?: string | null
 }
 
 const ESTADOS = [
@@ -66,7 +67,143 @@ const ESTADOS = [
   { value: 'cancelado',   label: 'Cancelado',   color: COLORS.textFaint, bg: COLORS.surfaceAlt },
 ]
 
-export default function QuoteActions({ quote, companyId, vehicles, busyVehicleIds = [] }: Props) {
+// --- Generación del PDF del presupuesto en el cliente (jspdf) ---
+// Se construye a partir de calcResult para que el PDF refleje EXACTAMENTE el
+// desglose que la empresa ve en pantalla. Devuelve base64 crudo (sin el prefijo
+// "data:...;base64,"), que es lo que Resend espera en attachments[].content.
+// jspdf se importa dinámicamente para no engordar el bundle inicial del dashboard.
+async function generarPresupuestoPdf(params: {
+  numeroPresupuesto: string
+  companyName: string
+  quote: any
+  calc: CalcResult
+  precioFinal: number
+  iva: number
+  baseImponible: number
+  importeIva: number
+}): Promise<string> {
+  const { numeroPresupuesto, companyName, quote, calc, precioFinal, iva, baseImponible, importeIva } = params
+  const { jsPDF } = await import('jspdf')
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' })
+
+  const NAVY: [number, number, number] = [30, 58, 95]   // #1e3a5f
+  const TEAL: [number, number, number] = [8, 145, 178]  // #0891b2
+  const DARK: [number, number, number] = [17, 24, 39]
+  const MUTED: [number, number, number] = [107, 114, 128]
+  const LINE: [number, number, number] = [226, 232, 240]
+
+  const M = 40
+  const W = doc.internal.pageSize.getWidth()
+  const H = doc.internal.pageSize.getHeight()
+  const f = (n: number) => `${n.toFixed(2)} €`
+  let y = 0
+
+  const ensure = (space: number) => {
+    if (y + space > H - 60) { doc.addPage(); y = 48 }
+  }
+
+  // Cabecera (banda navy con marca de la empresa)
+  doc.setFillColor(...NAVY); doc.rect(0, 0, W, 92, 'F')
+  doc.setTextColor(255, 255, 255)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(20)
+  doc.text(companyName, M, 42)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10)
+  doc.text('Gestión de transporte discrecional', M, 60)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11)
+  doc.text(`Presupuesto Nº ${numeroPresupuesto}`, M, 80)
+  const fechaEmision = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10)
+  doc.text(fechaEmision, W - M, 42, { align: 'right' })
+  y = 122
+
+  const sectionTitle = (label: string) => {
+    ensure(30)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...NAVY)
+    doc.text(label.toUpperCase(), M, y); y += 7
+    doc.setDrawColor(...LINE); doc.line(M, y, W - M, y); y += 16
+  }
+  const row = (label: string, value: string, opts?: { color?: [number, number, number]; bold?: boolean }) => {
+    ensure(18)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...MUTED)
+    doc.text(label, M, y)
+    doc.setTextColor(...(opts?.color ?? DARK)); doc.setFont('helvetica', opts?.bold ? 'bold' : 'normal')
+    doc.text(value, W - M, y, { align: 'right' })
+    y += 16
+  }
+
+  // Cliente
+  sectionTitle('Cliente')
+  row('Nombre', quote.requester_name || '—')
+  row('Email', quote.requester_email || '—')
+  row('Teléfono', quote.requester_phone || '—')
+  y += 8
+
+  // Datos del viaje
+  const stops: string[] = (() => { try { return JSON.parse(quote.stops || '[]') } catch { return [] } })()
+  const fechaViaje = quote.trip_date
+    ? new Date(quote.trip_date).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
+    : '—'
+  sectionTitle('Datos del viaje')
+  row('Origen', quote.origin || '—')
+  stops.forEach((s, i) => row(`Parada ${i + 1}`, s))
+  row('Destino', quote.destination || '—')
+  row('Fecha', fechaViaje)
+  if (quote.departure_time) row('Hora de salida', quote.departure_time)
+  row('Pasajeros', String(quote.passengers ?? '—'))
+  row('Kilómetros', `${calc.km} km`)
+  row('Duración', `${calc.dias} día${calc.dias !== 1 ? 's' : ''} · ${calc.horas} h`)
+  y += 8
+
+  // Vehículo
+  if (calc.vehiculo) {
+    sectionTitle('Vehículo')
+    row('Modelo', `${calc.vehiculo.marca_modelo} · ${calc.vehiculo.matricula}`)
+    y += 8
+  }
+
+  // Costes del vehículo
+  if (calc.costesVehiculo?.length) {
+    sectionTitle('Costes del vehículo')
+    calc.costesVehiculo.forEach(c => row(c.concepto, f(c.coste)))
+    row('Subtotal vehículo', f(calc.totalVehiculo), { color: NAVY, bold: true })
+    y += 8
+  }
+
+  // Variables de la empresa (solo las activas, igual que en pantalla)
+  const variablesActivas = calc.desgloseVariables?.filter(v => v.activa) ?? []
+  if (variablesActivas.length) {
+    sectionTitle('Variables de la empresa')
+    variablesActivas.forEach(v => row(`${v.nombre}${v.obligatoria ? ' (fija)' : ' (opcional)'}`, f(v.coste)))
+    row('Subtotal variables', f(calc.totalVariables), { bold: true })
+    y += 8
+  }
+
+  // Resumen (base e IVA recalculados desde el precio final editado)
+  sectionTitle('Resumen')
+  row('Subtotal costes', f(calc.subtotal))
+  row(`Margen (${calc.margen}%)`, `+${f(calc.margenImporte)}`, { color: TEAL })
+  row('Base imponible', f(baseImponible))
+  row(`IVA (${iva}%)`, `+${f(importeIva)}`)
+  y += 6
+
+  // Total
+  ensure(46)
+  doc.setFillColor(...NAVY); doc.rect(M, y, W - 2 * M, 36, 'F')
+  doc.setTextColor(255, 255, 255)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(12)
+  doc.text('TOTAL (IVA incl.)', M + 16, y + 23)
+  doc.setFontSize(16)
+  doc.text(f(precioFinal), W - M - 16, y + 23, { align: 'right' })
+  y += 60
+
+  // Pie
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...MUTED)
+  doc.text(`${companyName} — Presupuesto con validez de 30 días`, M, H - 40)
+
+  return doc.output('datauristring').split(',')[1]
+}
+
+export default function QuoteActions({ quote, companyId, vehicles, busyVehicleIds = [], companyName }: Props) {
   const busyVehicles = new Set(busyVehicleIds)
   const [estado, setEstado] = useState(quote.status)
   const [vehicleId, setVehicleId] = useState(quote.vehicle_id || '')
@@ -75,9 +212,15 @@ export default function QuoteActions({ quote, companyId, vehicles, busyVehicleId
   const [precioFinal, setPrecioFinal] = useState<string>(quote.final_price ? String(quote.final_price) : '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [sending, setSending] = useState(false)
   const [nota, setNota] = useState(quote.internal_notes || '')
 
   const f = (n: number) => n.toFixed(2) + '€'
+
+  // DEUDA TÉCNICA (temporal): el número de presupuesto se deriva del id.
+  // En el futuro será un correlativo secuencial por empresa (columna en BD +
+  // contador). Único punto a reemplazar cuando llegue esa tarea.
+  const numeroPresupuesto = String(quote.id).slice(0, 8).toUpperCase()
 
   const s = {
     card: { background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: RADIUS.lg, padding: 20, marginBottom: 14, fontFamily: FONT_BODY },
@@ -133,18 +276,74 @@ export default function QuoteActions({ quote, companyId, vehicles, busyVehicleId
   }
 
   async function handleEnviarPresupuesto() {
+    // Guards previos: sin cálculo no se puede generar un PDF completo.
+    if (!calcResult) return alert('Calcula el precio antes de enviar el presupuesto')
     if (!precioFinal) return alert('Primero calcula o introduce el precio final')
-    setLoading(true)
+    if (!quote.requester_email) return alert('Este cliente no tiene email; no se puede enviar el presupuesto')
+    // Marca blanca: sin nombre de empresa el email saldría como "FlotaFly",
+    // que el cliente final no reconoce. Mejor avisar y NO enviar.
+    if (!companyName) return alert('Falta el nombre de la empresa; no se puede enviar el presupuesto')
+
+    const precioNum = Number(precioFinal)
+    const ivaPct = calcResult.iva
+    // Caveat (b): recalcular base e IVA desde el precio final EDITADO para que el
+    // PDF y el email siempre cuadren, aunque la empresa ajuste el total a mano.
+    const baseImponible = precioNum / (1 + ivaPct / 100)
+    const importeIva = precioNum - baseImponible
+
+    setSending(true)
     try {
-      await fetch('/api/enviar-presupuesto', {
+      const pdfBase64 = await generarPresupuestoPdf({
+        numeroPresupuesto,
+        companyName,
+        quote,
+        calc: calcResult,
+        precioFinal: precioNum,
+        iva: ivaPct,
+        baseImponible,
+        importeIva,
+      })
+
+      const fecha = quote.trip_date
+        ? new Date(quote.trip_date).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
+        : ''
+
+      const res = await fetch('/api/enviar-presupuesto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quoteId: quote.id, companyId }),
+        body: JSON.stringify({
+          to: quote.requester_email,
+          nombre: quote.requester_name,
+          pdfBase64,
+          numeroPresupuesto,
+          origen: quote.origin,
+          destino: quote.destination,
+          fecha,
+          precio: precioNum.toFixed(2),
+          empresaNombre: companyName,
+          iva: ivaPct,
+          baseImponible: baseImponible.toFixed(2),
+          importeIva: importeIva.toFixed(2),
+        }),
       })
+
+      if (!res.ok) {
+        const body = await res.text().catch(() => '')
+        console.error('Envío de presupuesto falló:', res.status, body)
+        alert('No se pudo enviar el presupuesto. Inténtalo de nuevo.')
+        return // NO marcar 'enviado' si el email falló
+      }
+
+      // Solo si el email salió bien: persistir el estado 'enviado'.
       setEstado('enviado')
-      await supabase.from('quote_requests').update({ status: 'enviado' }).eq('id', quote.id)
-    } catch (e) { console.error(e) }
-    setLoading(false)
+      const { error } = await supabase.from('quote_requests').update({ status: 'enviado' }).eq('id', quote.id)
+      if (error) console.error('No se pudo persistir el estado enviado:', error)
+    } catch (e) {
+      console.error(e)
+      alert('No se pudo generar o enviar el presupuesto.')
+    } finally {
+      setSending(false)
+    }
   }
 
   const estadoActual = ESTADOS.find(e => e.value === estado)
@@ -357,8 +556,14 @@ export default function QuoteActions({ quote, companyId, vehicles, busyVehicleId
         <button style={s.btn} onClick={handleGuardar} disabled={saving}>
           {saved ? (<><Check style={{ width: 15, height: 15 }} /> Guardado</>) : saving ? 'Guardando...' : 'Guardar cambios'}
         </button>
-        <button style={s.btnSecondary} onClick={handleEnviarPresupuesto} disabled={loading}>
-          <Mail style={{ width: 15, height: 15 }} /> Enviar presupuesto por email
+        <button
+          style={{ ...s.btn, ...(sending || !calcResult ? { opacity: 0.55, cursor: 'not-allowed' } : {}) }}
+          onClick={handleEnviarPresupuesto}
+          disabled={sending || !calcResult}
+        >
+          {sending
+            ? (<><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Enviando...</>)
+            : (<><Mail style={{ width: 15, height: 15 }} /> Enviar presupuesto por email</>)}
         </button>
       </div>
     </div>
